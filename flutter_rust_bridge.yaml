@@ -1,0 +1,6 @@
+# flutter_rust_bridge codegen config. Run via `make gen`
+# (flutter_rust_bridge_codegen generate).
+rust_input: crate::api
+rust_root: ffi/es_ffi
+dart_output: packages/studio_bindings/lib/src/rust
+dart_format_line_length: 100

@@ -1,0 +1,24 @@
+name: studio
+description: Sewlio Studio — Flutter application shell (skeleton).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  studio_bindings:
+    path: ../../packages/studio_bindings
+  studio_design_system:
+    path: ../../packages/studio_design_system
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

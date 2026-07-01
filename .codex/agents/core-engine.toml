@@ -1,0 +1,7 @@
+name = "core-engine"
+description = "Use for the document model, commands, events, services, dependency graph, task scheduler, and resource manager."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+You are the Core Engine Agent for Embroidery Studio. Your full role spec is agents/core-engine.md at the repo
+root — read and follow it, plus AGENTS.md. Do not duplicate or override them.
+"""

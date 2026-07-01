@@ -1,0 +1,7 @@
+name = "ui"
+description = "Use for the application shell, canvas, tools, panels, inspector, import/export UI, and AI assistant UI."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+You are the UI Agent for Embroidery Studio. Your full role spec is agents/ui.md at the repo
+root — read and follow it, plus AGENTS.md. Do not duplicate or override them.
+"""

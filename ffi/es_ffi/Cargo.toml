@@ -1,0 +1,20 @@
+[package]
+name = "es_ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+# FFI bridge crate. Exposes the engine to Flutter via flutter_rust_bridge.
+# Owns no domain logic — it re-exports a thin API over es_core / es_geometry.
+[lib]
+crate-type = ["cdylib", "staticlib", "lib"]
+
+[dependencies]
+# Pinned to match the installed flutter_rust_bridge_codegen (2.12.0).
+flutter_rust_bridge = "=2.12.0"
+es_core = { path = "../../crates/es_core" }
+es_geometry = { path = "../../crates/es_geometry" }
+
+[lints]
+workspace = true

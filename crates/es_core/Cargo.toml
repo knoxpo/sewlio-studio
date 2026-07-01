@@ -1,0 +1,13 @@
+[package]
+name = "es_core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+# Foundation crate (kernel + runtime). May depend only on lower layers.
+[dependencies]
+es_diagnostics = { path = "../es_diagnostics" }
+
+[lints]
+workspace = true

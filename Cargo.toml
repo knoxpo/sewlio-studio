@@ -1,0 +1,31 @@
+# Sewlio / Embroidery Studio — Rust engine workspace.
+# Skeleton only: crate boundaries + toolchain wiring. No domain logic yet.
+[workspace]
+resolver = "2"
+members = [
+    "crates/es_diagnostics",
+    "crates/es_core",
+    "crates/es_geometry",
+    "ffi/es_ffi",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "UNLICENSED"
+repository = "https://github.com/knoxpo/sewlio-studio"
+
+# Shared lints. Dependency direction (downward only) is enforced by each crate's
+# [dependencies]; see docs/02-architecture/018-package-ownership.md.
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+# `frb_expand` is set by flutter_rust_bridge codegen during `cargo expand`; declare
+# it so the unexpected_cfgs lint stays quiet on #[frb(...)] in es_ffi.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
+
+[profile.release]
+lto = "thin"

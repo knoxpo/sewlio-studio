@@ -1,0 +1,7 @@
+name = "rendering"
+description = "Use for the scene graph, render graph, GPU backend, viewport, LOD/culling, and simulation rendering."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+You are the Rendering Agent for Embroidery Studio. Your full role spec is agents/rendering.md at the repo
+root — read and follow it, plus AGENTS.md. Do not duplicate or override them.
+"""

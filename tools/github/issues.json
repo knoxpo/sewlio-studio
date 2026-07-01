@@ -1,0 +1,2499 @@
+{
+  "note": "Importable GitHub issues for Sewlio Studio. Epics (umbrella) + Wave-1 tasks (S1-S13, milestones M1-M6). Later epics carry umbrella issues only; their tasks are added per rolling wave. See docs/09-project-management. 'dependencies' list parent task/feature IDs (encoded in title prefixes).",
+  "epics": [
+    {
+      "title": "E1 Foundation (kernel + runtime)",
+      "labels": [
+        "epic",
+        "runtime",
+        "rust",
+        "P0"
+      ],
+      "milestone": "M1 Foundation",
+      "body": "Command bus, event bus, ids/time, diagnostics, service registry. The only mutation path. Features E1-F1..F5. Depends: none."
+    },
+    {
+      "title": "E2 IR Framework",
+      "labels": [
+        "epic",
+        "rust",
+        "P0",
+        "testing"
+      ],
+      "milestone": "M1 Foundation",
+      "body": "Versioned/serializable/immutable IR traits + golden harness. Features E2-F1..F3. Depends: E1."
+    },
+    {
+      "title": "E3 Geometry Engine (Geometry IR)",
+      "labels": [
+        "epic",
+        "geometry",
+        "rust",
+        "P0"
+      ],
+      "milestone": "M2 Geometry",
+      "body": "Points, paths, curves, transforms, bbox, algorithms; mm-internal, deterministic. Features E3-F1..F7. Depends: E2."
+    },
+    {
+      "title": "E4 Document Model & Project",
+      "labels": [
+        "epic",
+        "runtime",
+        "rust",
+        "P0"
+      ],
+      "milestone": "M3 Document + Storage",
+      "body": "Project/layers/objects; command-driven mutation; events; undo. Features E4-F1..F4. Depends: E3."
+    },
+    {
+      "title": "E5 Storage & Recovery",
+      "labels": [
+        "epic",
+        "storage",
+        "rust",
+        "P0"
+      ],
+      "milestone": "M3 Document + Storage",
+      "body": ".embproj, atomic save, migration, recovery. Features E5-F1..F4. Depends: E4."
+    },
+    {
+      "title": "E6 Import Pipeline (Import IR)",
+      "labels": [
+        "epic",
+        "import",
+        "rust",
+        "P1"
+      ],
+      "milestone": "M4 Import",
+      "body": "Import IR; SVG/raster/emb parsers; normalization. Features E6-F1..F4. Depends: E3, E5."
+    },
+    {
+      "title": "E7 Embroidery Engine (Stitch IR)",
+      "labels": [
+        "epic",
+        "embroidery",
+        "rust",
+        "P0"
+      ],
+      "milestone": "M5 Embroidery Core",
+      "body": "Stitch IR; running/satin/fill/underlay; density, compensation, sequencing, optimization. Features E7-F1..F9. Depends: E3."
+    },
+    {
+      "title": "E8 Machine Compiler (Machine IR)",
+      "labels": [
+        "epic",
+        "machine",
+        "rust",
+        "P0"
+      ],
+      "milestone": "M6 Machine + Export",
+      "body": "Machine IR; needle/thread mapping; machine/hoop validation. Features E8-F1..F3. Depends: E7."
+    },
+    {
+      "title": "E9 Export / Generators",
+      "labels": [
+        "epic",
+        "generator",
+        "rust",
+        "P1"
+      ],
+      "milestone": "M6 Machine + Export",
+      "body": "DST first, then EXP/PES/JEF/VP3/HUS. Consume Machine IR only. Features E9-F1..F3. Depends: E8."
+    },
+    {
+      "title": "E10 Simulation (Playback IR)",
+      "labels": [
+        "epic",
+        "simulation",
+        "rust",
+        "P2"
+      ],
+      "milestone": "M7 Simulation",
+      "body": "Playback IR; timeline, needle motion, stats. Depends: E7."
+    },
+    {
+      "title": "E11 Rendering",
+      "labels": [
+        "epic",
+        "rendering",
+        "rust",
+        "P2"
+      ],
+      "milestone": "M7 Simulation",
+      "body": "Scene/render graph, GPU backend, viewport, LOD. Depends: E3, E10."
+    },
+    {
+      "title": "E12 Desktop UI",
+      "labels": [
+        "epic",
+        "ui",
+        "flutter",
+        "P1"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "body": "Shell, canvas, tools, panels, inspector, import/export UI. Depends: E4, E11, E15."
+    },
+    {
+      "title": "E13 AI Runtime",
+      "labels": [
+        "epic",
+        "ai",
+        "rust",
+        "P2"
+      ],
+      "milestone": "M9 AI",
+      "body": "Knowledge graph, rule engine, AI digitizer, quality inspector, assistant. Command-only, explainable, human-approved. Depends: E7, E8."
+    },
+    {
+      "title": "E14 Plugin System",
+      "labels": [
+        "epic",
+        "plugin",
+        "rust",
+        "P3"
+      ],
+      "milestone": "M10 Production Ready",
+      "body": "Plugin runtime, sandbox, extension registry. Depends: stable public APIs (post-E9)."
+    },
+    {
+      "title": "E15 FFI Bridge (frb + WASM)",
+      "labels": [
+        "epic",
+        "ffi",
+        "rust",
+        "flutter",
+        "P1"
+      ],
+      "milestone": "M1 Foundation",
+      "body": "Command dispatch, event stream, progress; WASM path. Depends: E1."
+    },
+    {
+      "title": "E16 Testing, CI/CD & Security",
+      "labels": [
+        "epic",
+        "testing",
+        "ci-cd",
+        "security",
+        "P0"
+      ],
+      "milestone": "M1 Foundation",
+      "body": "Golden/perf/compat/fault harness, pipelines, dependency-direction enforcement, permissions/audit. Cross-cutting, continuous. Depends: E1."
+    }
+  ],
+  "tasks": [
+    {
+      "title": "E1-F1-T1 ids + monotonic time",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S1",
+      "dependencies": [],
+      "body": "Objective: deterministic UUIDs + monotonic time source.\nFiles: crates/es_core/src/id.rs, tests.\nTests: unit (uniqueness, monotonicity).\nEstimate: S. Complexity: low. Source: docs/02-architecture/024,026."
+    },
+    {
+      "title": "E1-F2-T1 diagnostics + log sink",
+      "labels": [
+        "task",
+        "kernel",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S1",
+      "dependencies": [
+        "E1-F1-T1"
+      ],
+      "body": "Objective: severity + structured log records + tracing spans.\nFiles: crates/es_diagnostics/src (extend), tests.\nTests: unit.\nEstimate: S. Source: docs/05-engineering/600."
+    },
+    {
+      "title": "E1-F3-T1 Command trait + dispatch",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S1",
+      "dependencies": [
+        "E1-F1-T1"
+      ],
+      "body": "Objective: single mutation entry point.\nFiles: crates/es_core/src/command.rs, tests.\nTests: unit (dispatch \u2192 handler, error path).\nEstimate: M. Source: docs/02-architecture/003. Non-Negotiable #3."
+    },
+    {
+      "title": "E1-F3-T2 command validation + error path",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S1",
+      "dependencies": [
+        "E1-F3-T1"
+      ],
+      "body": "Objective: validation hook before handler; typed domain errors.\nTests: unit (invalid command rejected).\nEstimate: S."
+    },
+    {
+      "title": "E1-F4-T1 Event + append-only stream",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S1",
+      "dependencies": [
+        "E1-F3-T1"
+      ],
+      "body": "Objective: immutable Event, append-only stream, subscribers.\nFiles: crates/es_core/src/event.rs, tests.\nTests: unit. Source: docs/02-architecture/004. Non-Negotiable #4."
+    },
+    {
+      "title": "E1-F4-T2 command\u2192event integration test",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "testing",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S1",
+      "dependencies": [
+        "E1-F4-T1"
+      ],
+      "body": "Objective: dispatch Command, assert resulting Event.\nTests: integration.\nEstimate: S."
+    },
+    {
+      "title": "E1-F5-T1 service registry",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S2",
+      "dependencies": [
+        "E1-F1-T1"
+      ],
+      "body": "Objective: register/resolve services by type; no global singletons.\nFiles: crates/es_core/src/registry.rs, tests.\nTests: unit. Source: docs/02-architecture/024."
+    },
+    {
+      "title": "E2-F1-T1 IR base traits",
+      "labels": [
+        "task",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S2",
+      "dependencies": [
+        "E1-F5-T1"
+      ],
+      "body": "Objective: versioned + immutable + serializable IR contracts.\nFiles: crates/es_core/src/ir.rs, tests.\nTests: unit. Source: docs/02-architecture/001."
+    },
+    {
+      "title": "E2-F2-T1 golden harness",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S2",
+      "dependencies": [
+        "E2-F1-T1"
+      ],
+      "body": "Objective: fixture-in/out helper, byte-stable diff, update mode.\nFiles: crates/es_core/src/testing/golden.rs, testdata/.\nTests: serialization + golden. Source: docs/05-engineering/503."
+    },
+    {
+      "title": "E2-F3-T1 migration scaffold",
+      "labels": [
+        "task",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M1 Foundation",
+      "sprint": "S2",
+      "dependencies": [
+        "E2-F1-T1"
+      ],
+      "body": "Objective: explicit old\u2192new IR migration, never implicit.\nTests: migration. Source: docs/02-architecture/001."
+    },
+    {
+      "title": "E3-F1-T1 coordinate system + epsilon policy",
+      "labels": [
+        "task",
+        "geometry",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M2 Geometry",
+      "sprint": "S3",
+      "dependencies": [
+        "E2-F1-T1"
+      ],
+      "body": "Objective: mm-internal coords, fixed rounding/epsilon policy (guards determinism, R2).\nFiles: crates/es_geometry/src (extend Point), tests.\nTests: unit + property. Source: docs/03-domain/geometry/100."
+    },
+    {
+      "title": "E3-F2-T1 paths + validation",
+      "labels": [
+        "task",
+        "geometry",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M2 Geometry",
+      "sprint": "S3",
+      "dependencies": [
+        "E3-F1-T1"
+      ],
+      "body": "Objective: open/closed paths, segment model, validation (open path, dup id).\nTests: unit + golden. Source: docs/03-domain/geometry/101."
+    },
+    {
+      "title": "E3-F5-T1 bounding boxes",
+      "labels": [
+        "task",
+        "geometry",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M2 Geometry",
+      "sprint": "S3",
+      "dependencies": [
+        "E3-F2-T1"
+      ],
+      "body": "Objective: tight bbox, union, contains.\nTests: unit. Source: docs/03-domain/geometry/104."
+    },
+    {
+      "title": "E3-F3-T1 curves (bezier)",
+      "labels": [
+        "task",
+        "geometry",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M2 Geometry",
+      "sprint": "S4",
+      "dependencies": [
+        "E3-F2-T1"
+      ],
+      "body": "Objective: bezier eval/subdivide, deterministic.\nTests: unit + property. Source: docs/03-domain/geometry/102."
+    },
+    {
+      "title": "E3-F4-T1 transforms (affine)",
+      "labels": [
+        "task",
+        "geometry",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M2 Geometry",
+      "sprint": "S4",
+      "dependencies": [
+        "E3-F1-T1"
+      ],
+      "body": "Objective: affine compose/apply/invert; associativity.\nTests: unit + property. Source: docs/03-domain/geometry/103."
+    },
+    {
+      "title": "E3-F6-T1 geometry algorithms",
+      "labels": [
+        "task",
+        "geometry",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M2 Geometry",
+      "sprint": "S4",
+      "dependencies": [
+        "E3-F3-T1"
+      ],
+      "body": "Objective: length, flatten, hit-test; deterministic.\nTests: unit + golden. Source: docs/03-domain/geometry/105."
+    },
+    {
+      "title": "E3-F7-T1 Geometry IR serialization",
+      "labels": [
+        "task",
+        "geometry",
+        "rust",
+        "testing",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M2 Geometry",
+      "sprint": "S4",
+      "dependencies": [
+        "E3-F6-T1",
+        "E2-F2-T1"
+      ],
+      "body": "Objective: round-trip byte-stable + schema version. \u2192 M2 exit.\nTests: serialization + golden."
+    },
+    {
+      "title": "E4-F1-T1 document/layers/objects",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M3 Document + Storage",
+      "sprint": "S5",
+      "dependencies": [
+        "E3-F7-T1"
+      ],
+      "body": "Objective: tree of layers/objects over Geometry IR.\nFiles: crates/es_document.\nTests: unit. Source: docs/02-architecture/005."
+    },
+    {
+      "title": "E4-F2-T1 geometry commands",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M3 Document + Storage",
+      "sprint": "S5",
+      "dependencies": [
+        "E4-F1-T1",
+        "E1-F3-T1"
+      ],
+      "body": "Objective: create/move/delete/transform via Command\u2192Event only.\nTests: integration. Non-Negotiable #3/#4."
+    },
+    {
+      "title": "E4-F3-T1 undo/redo (event-sourced)",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M3 Document + Storage",
+      "sprint": "S6",
+      "dependencies": [
+        "E4-F2-T1"
+      ],
+      "body": "Objective: event-sourced undo/redo, deterministic replay.\nTests: integration. Source: docs/02-architecture/004."
+    },
+    {
+      "title": "E4-F4-T1 project metadata",
+      "labels": [
+        "task",
+        "runtime",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M3 Document + Storage",
+      "sprint": "S6",
+      "dependencies": [
+        "E4-F1-T1"
+      ],
+      "body": "Objective: project settings, thread refs, machine profile ref.\nTests: unit."
+    },
+    {
+      "title": "E5-F1-T1 .embproj layout + manifest",
+      "labels": [
+        "task",
+        "storage",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M3 Document + Storage",
+      "sprint": "S6",
+      "dependencies": [
+        "E4-F4-T1"
+      ],
+      "body": "Objective: package layout, versioned manifest, load validation.\nFiles: crates/es_storage.\nTests: round-trip. Source: docs/02-architecture/006. CONFIRM storage engine (R3) first."
+    },
+    {
+      "title": "E5-F2-T1 atomic save/load",
+      "labels": [
+        "task",
+        "storage",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M3 Document + Storage",
+      "sprint": "S7",
+      "dependencies": [
+        "E5-F1-T1"
+      ],
+      "body": "Objective: crash-safe write, checksum, load validation.\nTests: round-trip + fault."
+    },
+    {
+      "title": "E5-F3-T1 recovery",
+      "labels": [
+        "task",
+        "storage",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M3 Document + Storage",
+      "sprint": "S7",
+      "dependencies": [
+        "E5-F2-T1"
+      ],
+      "body": "Objective: journal/checkpoint; never auto-overwrite original. \u2192 M3 exit.\nTests: fault. Non-Negotiable #11. Source: docs/02-architecture/023."
+    },
+    {
+      "title": "E6-F1-T1 Import IR model",
+      "labels": [
+        "task",
+        "import",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M4 Import",
+      "sprint": "S8",
+      "dependencies": [
+        "E3-F7-T1"
+      ],
+      "body": "Objective: normalized shape/group/path/color model.\nFiles: crates/es_import.\nTests: unit. Source: docs/03-domain/import/700."
+    },
+    {
+      "title": "E6-F2-T1 SVG parser \u2192 Import IR",
+      "labels": [
+        "task",
+        "import",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M4 Import",
+      "sprint": "S8",
+      "dependencies": [
+        "E6-F1-T1"
+      ],
+      "body": "Objective: parse SVG into Import IR, preserve diagnostics.\nTests: golden + compat. Source: docs/03-domain/import/700."
+    },
+    {
+      "title": "E6-F3-T1 normalization \u2192 Geometry IR",
+      "labels": [
+        "task",
+        "import",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M4 Import",
+      "sprint": "S9",
+      "dependencies": [
+        "E6-F2-T1"
+      ],
+      "body": "Objective: Import IR \u2192 Geometry IR with validation. \u2192 M4 exit.\nTests: golden. Source: docs/03-domain/import/703."
+    },
+    {
+      "title": "E7-F1-T1 Stitch IR model",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M5 Embroidery Core",
+      "sprint": "S10",
+      "dependencies": [
+        "E3-F7-T1"
+      ],
+      "body": "Objective: machine-independent stitch model (run/fill/satin/jump/trim/color/tie).\nFiles: crates/es_embroidery, crates/es_digitizer.\nTests: unit + serialization. Source: docs/03-domain/embroidery/200. Non-Negotiable #7."
+    },
+    {
+      "title": "E7-F2-T1 running stitch pass",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M5 Embroidery Core",
+      "sprint": "S10",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: Geometry IR \u2192 running Stitch IR, deterministic.\nTests: golden + determinism. Source: docs/03-domain/embroidery/201."
+    },
+    {
+      "title": "E7-F6-T1 density model",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M5 Embroidery Core",
+      "sprint": "S11",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: density model + validation.\nTests: unit. Source: docs/03-domain/embroidery/209."
+    },
+    {
+      "title": "E7-F8-T1 sequencing + ties/trims/jumps",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M5 Embroidery Core",
+      "sprint": "S11",
+      "dependencies": [
+        "E7-F2-T1"
+      ],
+      "body": "Objective: object order, tie-in/off, trims, jumps. \u2192 M5 exit.\nTests: golden. Source: docs/03-domain/embroidery/205,206,207,208."
+    },
+    {
+      "title": "E8-F1-T1 Machine IR model",
+      "labels": [
+        "task",
+        "machine",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 Machine + Export",
+      "sprint": "S11",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: needle/thread/stop/jump/trim + hoop metadata.\nFiles: crates/es_machine, crates/es_machine_compiler.\nTests: unit + serialization. Source: docs/03-domain/export/800. Non-Negotiable #8."
+    },
+    {
+      "title": "E8-F2-T1 needle & thread mapping",
+      "labels": [
+        "task",
+        "machine",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 Machine + Export",
+      "sprint": "S12",
+      "dependencies": [
+        "E8-F1-T1"
+      ],
+      "body": "Objective: thread \u2192 needle assignment.\nTests: golden. Source: docs/03-domain/machine/302,303."
+    },
+    {
+      "title": "E8-F3-T1 machine validation",
+      "labels": [
+        "task",
+        "machine",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 Machine + Export",
+      "sprint": "S12",
+      "dependencies": [
+        "E8-F1-T1"
+      ],
+      "body": "Objective: limits, needle count, hoop size, unsupported commands.\nTests: validation. Source: docs/03-domain/machine/305."
+    },
+    {
+      "title": "E9-F1-T1 DST generator",
+      "labels": [
+        "task",
+        "generator",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M6 Machine + Export",
+      "sprint": "S13",
+      "dependencies": [
+        "E8-F3-T1"
+      ],
+      "body": "Objective: Machine IR \u2192 DST bytes, no optimization in encoder.\nFiles: crates/es_gen_dst, testdata/dst golden.\nTests: binary golden. Source: docs/03-domain/export/801."
+    },
+    {
+      "title": "E9-F2-T1 SVG\u2192DST integration gate",
+      "labels": [
+        "task",
+        "generator",
+        "testing",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 Machine + Export",
+      "sprint": "S13",
+      "dependencies": [
+        "E9-F1-T1",
+        "E6-F3-T1"
+      ],
+      "body": "Objective: headless SVG\u2192Import\u2192Geometry\u2192Stitch\u2192Machine\u2192DST integration test in CI. \u2192 M6 exit, architecture proof.\nTests: integration. Source: docs/02-architecture/000 \u00a731."
+    },
+    {
+      "title": "E7-F3-T1 satin column generator",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S14",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: satin column generator. Feature E7-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F4-T1 fill/tatami angle+density",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S14",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: fill/tatami angle+density. Feature E7-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F3-T2 satin golden",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S14",
+      "dependencies": [
+        "E7-F3-T1"
+      ],
+      "body": "Objective: satin golden. Feature E7-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F4-T2 fill golden",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S14",
+      "dependencies": [
+        "E7-F4-T1"
+      ],
+      "body": "Objective: fill golden. Feature E7-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F5-T1 underlay passes",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S15",
+      "dependencies": [
+        "E7-F2-T1"
+      ],
+      "body": "Objective: underlay passes. Feature E7-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F6-T1 density model + validation",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S15",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: density model + validation. Feature E7-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F5-T2 underlay golden",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S15",
+      "dependencies": [
+        "E7-F5-T1"
+      ],
+      "body": "Objective: underlay golden. Feature E7-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F7-T1 pull/push compensation",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S16",
+      "dependencies": [
+        "E7-F3-T1"
+      ],
+      "body": "Objective: pull/push compensation. Feature E7-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F8-T1 sequencing tie-in/off/trim/jump",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S16",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: sequencing tie-in/off/trim/jump. Feature E7-F8. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F7-T2 compensation golden",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S16",
+      "dependencies": [
+        "E7-F7-T1"
+      ],
+      "body": "Objective: compensation golden. Feature E7-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F9-T1 travel/color-change optimization",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S17",
+      "dependencies": [
+        "E7-F8-T1"
+      ],
+      "body": "Objective: travel/color-change optimization. Feature E7-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E7-F9-T2 optimization determinism test",
+      "labels": [
+        "task",
+        "embroidery",
+        "rust",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S17",
+      "dependencies": [
+        "E7-F9-T1"
+      ],
+      "body": "Objective: optimization determinism test. Feature E7-F9. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E9-F3-T1 EXP generator",
+      "labels": [
+        "task",
+        "export",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S17",
+      "dependencies": [
+        "E9-F1-T1"
+      ],
+      "body": "Objective: EXP generator. Feature E9-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E9-F3-T2 EXP binary golden",
+      "labels": [
+        "task",
+        "export",
+        "rust",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M6 widen",
+      "sprint": "S17",
+      "dependencies": [
+        "E9-F3-T1"
+      ],
+      "body": "Objective: EXP binary golden. Feature E9-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E10-F1-T1 Playback IR types + serialization",
+      "labels": [
+        "task",
+        "simulation",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S18",
+      "dependencies": [
+        "E7-F1-T1"
+      ],
+      "body": "Objective: Playback IR types + serialization. Feature E10-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E10-F2-T1 playback compiler Stitch->Playback",
+      "labels": [
+        "task",
+        "simulation",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S18",
+      "dependencies": [
+        "E10-F1-T1"
+      ],
+      "body": "Objective: playback compiler Stitch->Playback. Feature E10-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E10-F2-T2 playback determinism test",
+      "labels": [
+        "task",
+        "simulation",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S18",
+      "dependencies": [
+        "E10-F2-T1"
+      ],
+      "body": "Objective: playback determinism test. Feature E10-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E10-F3-T1 needle-motion model",
+      "labels": [
+        "task",
+        "simulation",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S19",
+      "dependencies": [
+        "E10-F2-T1"
+      ],
+      "body": "Objective: needle-motion model. Feature E10-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E10-F4-T1 playback statistics",
+      "labels": [
+        "task",
+        "simulation",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S19",
+      "dependencies": [
+        "E10-F2-T1"
+      ],
+      "body": "Objective: playback statistics. Feature E10-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E15-F1-T1 frb Command dispatch bridge",
+      "labels": [
+        "task",
+        "ffi",
+        "rust",
+        "flutter",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S19",
+      "dependencies": [
+        "E1-F1-T1"
+      ],
+      "body": "Objective: frb Command dispatch bridge. Feature E15-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E15-F1-T2 Command bridge contract test",
+      "labels": [
+        "task",
+        "ffi",
+        "rust",
+        "flutter",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S19",
+      "dependencies": [
+        "E15-F1-T1"
+      ],
+      "body": "Objective: Command bridge contract test. Feature E15-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E10-F5-T1 playback service play/pause/seek",
+      "labels": [
+        "task",
+        "simulation",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S20",
+      "dependencies": [
+        "E10-F2-T1"
+      ],
+      "body": "Objective: playback service play/pause/seek. Feature E10-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E15-F2-T1 frb Event stream bridge",
+      "labels": [
+        "task",
+        "ffi",
+        "rust",
+        "flutter",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S20",
+      "dependencies": [
+        "E15-F1-T1"
+      ],
+      "body": "Objective: frb Event stream bridge. Feature E15-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E15-F3-T1 progress + cancellation",
+      "labels": [
+        "task",
+        "ffi",
+        "rust",
+        "flutter",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S20",
+      "dependencies": [
+        "E15-F1-T1"
+      ],
+      "body": "Objective: progress + cancellation. Feature E15-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E15-F4-T1 WASM build target",
+      "labels": [
+        "task",
+        "ffi",
+        "rust",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S21",
+      "dependencies": [
+        "E15-F1-T1"
+      ],
+      "body": "Objective: WASM build target. Feature E15-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E15-F4-T2 engine API parity smoke suite",
+      "labels": [
+        "task",
+        "ffi",
+        "rust",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S21",
+      "dependencies": [
+        "E15-F4-T1"
+      ],
+      "body": "Objective: engine API parity smoke suite. Feature E15-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E15-F4-T3 CI web matrix job",
+      "labels": [
+        "task",
+        "ffi",
+        "rust",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M7 Simulation",
+      "sprint": "S21",
+      "dependencies": [
+        "E15-F4-T1"
+      ],
+      "body": "Objective: CI web matrix job. Feature E15-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F1-T1 renderable model from IR",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S22",
+      "dependencies": [
+        "E3-F1-T1"
+      ],
+      "body": "Objective: renderable model from IR. Feature E11-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F2-T1 scene-graph nodes + dirty tracking",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S22",
+      "dependencies": [
+        "E11-F1-T1"
+      ],
+      "body": "Objective: scene-graph nodes + dirty tracking. Feature E11-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F2-T2 scene unit tests",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S22",
+      "dependencies": [
+        "E11-F2-T1"
+      ],
+      "body": "Objective: scene unit tests. Feature E11-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F3-T1 render-graph pass ordering",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S23",
+      "dependencies": [
+        "E11-F2-T1"
+      ],
+      "body": "Objective: render-graph pass ordering. Feature E11-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F3-T2 GPU/document resource separation",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S23",
+      "dependencies": [
+        "E11-F3-T1"
+      ],
+      "body": "Objective: GPU/document resource separation. Feature E11-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F3-T3 render-graph snapshot test",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S23",
+      "dependencies": [
+        "E11-F3-T1"
+      ],
+      "body": "Objective: render-graph snapshot test. Feature E11-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F4-T1 replaceable GPU backend",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/L"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S24",
+      "dependencies": [
+        "E11-F3-T1"
+      ],
+      "body": "Objective: replaceable GPU backend. Feature E11-F4. Estimate: L. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F4-T2 render-to-target",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S24",
+      "dependencies": [
+        "E11-F4-T1"
+      ],
+      "body": "Objective: render-to-target. Feature E11-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F4-T3 backend golden",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S24",
+      "dependencies": [
+        "E11-F4-T2"
+      ],
+      "body": "Objective: backend golden. Feature E11-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F5-T1 viewport pan/zoom/fit",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S25",
+      "dependencies": [
+        "E11-F2-T1"
+      ],
+      "body": "Objective: viewport pan/zoom/fit. Feature E11-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F5-T2 device-pixel correctness",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S25",
+      "dependencies": [
+        "E11-F5-T1"
+      ],
+      "body": "Objective: device-pixel correctness. Feature E11-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F5-T3 camera unit tests",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S25",
+      "dependencies": [
+        "E11-F5-T1"
+      ],
+      "body": "Objective: camera unit tests. Feature E11-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F6-T1 large-document culling",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S26",
+      "dependencies": [
+        "E11-F3-T1"
+      ],
+      "body": "Objective: large-document culling. Feature E11-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F6-T2 level-of-detail",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S26",
+      "dependencies": [
+        "E11-F6-T1"
+      ],
+      "body": "Objective: level-of-detail. Feature E11-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F6-T3 rendering perf benchmark",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S26",
+      "dependencies": [
+        "E11-F6-T2"
+      ],
+      "body": "Objective: rendering perf benchmark. Feature E11-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F7-T1 thread visual styling from Playback IR",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S27",
+      "dependencies": [
+        "E11-F4-T2",
+        "E10-F1-T1"
+      ],
+      "body": "Objective: thread visual styling from Playback IR. Feature E11-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E11-F7-T2 thread golden",
+      "labels": [
+        "task",
+        "rendering",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S27",
+      "dependencies": [
+        "E11-F7-T1"
+      ],
+      "body": "Objective: thread golden. Feature E11-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F1-T1 app shell/window/theme/lifecycle",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S28",
+      "dependencies": [
+        "E15-F1-T1"
+      ],
+      "body": "Objective: app shell/window/theme/lifecycle. Feature E12-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F2-T1 workspace docking + layout persistence",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S28",
+      "dependencies": [
+        "E12-F1-T1"
+      ],
+      "body": "Objective: workspace docking + layout persistence. Feature E12-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F1-T2 shell widget tests",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S28",
+      "dependencies": [
+        "E12-F1-T1"
+      ],
+      "body": "Objective: shell widget tests. Feature E12-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F3-T1 canvas hosting render viewport",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S29",
+      "dependencies": [
+        "E12-F1-T1",
+        "E11-F5-T1"
+      ],
+      "body": "Objective: canvas hosting render viewport. Feature E12-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F3-T2 gesture->Command dispatch",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S29",
+      "dependencies": [
+        "E12-F3-T1",
+        "E15-F1-T1"
+      ],
+      "body": "Objective: gesture->Command dispatch. Feature E12-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F3-T3 canvas interaction tests",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S29",
+      "dependencies": [
+        "E12-F3-T2"
+      ],
+      "body": "Objective: canvas interaction tests. Feature E12-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F4-T1 selection tool via Commands",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S30",
+      "dependencies": [
+        "E12-F3-T2"
+      ],
+      "body": "Objective: selection tool via Commands. Feature E12-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F4-T2 transform gizmos move/scale/rotate",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S30",
+      "dependencies": [
+        "E12-F4-T1"
+      ],
+      "body": "Objective: transform gizmos move/scale/rotate. Feature E12-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F4-T3 tool interaction tests",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S30",
+      "dependencies": [
+        "E12-F4-T2"
+      ],
+      "body": "Objective: tool interaction tests. Feature E12-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F5-T1 pen tool",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S31",
+      "dependencies": [
+        "E12-F3-T2"
+      ],
+      "body": "Objective: pen tool. Feature E12-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F5-T2 shape/text tools",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S31",
+      "dependencies": [
+        "E12-F5-T1"
+      ],
+      "body": "Objective: shape/text tools. Feature E12-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F5-T3 tool-state isolation test",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S31",
+      "dependencies": [
+        "E12-F5-T1"
+      ],
+      "body": "Objective: tool-state isolation test. Feature E12-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F6-T1 property inspector edits via Commands",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S32",
+      "dependencies": [
+        "E12-F2-T1",
+        "E15-F2-T1"
+      ],
+      "body": "Objective: property inspector edits via Commands. Feature E12-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F6-T2 event-derived state binding",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S32",
+      "dependencies": [
+        "E12-F6-T1"
+      ],
+      "body": "Objective: event-derived state binding. Feature E12-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F6-T3 inspector widget tests",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S32",
+      "dependencies": [
+        "E12-F6-T1"
+      ],
+      "body": "Objective: inspector widget tests. Feature E12-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F7-T1 layer tree",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S33",
+      "dependencies": [
+        "E12-F2-T1"
+      ],
+      "body": "Objective: layer tree. Feature E12-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F7-T2 undo/redo/history view from events",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S33",
+      "dependencies": [
+        "E12-F7-T1",
+        "E15-F2-T1"
+      ],
+      "body": "Objective: undo/redo/history view from events. Feature E12-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F7-T3 panel widget tests",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S33",
+      "dependencies": [
+        "E12-F7-T1"
+      ],
+      "body": "Objective: panel widget tests. Feature E12-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F8-T1 thread panel assign via Command",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S34",
+      "dependencies": [
+        "E12-F2-T1"
+      ],
+      "body": "Objective: thread panel assign via Command. Feature E12-F8. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F8-T2 machine-profile panel",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S34",
+      "dependencies": [
+        "E12-F8-T1"
+      ],
+      "body": "Objective: machine-profile panel. Feature E12-F8. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F8-T3 panel widget tests",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S34",
+      "dependencies": [
+        "E12-F8-T1"
+      ],
+      "body": "Objective: panel widget tests. Feature E12-F8. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F9-T1 import dialog wired to pipeline",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S35",
+      "dependencies": [
+        "E12-F2-T1",
+        "E6-F2-T1"
+      ],
+      "body": "Objective: import dialog wired to pipeline. Feature E12-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F9-T2 export dialog wired to generators",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S35",
+      "dependencies": [
+        "E12-F9-T1",
+        "E9-F1-T1"
+      ],
+      "body": "Objective: export dialog wired to generators. Feature E12-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E12-F9-T3 import/export integration test",
+      "labels": [
+        "task",
+        "ui",
+        "flutter",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M8 Desktop Editor",
+      "sprint": "S35",
+      "dependencies": [
+        "E12-F9-T2"
+      ],
+      "body": "Objective: import/export integration test. Feature E12-F9. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F1-T1 knowledge-graph model",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S36",
+      "dependencies": [
+        "E7-F1-T1",
+        "E8-F1-T1"
+      ],
+      "body": "Objective: knowledge-graph model. Feature E13-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F1-T2 knowledge-graph loader + query",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S36",
+      "dependencies": [
+        "E13-F1-T1"
+      ],
+      "body": "Objective: knowledge-graph loader + query. Feature E13-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F1-T3 knowledge-graph unit tests",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S36",
+      "dependencies": [
+        "E13-F1-T2"
+      ],
+      "body": "Objective: knowledge-graph unit tests. Feature E13-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F2-T1 deterministic rule evaluation",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S37",
+      "dependencies": [
+        "E13-F1-T2"
+      ],
+      "body": "Objective: deterministic rule evaluation. Feature E13-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F2-T2 digitizing rule set",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S37",
+      "dependencies": [
+        "E13-F2-T1"
+      ],
+      "body": "Objective: digitizing rule set. Feature E13-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F2-T3 rule-eval tests",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S37",
+      "dependencies": [
+        "E13-F2-T1"
+      ],
+      "body": "Objective: rule-eval tests. Feature E13-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F3-T1 confidence scoring",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S38",
+      "dependencies": [
+        "E13-F2-T1"
+      ],
+      "body": "Objective: confidence scoring. Feature E13-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F3-T2 explanation generator",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S38",
+      "dependencies": [
+        "E13-F3-T1"
+      ],
+      "body": "Objective: explanation generator. Feature E13-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F3-T3 explainability tests",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S38",
+      "dependencies": [
+        "E13-F3-T2"
+      ],
+      "body": "Objective: explainability tests. Feature E13-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F4-T1 artwork analyzer/classifier",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S39",
+      "dependencies": [
+        "E13-F1-T2",
+        "E6-F1-T1"
+      ],
+      "body": "Objective: artwork analyzer/classifier. Feature E13-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F6-T1 quality inspector risk flags",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S39",
+      "dependencies": [
+        "E13-F2-T1",
+        "E8-F1-T1"
+      ],
+      "body": "Objective: quality inspector risk flags. Feature E13-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F6-T2 quality eval suite",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S39",
+      "dependencies": [
+        "E13-F6-T1"
+      ],
+      "body": "Objective: quality eval suite. Feature E13-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F5-T1 stitch strategy planner",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/L"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S40",
+      "dependencies": [
+        "E13-F2-T1",
+        "E7-F1-T1"
+      ],
+      "body": "Objective: stitch strategy planner. Feature E13-F5. Estimate: L. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F5-T2 emit plan as Commands (no direct mutation)",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S40",
+      "dependencies": [
+        "E13-F5-T1"
+      ],
+      "body": "Objective: emit plan as Commands (no direct mutation). Feature E13-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F5-T3 digitizer integration test",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S40",
+      "dependencies": [
+        "E13-F5-T2"
+      ],
+      "body": "Objective: digitizer integration test. Feature E13-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F7-T1 assistant/chat tool-calling",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S41",
+      "dependencies": [
+        "E13-F5-T2"
+      ],
+      "body": "Objective: assistant/chat tool-calling. Feature E13-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F7-T2 approval + audit + permission gate",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/M"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S41",
+      "dependencies": [
+        "E13-F7-T1",
+        "E16-F4-T1"
+      ],
+      "body": "Objective: approval + audit + permission gate. Feature E13-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E13-F7-T3 assistant integration test",
+      "labels": [
+        "task",
+        "ai",
+        "rust",
+        "P2",
+        "size/S"
+      ],
+      "milestone": "M9 AI",
+      "sprint": "S41",
+      "dependencies": [
+        "E13-F7-T2"
+      ],
+      "body": "Objective: assistant integration test. Feature E13-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F1-T1 plugin runtime/lifecycle",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S42",
+      "dependencies": [
+        "E1-F1-T1"
+      ],
+      "body": "Objective: plugin runtime/lifecycle. Feature E14-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F3-T1 extension registry",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S42",
+      "dependencies": [
+        "E14-F1-T1"
+      ],
+      "body": "Objective: extension registry. Feature E14-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F1-T2 plugin runtime unit tests",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S42",
+      "dependencies": [
+        "E14-F1-T1"
+      ],
+      "body": "Objective: plugin runtime unit tests. Feature E14-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F2-T1 sandbox isolation",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S43",
+      "dependencies": [
+        "E14-F1-T1",
+        "E16-F4-T1"
+      ],
+      "body": "Objective: sandbox isolation. Feature E14-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F2-T2 permission-gated engine access",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S43",
+      "dependencies": [
+        "E14-F2-T1"
+      ],
+      "body": "Objective: permission-gated engine access. Feature E14-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F2-T3 sandbox tests",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S43",
+      "dependencies": [
+        "E14-F2-T1"
+      ],
+      "body": "Objective: sandbox tests. Feature E14-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F4-T1 plugin importer/exporter hook",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S44",
+      "dependencies": [
+        "E14-F3-T1",
+        "E9-F1-T1"
+      ],
+      "body": "Objective: plugin importer/exporter hook. Feature E14-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F4-T2 plugin stitch-algorithm hook",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S44",
+      "dependencies": [
+        "E14-F3-T1",
+        "E7-F1-T1"
+      ],
+      "body": "Objective: plugin stitch-algorithm hook. Feature E14-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F4-T3 plugin IR-contract integration test",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S44",
+      "dependencies": [
+        "E14-F4-T1"
+      ],
+      "body": "Objective: plugin IR-contract integration test. Feature E14-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F5-T1 host plugin-contributed panels",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S45",
+      "dependencies": [
+        "E14-F3-T1",
+        "E12-F2-T1"
+      ],
+      "body": "Objective: host plugin-contributed panels. Feature E14-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F5-T2 panel isolation/safety",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S45",
+      "dependencies": [
+        "E14-F5-T1"
+      ],
+      "body": "Objective: panel isolation/safety. Feature E14-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E14-F5-T3 plugin panel widget test",
+      "labels": [
+        "task",
+        "plugin",
+        "rust",
+        "P3",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S45",
+      "dependencies": [
+        "E14-F5-T1"
+      ],
+      "body": "Objective: plugin panel widget test. Feature E14-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F2-T1 perf-benchmark CI gate",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S46",
+      "dependencies": [
+        "E3-F1-T1"
+      ],
+      "body": "Objective: perf-benchmark CI gate. Feature E16-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F2-T2 large-document perf pass",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S46",
+      "dependencies": [
+        "E16-F2-T1"
+      ],
+      "body": "Objective: large-document perf pass. Feature E16-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F2-T3 regression budgets wired",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S46",
+      "dependencies": [
+        "E16-F2-T1"
+      ],
+      "body": "Objective: regression budgets wired. Feature E16-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F3-T1 real-world file compat suite",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S47",
+      "dependencies": [
+        "E6-F2-T1",
+        "E9-F1-T1"
+      ],
+      "body": "Objective: real-world file compat suite. Feature E16-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F3-T2 storage/lifecycle fault-injection",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P1",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S47",
+      "dependencies": [
+        "E5-F1-T1"
+      ],
+      "body": "Objective: storage/lifecycle fault-injection. Feature E16-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F3-T3 recovery verification",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P1",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S47",
+      "dependencies": [
+        "E16-F3-T2"
+      ],
+      "body": "Objective: recovery verification. Feature E16-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F4-T1 security gateway + audit hardening",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S48",
+      "dependencies": [
+        "E1-F1-T1"
+      ],
+      "body": "Objective: security gateway + audit hardening. Feature E16-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F4-T2 signed/notarized builds",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P0",
+        "size/M"
+      ],
+      "milestone": "M10",
+      "sprint": "S48",
+      "dependencies": [
+        "E16-F4-T1"
+      ],
+      "body": "Objective: signed/notarized builds. Feature E16-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    },
+    {
+      "title": "E16-F4-T3 release checklist dry-run",
+      "labels": [
+        "task",
+        "testing",
+        "rust",
+        "P0",
+        "size/S"
+      ],
+      "milestone": "M10",
+      "sprint": "S48",
+      "dependencies": [
+        "E16-F4-T2"
+      ],
+      "body": "Objective: release checklist dry-run. Feature E16-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+name = "machine-compiler"
+description = "Use for the machine model, machine coordinates, machine commands, Machine IR, machine limits, and export preparation."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+You are the Machine Compiler Agent for Embroidery Studio. Your full role spec is agents/machine-compiler.md at the repo
+root — read and follow it, plus AGENTS.md. Do not duplicate or override them.
+"""

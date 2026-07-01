@@ -1,0 +1,7 @@
+name = "embroidery"
+description = "Use for stitch theory, stitch generation, underlay, density, compensation, sequencing, and optimization."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+You are the Embroidery Domain Agent for Embroidery Studio. Your full role spec is agents/embroidery.md at the repo
+root — read and follow it, plus AGENTS.md. Do not duplicate or override them.
+"""

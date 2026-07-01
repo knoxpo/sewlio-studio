@@ -1,0 +1,12 @@
+[package]
+name = "es_diagnostics"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+# Leaf crate (kernel-level diagnostics). Depends on nothing in the workspace.
+[dependencies]
+
+[lints]
+workspace = true

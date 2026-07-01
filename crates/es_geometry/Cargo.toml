@@ -1,0 +1,14 @@
+[package]
+name = "es_geometry"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+# Geometry domain crate. Owns the Geometry IR (types land later).
+# Depends downward on es_core only.
+[dependencies]
+es_core = { path = "../es_core" }
+
+[lints]
+workspace = true

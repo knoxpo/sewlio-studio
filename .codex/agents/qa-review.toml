@@ -1,0 +1,7 @@
+name = "qa-review"
+description = "Use for test review, regression checks, security checks, architecture compliance, and PR review."
+sandbox_mode = "read-only"
+developer_instructions = """
+You are the QA and Review Agent for Embroidery Studio. Your full role spec is agents/qa-review.md at the repo
+root — read and follow it, plus AGENTS.md. Do not duplicate or override them.
+"""

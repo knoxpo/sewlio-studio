@@ -1,0 +1,22 @@
+# Rust
+/target/
+
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/generated_plugin_registrant.*
+apps/**/.metadata
+
+# FVM Version Cache
+.fvm/
+
+# OS / editor
+.DS_Store
+*.iml
+.idea/
+.vscode/
+
+# Note: flutter_rust_bridge generated glue (frb_generated.*) IS committed.
