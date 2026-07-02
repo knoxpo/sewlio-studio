@@ -7,16 +7,80 @@
 **Status:** Living
 **Owner:** Technical Program Management
 
-2-week sprints, one senior engineer + agents. **Near-term sprints (S1-S13, Milestones M1-M6) are
-task-loaded**; later sprints are feature-level and refined as they approach. No sprint schedules a
-task before its prerequisite (`docs/08-implementation/004-development-order.md`). Every sprint is
-shippable + demoable.
+2-week sprints, one senior engineer + agents. Every sprint is shippable + demoable. No sprint
+schedules a task before its prerequisite (`docs/08-implementation/004-development-order.md`).
 
-Task ID scheme `E<epic>-F<feat>-T<n>`. Each task follows `006-task-template.md` (4-12h).
+> **ADR-026:** the **active plan is the MVP (Flutter/Dart) Sprints 1-10** below. The Rust program
+> (Wave 1/2, `E<epic>` ids) is preserved beneath as **Phase 2 — Rust Migration**, unchanged, and
+> begins only after MVP acceptance.
 
 ---
 
-# Wave 1 — detailed (M1-M6)
+# MVP — Flutter/Dart (Phase 1, active)
+
+All Dart. Sprint IDs `MVP-S<n>`; tasks `MVP-S<n>-T<n>`. Each follows `006-task-template.md` (4-12h),
+`Implementation Phase: MVP Flutter/Dart`.
+
+## MVP Sprint 1 — Flutter/Dart Foundation
+- Create the Flutter app + Dart package workspace; set up lint/test; diagnostics + core packages;
+  basic CI commands; roadmap docs.
+- **Deliverable:** workspace builds; `studio_diagnostics` + `studio_core` compile + test green.
+- **Demo:** `flutter test` + `dart test` pass across the workspace.
+
+## MVP Sprint 2 — Core Runtime
+- `studio_events` event system; `studio_commands` command system; `studio_document` skeleton;
+  undo/redo foundation.
+- **Demo:** a command mutates the document and emits an event; undo reverts it.
+
+## MVP Sprint 3 — Geometry Core
+- `studio_geometry`: coordinate system, paths, curves, transforms, bounding boxes.
+- **Demo:** build/transform a path; golden serialization stable.
+
+## MVP Sprint 4 — Embroidery Core I
+- `studio_embroidery`: embroidery object model, stitch model, running stitch, satin + fill
+  skeletons.
+- **Demo:** geometry → running-stitch output, deterministic.
+
+## MVP Sprint 5 — Machine Core
+- `studio_machine`: machine model, machine commands, **Machine IR (Dart)**, validation skeleton.
+- **Demo:** stitches → Machine IR; validation flags an over-limit design.
+
+## MVP Sprint 6 — Export MVP
+- `studio_export`: DST MVP exporter, EXP MVP exporter, export diagnostics, golden tests.
+- **Demo:** Machine IR → DST/EXP bytes; binary golden passes.
+
+## MVP Sprint 7 — Import MVP
+- `studio_import`: raster import, vector import skeleton, embroidery import skeleton, normalization
+  pipeline.
+- **Demo:** import a vector/raster asset → geometry model.
+
+## MVP Sprint 8 — UI Shell
+- `apps/studio` + `studio_design_system`: desktop app shell, menu/toolbar, panels, canvas
+  placeholder.
+- **Demo:** app runs; panels dock; menu actions dispatch commands.
+
+## MVP Sprint 9 — Canvas + Tools
+- `studio_canvas` + `studio_tools`: viewport, selection, pan/zoom, transform handles, basic
+  drawing/editing tools.
+- **Demo:** draw + select + transform on canvas via commands.
+
+## MVP Sprint 10 — MVP Integration
+- Project save/load; inspector; export UI; import UI; basic simulation preview.
+- **Demo:** full loop — import → edit → preview → export → save/reopen. → **MVP candidate.**
+
+---
+
+# Post-MVP / Phase 2 — Rust Migration
+
+Begins after MVP acceptance. Introduce Rust behind the stable Dart interfaces, geometry first, with
+before/after benchmarks: Rust workspace activation · FFI boundary (`flutter_rust_bridge`) · geometry
+migration · embroidery migration · machine-compiler migration · import/export migration ·
+benchmarking. The detailed Rust sprint sequence is **preserved verbatim below** (its `S1…`/`E<epic>`
+ids are the Phase 2 sequence, not MVP sprints).
+
+---
+
+# Phase 2 (Rust) — Wave 1 — detailed (M1-M6)
 
 ## Sprint 1 — Engine foundation I  ·  Goal: command/event bus dispatch
 - Features: E1-F1, E1-F2, E1-F3, E1-F4

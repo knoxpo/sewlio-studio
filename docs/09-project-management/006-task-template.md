@@ -35,6 +35,10 @@ assertion that fails if the logic breaks.
 
 **Complexity:** <low | medium | high>
 
+**Implementation Phase:** <MVP Flutter/Dart | Post-MVP Rust | Production Hardening>
+
+**Migration Impact:** <No Rust migration needed | Must preserve Rust migration path | Expected to migrate to Rust later>
+
 **Labels:** <domain/layer> <stack> `task` <priority> <size>
 
 **Definition of Done:** meets Task DoD in docs/08-implementation/008-definition-of-done.md.
@@ -65,10 +69,15 @@ unregistered/invalid command returns the expected error.
 
 **Estimate:** M (1-2 days)   **Priority:** P0   **Complexity:** medium
 
-**Labels:** `runtime` `rust` `task` `P0` `size/M`
+**Labels:** `runtime` `rust` `task` `P0` `size/M` `post-mvp`
+
+**Implementation Phase:** Post-MVP Rust   **Migration Impact:** No Rust migration needed (is the Rust impl)
 
 **Definition of Done:** Task DoD green (fmt/clippy/test), no cross-layer dep, rustdoc on the trait.
 ```
+
+MVP example labels: `geometry` `dart` `flutter` `task` `P0` `size/M` `mvp` — with
+`Implementation Phase: MVP Flutter/Dart` and `Migration Impact: Must preserve Rust migration path`.
 
 Rules: if a task can't be stated with a concrete failing test, it's not ready. If it exceeds size/M,
 split it. Every task traces to a feature and a milestone.

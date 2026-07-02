@@ -2,10 +2,16 @@
 
 ## IMPL-000 Implementation Roadmap
 
+> **Phase 2 document (ADR-026).** This is the **long-term Rust production plan**, preserved intact.
+> The **active MVP is Flutter/Dart-only** — see [`000-roadmap.md`](000-roadmap.md) and
+> [`../07-adr/026-use-dart-engine-for-mvp.md`](../07-adr/026-use-dart-engine-for-mvp.md). Everything
+> below (Rust packages, IR ownership, first-10 Rust tasks) is the Phase 2 migration target, not the
+> MVP track. Nothing here is abandoned.
+
 **Document ID:** IMPL-000
 **Title:** Implementation Roadmap
 **Version:** 1.0.0
-**Status:** Foundation (Critical)
+**Status:** Foundation (Critical) — Phase 2 (Rust), deferred per ADR-026
 **Priority:** Critical
 **Owner:** Core Engineering Team
 

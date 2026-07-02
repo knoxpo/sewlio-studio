@@ -9,6 +9,22 @@
 
 How work is prioritized. Combines a **value/effort** view with **MoSCoW** and a **P0-P3** scale.
 
+> **ADR-026:** MVP priorities are Dart-first. The Rust migration and other long-term epics are P2
+> Post-MVP. Priorities below lead with the MVP; the Rust-epic mapping is preserved beneath.
+
+---
+
+# MVP priorities (active, ADR-026)
+
+**P0 — MVP (must ship):** Flutter app shell · Dart core/domain packages (`studio_core`,
+`studio_geometry`, `studio_embroidery`) · document model · geometry · embroidery basics · Machine IR
+(Dart) · basic import/export (DST/EXP) · canvas · save/load.
+
+**P1 — MVP polish:** simulation preview · inspector · AI assistant hooks · quality diagnostics.
+
+**P2 — Post-MVP:** Rust migration · `flutter_rust_bridge` · GPU rendering backend · plugin runtime ·
+advanced exporters (PES/JEF/VP3/HUS) · advanced AI.
+
 ---
 
 # Priority scale

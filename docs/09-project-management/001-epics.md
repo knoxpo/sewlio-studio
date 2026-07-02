@@ -7,6 +7,11 @@
 **Status:** Living
 **Owner:** Technical Program Management
 
+> **ADR-026:** these 16 epics are the **long-term (Rust) program**, preserved intact. The **MVP
+> delivers Dart equivalents first** (see `003-sprints.md` MVP Sprints 1-10, `004-backlog.md`
+> category 1); Rust implementation of these epics is **Phase 2 / Post-MVP**. No epic is deleted or
+> descoped — only resequenced after MVP validation.
+
 16 epics covering the whole program. Complexity: S/M/L/XL. Duration in 2-week sprints (planning
 estimates; far-milestone epics carry wider bands — rolling wave). Priority P0 (blocking spine) → P3.
 All 16 are decomposed to features (`002-features.md`) and task-loaded sprints (`003-sprints.md`,

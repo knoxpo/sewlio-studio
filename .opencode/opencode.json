@@ -1,0 +1,71 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "omlx_remote/Ornith-1.0-9B-8bit",
+  "small_model": "omlx_remote/gemma-4-26b-a4b-it-4bit",
+  "provider": {
+    "omlx_remote": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "oMLX (Remote)",
+      "options": {
+        "baseURL": "http://192.168.20.209:8000/v1",
+        "apiKey": "abcd"
+      }
+    },
+    "omlx_local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "oMLX (Local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8000/v1",
+        "apiKey": "abcd",
+        "probe": "omlx"
+      }
+    },
+  },
+  "agent": {
+    "core-engine": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "geometry": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "embroidery": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "import-export": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "rendering": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "ui": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "ai": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "ffi-bridge": {
+      "model": "omlx_remote/Ornith-1.0-9B-8bit"
+    },
+    "machine-compiler": {
+      "model": "omlx_remote/Qwen3.6-35B-A3B-4bit"
+    },
+    "ir-guardian": {
+      "model": "omlx_remote/Qwen3.6-35B-A3B-4bit"
+    },
+    "golden-runner": {
+      "model": "omlx_remote/Qwen3.6-35B-A3B-4bit"
+    },
+    "architect": {
+      "model": "github-copilot/gpt-5.5"
+    },
+    "qa-review": {
+      "model": "github-copilot/gpt-5.5"
+    },
+    "sprint-runner": {
+      "model": "github-copilot/gpt-5.5"
+    },
+    "dep-fitness": {
+      "model": "github-copilot/gpt-5.5"
+    }
+  }
+}

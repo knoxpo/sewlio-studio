@@ -1,4 +1,6 @@
 # Sewlio Studio — dev tasks. Flutter/Dart run through FVM (pinned by .fvmrc).
+# CI runs without FVM: `make check FVM=`.
+FVM ?= fvm
 FLUTTER_PKGS := packages/studio_design_system packages/studio_bindings apps/studio
 
 .PHONY: help gen fmt fmt-check lint test check rust-test flutter-test clean
@@ -15,21 +17,26 @@ gen:
 
 fmt:
 	cargo fmt --all
-	@for p in $(FLUTTER_PKGS); do (cd $$p && fvm dart format .); done
+	$(FVM) dart format .
 
 fmt-check:
 	cargo fmt --all --check
-	@for p in $(FLUTTER_PKGS); do (cd $$p && fvm dart format --set-exit-if-changed .); done
+	$(FVM) dart format --set-exit-if-changed .
 
 lint:
 	cargo clippy --workspace --all-targets --all-features -- -D warnings
-	@for p in $(FLUTTER_PKGS); do echo "analyze $$p"; (cd $$p && fvm flutter analyze); done
+	$(FVM) flutter analyze
 
 rust-test:
 	cargo test --workspace
 
+# ponytail: per-package loop — `flutter test` runs one project at a time.
+# Packages without a test/ dir are skipped (e.g. studio_bindings until it grows tests).
 flutter-test:
-	@for p in $(FLUTTER_PKGS); do echo "test $$p"; (cd $$p && fvm flutter test); done
+	@for p in $(FLUTTER_PKGS); do \
+		if [ -d $$p/test ]; then echo "test $$p"; (cd $$p && $(FVM) flutter test) || exit 1; \
+		else echo "skip $$p (no test/)"; fi; \
+	done
 
 test: rust-test flutter-test
 
@@ -37,4 +44,4 @@ check: fmt-check lint test
 
 clean:
 	cargo clean
-	@for p in $(FLUTTER_PKGS); do (cd $$p && fvm flutter clean); done
+	@for p in $(FLUTTER_PKGS); do (cd $$p && $(FVM) flutter clean); done

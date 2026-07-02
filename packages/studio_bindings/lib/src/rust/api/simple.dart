@@ -12,5 +12,9 @@ String appVersion() => RustLib.instance.api.crateApiSimpleAppVersion();
 
 /// Distance in millimeters between two points — exercises the geometry domain
 /// across the boundary. Placeholder; the real geometry API is command-driven.
-double distance({required double x1, required double y1, required double x2, required double y2}) =>
+double distance(
+        {required double x1,
+        required double y1,
+        required double x2,
+        required double y2}) =>
     RustLib.instance.api.crateApiSimpleDistance(x1: x1, y1: y1, x2: x2, y2: y2);

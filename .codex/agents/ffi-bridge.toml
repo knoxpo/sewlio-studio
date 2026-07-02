@@ -1,0 +1,7 @@
+name = "ffi-bridge"
+description = "Own the flutter_rust_bridge boundary: regenerate glue, keep Command/Event marshaling + WASM parity in sync."
+sandbox_mode = "workspace-write"
+developer_instructions = """
+You are the FFI Bridge agent for Embroidery Studio. Your full role spec is agents/ffi-bridge.md at the repo root — read
+and follow it, plus AGENTS.md and WORKFLOW.md. Do not duplicate or override them.
+"""

@@ -1,5 +1,5 @@
 {
-  "note": "Importable GitHub issues for Sewlio Studio. Epics (umbrella) + Wave-1 tasks (S1-S13, milestones M1-M6). Later epics carry umbrella issues only; their tasks are added per rolling wave. See docs/09-project-management. 'dependencies' list parent task/feature IDs (encoded in title prefixes).",
+  "note": "Importable GitHub issues for Sewlio Studio. Epics (umbrella) + Wave-1 tasks (S1-S13, milestones M1-M6). Later epics carry umbrella issues only; their tasks are added per rolling wave. See docs/09-project-management. 'dependencies' list parent task/feature IDs (encoded in title prefixes). | ADR-026: existing epics/tasks are the Rust program, marked post-mvp (deferred until MVP validation, preserved). MVP Dart tasks carry label 'mvp'.",
   "epics": [
     {
       "title": "E1 Foundation (kernel + runtime)",
@@ -7,10 +7,12 @@
         "epic",
         "runtime",
         "rust",
-        "P0"
+        "P0",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
-      "body": "Command bus, event bus, ids/time, diagnostics, service registry. The only mutation path. Features E1-F1..F5. Depends: none."
+      "body": "Command bus, event bus, ids/time, diagnostics, service registry. The only mutation path. Features E1-F1..F5. Depends: none.",
+      "phase": "post-mvp"
     },
     {
       "title": "E2 IR Framework",
@@ -18,10 +20,12 @@
         "epic",
         "rust",
         "P0",
-        "testing"
+        "testing",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
-      "body": "Versioned/serializable/immutable IR traits + golden harness. Features E2-F1..F3. Depends: E1."
+      "body": "Versioned/serializable/immutable IR traits + golden harness. Features E2-F1..F3. Depends: E1.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3 Geometry Engine (Geometry IR)",
@@ -29,10 +33,12 @@
         "epic",
         "geometry",
         "rust",
-        "P0"
+        "P0",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
-      "body": "Points, paths, curves, transforms, bbox, algorithms; mm-internal, deterministic. Features E3-F1..F7. Depends: E2."
+      "body": "Points, paths, curves, transforms, bbox, algorithms; mm-internal, deterministic. Features E3-F1..F7. Depends: E2.",
+      "phase": "post-mvp"
     },
     {
       "title": "E4 Document Model & Project",
@@ -40,10 +46,12 @@
         "epic",
         "runtime",
         "rust",
-        "P0"
+        "P0",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
-      "body": "Project/layers/objects; command-driven mutation; events; undo. Features E4-F1..F4. Depends: E3."
+      "body": "Project/layers/objects; command-driven mutation; events; undo. Features E4-F1..F4. Depends: E3.",
+      "phase": "post-mvp"
     },
     {
       "title": "E5 Storage & Recovery",
@@ -51,10 +59,12 @@
         "epic",
         "storage",
         "rust",
-        "P0"
+        "P0",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
-      "body": ".embproj, atomic save, migration, recovery. Features E5-F1..F4. Depends: E4."
+      "body": ".embproj, atomic save, migration, recovery. Features E5-F1..F4. Depends: E4.",
+      "phase": "post-mvp"
     },
     {
       "title": "E6 Import Pipeline (Import IR)",
@@ -62,10 +72,12 @@
         "epic",
         "import",
         "rust",
-        "P1"
+        "P1",
+        "post-mvp"
       ],
       "milestone": "M4 Import",
-      "body": "Import IR; SVG/raster/emb parsers; normalization. Features E6-F1..F4. Depends: E3, E5."
+      "body": "Import IR; SVG/raster/emb parsers; normalization. Features E6-F1..F4. Depends: E3, E5.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7 Embroidery Engine (Stitch IR)",
@@ -73,10 +85,12 @@
         "epic",
         "embroidery",
         "rust",
-        "P0"
+        "P0",
+        "post-mvp"
       ],
       "milestone": "M5 Embroidery Core",
-      "body": "Stitch IR; running/satin/fill/underlay; density, compensation, sequencing, optimization. Features E7-F1..F9. Depends: E3."
+      "body": "Stitch IR; running/satin/fill/underlay; density, compensation, sequencing, optimization. Features E7-F1..F9. Depends: E3.",
+      "phase": "post-mvp"
     },
     {
       "title": "E8 Machine Compiler (Machine IR)",
@@ -84,10 +98,12 @@
         "epic",
         "machine",
         "rust",
-        "P0"
+        "P0",
+        "post-mvp"
       ],
       "milestone": "M6 Machine + Export",
-      "body": "Machine IR; needle/thread mapping; machine/hoop validation. Features E8-F1..F3. Depends: E7."
+      "body": "Machine IR; needle/thread mapping; machine/hoop validation. Features E8-F1..F3. Depends: E7.",
+      "phase": "post-mvp"
     },
     {
       "title": "E9 Export / Generators",
@@ -95,10 +111,12 @@
         "epic",
         "generator",
         "rust",
-        "P1"
+        "P1",
+        "post-mvp"
       ],
       "milestone": "M6 Machine + Export",
-      "body": "DST first, then EXP/PES/JEF/VP3/HUS. Consume Machine IR only. Features E9-F1..F3. Depends: E8."
+      "body": "DST first, then EXP/PES/JEF/VP3/HUS. Consume Machine IR only. Features E9-F1..F3. Depends: E8.",
+      "phase": "post-mvp"
     },
     {
       "title": "E10 Simulation (Playback IR)",
@@ -106,10 +124,12 @@
         "epic",
         "simulation",
         "rust",
-        "P2"
+        "P2",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
-      "body": "Playback IR; timeline, needle motion, stats. Depends: E7."
+      "body": "Playback IR; timeline, needle motion, stats. Depends: E7.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11 Rendering",
@@ -117,10 +137,12 @@
         "epic",
         "rendering",
         "rust",
-        "P2"
+        "P2",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
-      "body": "Scene/render graph, GPU backend, viewport, LOD. Depends: E3, E10."
+      "body": "Scene/render graph, GPU backend, viewport, LOD. Depends: E3, E10.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12 Desktop UI",
@@ -128,10 +150,12 @@
         "epic",
         "ui",
         "flutter",
-        "P1"
+        "P1",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
-      "body": "Shell, canvas, tools, panels, inspector, import/export UI. Depends: E4, E11, E15."
+      "body": "Shell, canvas, tools, panels, inspector, import/export UI. Depends: E4, E11, E15.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13 AI Runtime",
@@ -139,10 +163,12 @@
         "epic",
         "ai",
         "rust",
-        "P2"
+        "P2",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
-      "body": "Knowledge graph, rule engine, AI digitizer, quality inspector, assistant. Command-only, explainable, human-approved. Depends: E7, E8."
+      "body": "Knowledge graph, rule engine, AI digitizer, quality inspector, assistant. Command-only, explainable, human-approved. Depends: E7, E8.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14 Plugin System",
@@ -150,10 +176,12 @@
         "epic",
         "plugin",
         "rust",
-        "P3"
+        "P3",
+        "post-mvp"
       ],
       "milestone": "M10 Production Ready",
-      "body": "Plugin runtime, sandbox, extension registry. Depends: stable public APIs (post-E9)."
+      "body": "Plugin runtime, sandbox, extension registry. Depends: stable public APIs (post-E9).",
+      "phase": "post-mvp"
     },
     {
       "title": "E15 FFI Bridge (frb + WASM)",
@@ -162,10 +190,12 @@
         "ffi",
         "rust",
         "flutter",
-        "P1"
+        "P1",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
-      "body": "Command dispatch, event stream, progress; WASM path. Depends: E1."
+      "body": "Command dispatch, event stream, progress; WASM path. Depends: E1.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16 Testing, CI/CD & Security",
@@ -174,10 +204,12 @@
         "testing",
         "ci-cd",
         "security",
-        "P0"
+        "P0",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
-      "body": "Golden/perf/compat/fault harness, pipelines, dependency-direction enforcement, permissions/audit. Cross-cutting, continuous. Depends: E1."
+      "body": "Golden/perf/compat/fault harness, pipelines, dependency-direction enforcement, permissions/audit. Cross-cutting, continuous. Depends: E1.",
+      "phase": "post-mvp"
     }
   ],
   "tasks": [
@@ -188,12 +220,14 @@
         "runtime",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S1",
       "dependencies": [],
-      "body": "Objective: deterministic UUIDs + monotonic time source.\nFiles: crates/es_core/src/id.rs, tests.\nTests: unit (uniqueness, monotonicity).\nEstimate: S. Complexity: low. Source: docs/02-architecture/024,026."
+      "body": "Objective: deterministic UUIDs + monotonic time source.\nFiles: crates/es_core/src/id.rs, tests.\nTests: unit (uniqueness, monotonicity).\nEstimate: S. Complexity: low. Source: docs/02-architecture/024,026.",
+      "phase": "post-mvp"
     },
     {
       "title": "E1-F2-T1 diagnostics + log sink",
@@ -202,14 +236,16 @@
         "kernel",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S1",
       "dependencies": [
         "E1-F1-T1"
       ],
-      "body": "Objective: severity + structured log records + tracing spans.\nFiles: crates/es_diagnostics/src (extend), tests.\nTests: unit.\nEstimate: S. Source: docs/05-engineering/600."
+      "body": "Objective: severity + structured log records + tracing spans.\nFiles: crates/es_diagnostics/src (extend), tests.\nTests: unit.\nEstimate: S. Source: docs/05-engineering/600.",
+      "phase": "post-mvp"
     },
     {
       "title": "E1-F3-T1 Command trait + dispatch",
@@ -218,14 +254,16 @@
         "runtime",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S1",
       "dependencies": [
         "E1-F1-T1"
       ],
-      "body": "Objective: single mutation entry point.\nFiles: crates/es_core/src/command.rs, tests.\nTests: unit (dispatch \u2192 handler, error path).\nEstimate: M. Source: docs/02-architecture/003. Non-Negotiable #3."
+      "body": "Objective: single mutation entry point.\nFiles: crates/es_core/src/command.rs, tests.\nTests: unit (dispatch \u2192 handler, error path).\nEstimate: M. Source: docs/02-architecture/003. Non-Negotiable #3.",
+      "phase": "post-mvp"
     },
     {
       "title": "E1-F3-T2 command validation + error path",
@@ -234,14 +272,16 @@
         "runtime",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S1",
       "dependencies": [
         "E1-F3-T1"
       ],
-      "body": "Objective: validation hook before handler; typed domain errors.\nTests: unit (invalid command rejected).\nEstimate: S."
+      "body": "Objective: validation hook before handler; typed domain errors.\nTests: unit (invalid command rejected).\nEstimate: S.",
+      "phase": "post-mvp"
     },
     {
       "title": "E1-F4-T1 Event + append-only stream",
@@ -250,14 +290,16 @@
         "runtime",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S1",
       "dependencies": [
         "E1-F3-T1"
       ],
-      "body": "Objective: immutable Event, append-only stream, subscribers.\nFiles: crates/es_core/src/event.rs, tests.\nTests: unit. Source: docs/02-architecture/004. Non-Negotiable #4."
+      "body": "Objective: immutable Event, append-only stream, subscribers.\nFiles: crates/es_core/src/event.rs, tests.\nTests: unit. Source: docs/02-architecture/004. Non-Negotiable #4.",
+      "phase": "post-mvp"
     },
     {
       "title": "E1-F4-T2 command\u2192event integration test",
@@ -267,14 +309,16 @@
         "rust",
         "testing",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S1",
       "dependencies": [
         "E1-F4-T1"
       ],
-      "body": "Objective: dispatch Command, assert resulting Event.\nTests: integration.\nEstimate: S."
+      "body": "Objective: dispatch Command, assert resulting Event.\nTests: integration.\nEstimate: S.",
+      "phase": "post-mvp"
     },
     {
       "title": "E1-F5-T1 service registry",
@@ -283,14 +327,16 @@
         "runtime",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S2",
       "dependencies": [
         "E1-F1-T1"
       ],
-      "body": "Objective: register/resolve services by type; no global singletons.\nFiles: crates/es_core/src/registry.rs, tests.\nTests: unit. Source: docs/02-architecture/024."
+      "body": "Objective: register/resolve services by type; no global singletons.\nFiles: crates/es_core/src/registry.rs, tests.\nTests: unit. Source: docs/02-architecture/024.",
+      "phase": "post-mvp"
     },
     {
       "title": "E2-F1-T1 IR base traits",
@@ -298,14 +344,16 @@
         "task",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S2",
       "dependencies": [
         "E1-F5-T1"
       ],
-      "body": "Objective: versioned + immutable + serializable IR contracts.\nFiles: crates/es_core/src/ir.rs, tests.\nTests: unit. Source: docs/02-architecture/001."
+      "body": "Objective: versioned + immutable + serializable IR contracts.\nFiles: crates/es_core/src/ir.rs, tests.\nTests: unit. Source: docs/02-architecture/001.",
+      "phase": "post-mvp"
     },
     {
       "title": "E2-F2-T1 golden harness",
@@ -314,14 +362,16 @@
         "testing",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S2",
       "dependencies": [
         "E2-F1-T1"
       ],
-      "body": "Objective: fixture-in/out helper, byte-stable diff, update mode.\nFiles: crates/es_core/src/testing/golden.rs, testdata/.\nTests: serialization + golden. Source: docs/05-engineering/503."
+      "body": "Objective: fixture-in/out helper, byte-stable diff, update mode.\nFiles: crates/es_core/src/testing/golden.rs, testdata/.\nTests: serialization + golden. Source: docs/05-engineering/503.",
+      "phase": "post-mvp"
     },
     {
       "title": "E2-F3-T1 migration scaffold",
@@ -329,14 +379,16 @@
         "task",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M1 Foundation",
       "sprint": "S2",
       "dependencies": [
         "E2-F1-T1"
       ],
-      "body": "Objective: explicit old\u2192new IR migration, never implicit.\nTests: migration. Source: docs/02-architecture/001."
+      "body": "Objective: explicit old\u2192new IR migration, never implicit.\nTests: migration. Source: docs/02-architecture/001.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3-F1-T1 coordinate system + epsilon policy",
@@ -345,14 +397,16 @@
         "geometry",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
       "sprint": "S3",
       "dependencies": [
         "E2-F1-T1"
       ],
-      "body": "Objective: mm-internal coords, fixed rounding/epsilon policy (guards determinism, R2).\nFiles: crates/es_geometry/src (extend Point), tests.\nTests: unit + property. Source: docs/03-domain/geometry/100."
+      "body": "Objective: mm-internal coords, fixed rounding/epsilon policy (guards determinism, R2).\nFiles: crates/es_geometry/src (extend Point), tests.\nTests: unit + property. Source: docs/03-domain/geometry/100.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3-F2-T1 paths + validation",
@@ -361,14 +415,16 @@
         "geometry",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
       "sprint": "S3",
       "dependencies": [
         "E3-F1-T1"
       ],
-      "body": "Objective: open/closed paths, segment model, validation (open path, dup id).\nTests: unit + golden. Source: docs/03-domain/geometry/101."
+      "body": "Objective: open/closed paths, segment model, validation (open path, dup id).\nTests: unit + golden. Source: docs/03-domain/geometry/101.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3-F5-T1 bounding boxes",
@@ -377,14 +433,16 @@
         "geometry",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
       "sprint": "S3",
       "dependencies": [
         "E3-F2-T1"
       ],
-      "body": "Objective: tight bbox, union, contains.\nTests: unit. Source: docs/03-domain/geometry/104."
+      "body": "Objective: tight bbox, union, contains.\nTests: unit. Source: docs/03-domain/geometry/104.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3-F3-T1 curves (bezier)",
@@ -393,14 +451,16 @@
         "geometry",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
       "sprint": "S4",
       "dependencies": [
         "E3-F2-T1"
       ],
-      "body": "Objective: bezier eval/subdivide, deterministic.\nTests: unit + property. Source: docs/03-domain/geometry/102."
+      "body": "Objective: bezier eval/subdivide, deterministic.\nTests: unit + property. Source: docs/03-domain/geometry/102.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3-F4-T1 transforms (affine)",
@@ -409,14 +469,16 @@
         "geometry",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
       "sprint": "S4",
       "dependencies": [
         "E3-F1-T1"
       ],
-      "body": "Objective: affine compose/apply/invert; associativity.\nTests: unit + property. Source: docs/03-domain/geometry/103."
+      "body": "Objective: affine compose/apply/invert; associativity.\nTests: unit + property. Source: docs/03-domain/geometry/103.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3-F6-T1 geometry algorithms",
@@ -425,14 +487,16 @@
         "geometry",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
       "sprint": "S4",
       "dependencies": [
         "E3-F3-T1"
       ],
-      "body": "Objective: length, flatten, hit-test; deterministic.\nTests: unit + golden. Source: docs/03-domain/geometry/105."
+      "body": "Objective: length, flatten, hit-test; deterministic.\nTests: unit + golden. Source: docs/03-domain/geometry/105.",
+      "phase": "post-mvp"
     },
     {
       "title": "E3-F7-T1 Geometry IR serialization",
@@ -442,7 +506,8 @@
         "rust",
         "testing",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M2 Geometry",
       "sprint": "S4",
@@ -450,7 +515,8 @@
         "E3-F6-T1",
         "E2-F2-T1"
       ],
-      "body": "Objective: round-trip byte-stable + schema version. \u2192 M2 exit.\nTests: serialization + golden."
+      "body": "Objective: round-trip byte-stable + schema version. \u2192 M2 exit.\nTests: serialization + golden.",
+      "phase": "post-mvp"
     },
     {
       "title": "E4-F1-T1 document/layers/objects",
@@ -459,14 +525,16 @@
         "runtime",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
       "sprint": "S5",
       "dependencies": [
         "E3-F7-T1"
       ],
-      "body": "Objective: tree of layers/objects over Geometry IR.\nFiles: crates/es_document.\nTests: unit. Source: docs/02-architecture/005."
+      "body": "Objective: tree of layers/objects over Geometry IR.\nFiles: crates/es_document.\nTests: unit. Source: docs/02-architecture/005.",
+      "phase": "post-mvp"
     },
     {
       "title": "E4-F2-T1 geometry commands",
@@ -475,7 +543,8 @@
         "runtime",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
       "sprint": "S5",
@@ -483,7 +552,8 @@
         "E4-F1-T1",
         "E1-F3-T1"
       ],
-      "body": "Objective: create/move/delete/transform via Command\u2192Event only.\nTests: integration. Non-Negotiable #3/#4."
+      "body": "Objective: create/move/delete/transform via Command\u2192Event only.\nTests: integration. Non-Negotiable #3/#4.",
+      "phase": "post-mvp"
     },
     {
       "title": "E4-F3-T1 undo/redo (event-sourced)",
@@ -492,14 +562,16 @@
         "runtime",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
       "sprint": "S6",
       "dependencies": [
         "E4-F2-T1"
       ],
-      "body": "Objective: event-sourced undo/redo, deterministic replay.\nTests: integration. Source: docs/02-architecture/004."
+      "body": "Objective: event-sourced undo/redo, deterministic replay.\nTests: integration. Source: docs/02-architecture/004.",
+      "phase": "post-mvp"
     },
     {
       "title": "E4-F4-T1 project metadata",
@@ -508,14 +580,16 @@
         "runtime",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
       "sprint": "S6",
       "dependencies": [
         "E4-F1-T1"
       ],
-      "body": "Objective: project settings, thread refs, machine profile ref.\nTests: unit."
+      "body": "Objective: project settings, thread refs, machine profile ref.\nTests: unit.",
+      "phase": "post-mvp"
     },
     {
       "title": "E5-F1-T1 .embproj layout + manifest",
@@ -524,14 +598,16 @@
         "storage",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
       "sprint": "S6",
       "dependencies": [
         "E4-F4-T1"
       ],
-      "body": "Objective: package layout, versioned manifest, load validation.\nFiles: crates/es_storage.\nTests: round-trip. Source: docs/02-architecture/006. CONFIRM storage engine (R3) first."
+      "body": "Objective: package layout, versioned manifest, load validation.\nFiles: crates/es_storage.\nTests: round-trip. Source: docs/02-architecture/006. CONFIRM storage engine (R3) first.",
+      "phase": "post-mvp"
     },
     {
       "title": "E5-F2-T1 atomic save/load",
@@ -540,14 +616,16 @@
         "storage",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
       "sprint": "S7",
       "dependencies": [
         "E5-F1-T1"
       ],
-      "body": "Objective: crash-safe write, checksum, load validation.\nTests: round-trip + fault."
+      "body": "Objective: crash-safe write, checksum, load validation.\nTests: round-trip + fault.",
+      "phase": "post-mvp"
     },
     {
       "title": "E5-F3-T1 recovery",
@@ -556,14 +634,16 @@
         "storage",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
       "sprint": "S7",
       "dependencies": [
         "E5-F2-T1"
       ],
-      "body": "Objective: journal/checkpoint; never auto-overwrite original. \u2192 M3 exit.\nTests: fault. Non-Negotiable #11. Source: docs/02-architecture/023."
+      "body": "Objective: journal/checkpoint; never auto-overwrite original. \u2192 M3 exit.\nTests: fault. Non-Negotiable #11. Source: docs/02-architecture/023.",
+      "phase": "post-mvp"
     },
     {
       "title": "E6-F1-T1 Import IR model",
@@ -572,14 +652,16 @@
         "import",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M4 Import",
       "sprint": "S8",
       "dependencies": [
         "E3-F7-T1"
       ],
-      "body": "Objective: normalized shape/group/path/color model.\nFiles: crates/es_import.\nTests: unit. Source: docs/03-domain/import/700."
+      "body": "Objective: normalized shape/group/path/color model.\nFiles: crates/es_import.\nTests: unit. Source: docs/03-domain/import/700.",
+      "phase": "post-mvp"
     },
     {
       "title": "E6-F2-T1 SVG parser \u2192 Import IR",
@@ -588,14 +670,16 @@
         "import",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M4 Import",
       "sprint": "S8",
       "dependencies": [
         "E6-F1-T1"
       ],
-      "body": "Objective: parse SVG into Import IR, preserve diagnostics.\nTests: golden + compat. Source: docs/03-domain/import/700."
+      "body": "Objective: parse SVG into Import IR, preserve diagnostics.\nTests: golden + compat. Source: docs/03-domain/import/700.",
+      "phase": "post-mvp"
     },
     {
       "title": "E6-F3-T1 normalization \u2192 Geometry IR",
@@ -604,14 +688,16 @@
         "import",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M4 Import",
       "sprint": "S9",
       "dependencies": [
         "E6-F2-T1"
       ],
-      "body": "Objective: Import IR \u2192 Geometry IR with validation. \u2192 M4 exit.\nTests: golden. Source: docs/03-domain/import/703."
+      "body": "Objective: Import IR \u2192 Geometry IR with validation. \u2192 M4 exit.\nTests: golden. Source: docs/03-domain/import/703.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F1-T1 Stitch IR model",
@@ -620,14 +706,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M5 Embroidery Core",
       "sprint": "S10",
       "dependencies": [
         "E3-F7-T1"
       ],
-      "body": "Objective: machine-independent stitch model (run/fill/satin/jump/trim/color/tie).\nFiles: crates/es_embroidery, crates/es_digitizer.\nTests: unit + serialization. Source: docs/03-domain/embroidery/200. Non-Negotiable #7."
+      "body": "Objective: machine-independent stitch model (run/fill/satin/jump/trim/color/tie).\nFiles: crates/es_embroidery, crates/es_digitizer.\nTests: unit + serialization. Source: docs/03-domain/embroidery/200. Non-Negotiable #7.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F2-T1 running stitch pass",
@@ -636,14 +724,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M5 Embroidery Core",
       "sprint": "S10",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: Geometry IR \u2192 running Stitch IR, deterministic.\nTests: golden + determinism. Source: docs/03-domain/embroidery/201."
+      "body": "Objective: Geometry IR \u2192 running Stitch IR, deterministic.\nTests: golden + determinism. Source: docs/03-domain/embroidery/201.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F6-T1 density model",
@@ -652,14 +742,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M5 Embroidery Core",
       "sprint": "S11",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: density model + validation.\nTests: unit. Source: docs/03-domain/embroidery/209."
+      "body": "Objective: density model + validation.\nTests: unit. Source: docs/03-domain/embroidery/209.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F8-T1 sequencing + ties/trims/jumps",
@@ -668,14 +760,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M5 Embroidery Core",
       "sprint": "S11",
       "dependencies": [
         "E7-F2-T1"
       ],
-      "body": "Objective: object order, tie-in/off, trims, jumps. \u2192 M5 exit.\nTests: golden. Source: docs/03-domain/embroidery/205,206,207,208."
+      "body": "Objective: object order, tie-in/off, trims, jumps. \u2192 M5 exit.\nTests: golden. Source: docs/03-domain/embroidery/205,206,207,208.",
+      "phase": "post-mvp"
     },
     {
       "title": "E8-F1-T1 Machine IR model",
@@ -684,14 +778,16 @@
         "machine",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M6 Machine + Export",
       "sprint": "S11",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: needle/thread/stop/jump/trim + hoop metadata.\nFiles: crates/es_machine, crates/es_machine_compiler.\nTests: unit + serialization. Source: docs/03-domain/export/800. Non-Negotiable #8."
+      "body": "Objective: needle/thread/stop/jump/trim + hoop metadata.\nFiles: crates/es_machine, crates/es_machine_compiler.\nTests: unit + serialization. Source: docs/03-domain/export/800. Non-Negotiable #8.",
+      "phase": "post-mvp"
     },
     {
       "title": "E8-F2-T1 needle & thread mapping",
@@ -700,14 +796,16 @@
         "machine",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M6 Machine + Export",
       "sprint": "S12",
       "dependencies": [
         "E8-F1-T1"
       ],
-      "body": "Objective: thread \u2192 needle assignment.\nTests: golden. Source: docs/03-domain/machine/302,303."
+      "body": "Objective: thread \u2192 needle assignment.\nTests: golden. Source: docs/03-domain/machine/302,303.",
+      "phase": "post-mvp"
     },
     {
       "title": "E8-F3-T1 machine validation",
@@ -716,14 +814,16 @@
         "machine",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M6 Machine + Export",
       "sprint": "S12",
       "dependencies": [
         "E8-F1-T1"
       ],
-      "body": "Objective: limits, needle count, hoop size, unsupported commands.\nTests: validation. Source: docs/03-domain/machine/305."
+      "body": "Objective: limits, needle count, hoop size, unsupported commands.\nTests: validation. Source: docs/03-domain/machine/305.",
+      "phase": "post-mvp"
     },
     {
       "title": "E9-F1-T1 DST generator",
@@ -732,14 +832,16 @@
         "generator",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M6 Machine + Export",
       "sprint": "S13",
       "dependencies": [
         "E8-F3-T1"
       ],
-      "body": "Objective: Machine IR \u2192 DST bytes, no optimization in encoder.\nFiles: crates/es_gen_dst, testdata/dst golden.\nTests: binary golden. Source: docs/03-domain/export/801."
+      "body": "Objective: Machine IR \u2192 DST bytes, no optimization in encoder.\nFiles: crates/es_gen_dst, testdata/dst golden.\nTests: binary golden. Source: docs/03-domain/export/801.",
+      "phase": "post-mvp"
     },
     {
       "title": "E9-F2-T1 SVG\u2192DST integration gate",
@@ -749,7 +851,8 @@
         "testing",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M6 Machine + Export",
       "sprint": "S13",
@@ -757,7 +860,8 @@
         "E9-F1-T1",
         "E6-F3-T1"
       ],
-      "body": "Objective: headless SVG\u2192Import\u2192Geometry\u2192Stitch\u2192Machine\u2192DST integration test in CI. \u2192 M6 exit, architecture proof.\nTests: integration. Source: docs/02-architecture/000 \u00a731."
+      "body": "Objective: headless SVG\u2192Import\u2192Geometry\u2192Stitch\u2192Machine\u2192DST integration test in CI. \u2192 M6 exit, architecture proof.\nTests: integration. Source: docs/02-architecture/000 \u00a731.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F3-T1 satin column generator",
@@ -766,14 +870,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S14",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: satin column generator. Feature E7-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: satin column generator. Feature E7-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F4-T1 fill/tatami angle+density",
@@ -782,14 +888,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S14",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: fill/tatami angle+density. Feature E7-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: fill/tatami angle+density. Feature E7-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F3-T2 satin golden",
@@ -798,14 +906,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S14",
       "dependencies": [
         "E7-F3-T1"
       ],
-      "body": "Objective: satin golden. Feature E7-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: satin golden. Feature E7-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F4-T2 fill golden",
@@ -814,14 +924,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S14",
       "dependencies": [
         "E7-F4-T1"
       ],
-      "body": "Objective: fill golden. Feature E7-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: fill golden. Feature E7-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F5-T1 underlay passes",
@@ -830,14 +942,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S15",
       "dependencies": [
         "E7-F2-T1"
       ],
-      "body": "Objective: underlay passes. Feature E7-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: underlay passes. Feature E7-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F6-T1 density model + validation",
@@ -846,14 +960,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S15",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: density model + validation. Feature E7-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: density model + validation. Feature E7-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F5-T2 underlay golden",
@@ -862,14 +978,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S15",
       "dependencies": [
         "E7-F5-T1"
       ],
-      "body": "Objective: underlay golden. Feature E7-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: underlay golden. Feature E7-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F7-T1 pull/push compensation",
@@ -878,14 +996,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S16",
       "dependencies": [
         "E7-F3-T1"
       ],
-      "body": "Objective: pull/push compensation. Feature E7-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: pull/push compensation. Feature E7-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F8-T1 sequencing tie-in/off/trim/jump",
@@ -894,14 +1014,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S16",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: sequencing tie-in/off/trim/jump. Feature E7-F8. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: sequencing tie-in/off/trim/jump. Feature E7-F8. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F7-T2 compensation golden",
@@ -910,14 +1032,16 @@
         "embroidery",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S16",
       "dependencies": [
         "E7-F7-T1"
       ],
-      "body": "Objective: compensation golden. Feature E7-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: compensation golden. Feature E7-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F9-T1 travel/color-change optimization",
@@ -926,14 +1050,16 @@
         "embroidery",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S17",
       "dependencies": [
         "E7-F8-T1"
       ],
-      "body": "Objective: travel/color-change optimization. Feature E7-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: travel/color-change optimization. Feature E7-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E7-F9-T2 optimization determinism test",
@@ -942,14 +1068,16 @@
         "embroidery",
         "rust",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S17",
       "dependencies": [
         "E7-F9-T1"
       ],
-      "body": "Objective: optimization determinism test. Feature E7-F9. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: optimization determinism test. Feature E7-F9. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E9-F3-T1 EXP generator",
@@ -958,14 +1086,16 @@
         "export",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S17",
       "dependencies": [
         "E9-F1-T1"
       ],
-      "body": "Objective: EXP generator. Feature E9-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: EXP generator. Feature E9-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E9-F3-T2 EXP binary golden",
@@ -974,14 +1104,16 @@
         "export",
         "rust",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M6 widen",
+      "milestone": "M6 Machine + Export",
       "sprint": "S17",
       "dependencies": [
         "E9-F3-T1"
       ],
-      "body": "Objective: EXP binary golden. Feature E9-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: EXP binary golden. Feature E9-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E10-F1-T1 Playback IR types + serialization",
@@ -990,14 +1122,16 @@
         "simulation",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S18",
       "dependencies": [
         "E7-F1-T1"
       ],
-      "body": "Objective: Playback IR types + serialization. Feature E10-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: Playback IR types + serialization. Feature E10-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E10-F2-T1 playback compiler Stitch->Playback",
@@ -1006,14 +1140,16 @@
         "simulation",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S18",
       "dependencies": [
         "E10-F1-T1"
       ],
-      "body": "Objective: playback compiler Stitch->Playback. Feature E10-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: playback compiler Stitch->Playback. Feature E10-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E10-F2-T2 playback determinism test",
@@ -1022,14 +1158,16 @@
         "simulation",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S18",
       "dependencies": [
         "E10-F2-T1"
       ],
-      "body": "Objective: playback determinism test. Feature E10-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: playback determinism test. Feature E10-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E10-F3-T1 needle-motion model",
@@ -1038,14 +1176,16 @@
         "simulation",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S19",
       "dependencies": [
         "E10-F2-T1"
       ],
-      "body": "Objective: needle-motion model. Feature E10-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: needle-motion model. Feature E10-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E10-F4-T1 playback statistics",
@@ -1054,14 +1194,16 @@
         "simulation",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S19",
       "dependencies": [
         "E10-F2-T1"
       ],
-      "body": "Objective: playback statistics. Feature E10-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: playback statistics. Feature E10-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E15-F1-T1 frb Command dispatch bridge",
@@ -1071,14 +1213,16 @@
         "rust",
         "flutter",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S19",
       "dependencies": [
         "E1-F1-T1"
       ],
-      "body": "Objective: frb Command dispatch bridge. Feature E15-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: frb Command dispatch bridge. Feature E15-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E15-F1-T2 Command bridge contract test",
@@ -1088,14 +1232,16 @@
         "rust",
         "flutter",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S19",
       "dependencies": [
         "E15-F1-T1"
       ],
-      "body": "Objective: Command bridge contract test. Feature E15-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: Command bridge contract test. Feature E15-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E10-F5-T1 playback service play/pause/seek",
@@ -1104,14 +1250,16 @@
         "simulation",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S20",
       "dependencies": [
         "E10-F2-T1"
       ],
-      "body": "Objective: playback service play/pause/seek. Feature E10-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: playback service play/pause/seek. Feature E10-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E15-F2-T1 frb Event stream bridge",
@@ -1121,14 +1269,16 @@
         "rust",
         "flutter",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S20",
       "dependencies": [
         "E15-F1-T1"
       ],
-      "body": "Objective: frb Event stream bridge. Feature E15-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: frb Event stream bridge. Feature E15-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E15-F3-T1 progress + cancellation",
@@ -1138,14 +1288,16 @@
         "rust",
         "flutter",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S20",
       "dependencies": [
         "E15-F1-T1"
       ],
-      "body": "Objective: progress + cancellation. Feature E15-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: progress + cancellation. Feature E15-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E15-F4-T1 WASM build target",
@@ -1155,14 +1307,16 @@
         "rust",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S21",
       "dependencies": [
         "E15-F1-T1"
       ],
-      "body": "Objective: WASM build target. Feature E15-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: WASM build target. Feature E15-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E15-F4-T2 engine API parity smoke suite",
@@ -1172,14 +1326,16 @@
         "rust",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S21",
       "dependencies": [
         "E15-F4-T1"
       ],
-      "body": "Objective: engine API parity smoke suite. Feature E15-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: engine API parity smoke suite. Feature E15-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E15-F4-T3 CI web matrix job",
@@ -1189,14 +1345,16 @@
         "rust",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M7 Simulation",
       "sprint": "S21",
       "dependencies": [
         "E15-F4-T1"
       ],
-      "body": "Objective: CI web matrix job. Feature E15-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: CI web matrix job. Feature E15-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F1-T1 renderable model from IR",
@@ -1205,14 +1363,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S22",
       "dependencies": [
         "E3-F1-T1"
       ],
-      "body": "Objective: renderable model from IR. Feature E11-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: renderable model from IR. Feature E11-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F2-T1 scene-graph nodes + dirty tracking",
@@ -1221,14 +1381,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S22",
       "dependencies": [
         "E11-F1-T1"
       ],
-      "body": "Objective: scene-graph nodes + dirty tracking. Feature E11-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: scene-graph nodes + dirty tracking. Feature E11-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F2-T2 scene unit tests",
@@ -1237,14 +1399,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S22",
       "dependencies": [
         "E11-F2-T1"
       ],
-      "body": "Objective: scene unit tests. Feature E11-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: scene unit tests. Feature E11-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F3-T1 render-graph pass ordering",
@@ -1253,14 +1417,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S23",
       "dependencies": [
         "E11-F2-T1"
       ],
-      "body": "Objective: render-graph pass ordering. Feature E11-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: render-graph pass ordering. Feature E11-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F3-T2 GPU/document resource separation",
@@ -1269,14 +1435,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S23",
       "dependencies": [
         "E11-F3-T1"
       ],
-      "body": "Objective: GPU/document resource separation. Feature E11-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: GPU/document resource separation. Feature E11-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F3-T3 render-graph snapshot test",
@@ -1285,14 +1453,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S23",
       "dependencies": [
         "E11-F3-T1"
       ],
-      "body": "Objective: render-graph snapshot test. Feature E11-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: render-graph snapshot test. Feature E11-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F4-T1 replaceable GPU backend",
@@ -1301,14 +1471,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/L"
+        "size/L",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S24",
       "dependencies": [
         "E11-F3-T1"
       ],
-      "body": "Objective: replaceable GPU backend. Feature E11-F4. Estimate: L. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: replaceable GPU backend. Feature E11-F4. Estimate: L. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F4-T2 render-to-target",
@@ -1317,14 +1489,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S24",
       "dependencies": [
         "E11-F4-T1"
       ],
-      "body": "Objective: render-to-target. Feature E11-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: render-to-target. Feature E11-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F4-T3 backend golden",
@@ -1333,14 +1507,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S24",
       "dependencies": [
         "E11-F4-T2"
       ],
-      "body": "Objective: backend golden. Feature E11-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: backend golden. Feature E11-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F5-T1 viewport pan/zoom/fit",
@@ -1349,14 +1525,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S25",
       "dependencies": [
         "E11-F2-T1"
       ],
-      "body": "Objective: viewport pan/zoom/fit. Feature E11-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: viewport pan/zoom/fit. Feature E11-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F5-T2 device-pixel correctness",
@@ -1365,14 +1543,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S25",
       "dependencies": [
         "E11-F5-T1"
       ],
-      "body": "Objective: device-pixel correctness. Feature E11-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: device-pixel correctness. Feature E11-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F5-T3 camera unit tests",
@@ -1381,14 +1561,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S25",
       "dependencies": [
         "E11-F5-T1"
       ],
-      "body": "Objective: camera unit tests. Feature E11-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: camera unit tests. Feature E11-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F6-T1 large-document culling",
@@ -1397,14 +1579,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S26",
       "dependencies": [
         "E11-F3-T1"
       ],
-      "body": "Objective: large-document culling. Feature E11-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: large-document culling. Feature E11-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F6-T2 level-of-detail",
@@ -1413,14 +1597,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S26",
       "dependencies": [
         "E11-F6-T1"
       ],
-      "body": "Objective: level-of-detail. Feature E11-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: level-of-detail. Feature E11-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F6-T3 rendering perf benchmark",
@@ -1429,14 +1615,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S26",
       "dependencies": [
         "E11-F6-T2"
       ],
-      "body": "Objective: rendering perf benchmark. Feature E11-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: rendering perf benchmark. Feature E11-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F7-T1 thread visual styling from Playback IR",
@@ -1445,7 +1633,8 @@
         "rendering",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S27",
@@ -1453,7 +1642,8 @@
         "E11-F4-T2",
         "E10-F1-T1"
       ],
-      "body": "Objective: thread visual styling from Playback IR. Feature E11-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: thread visual styling from Playback IR. Feature E11-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E11-F7-T2 thread golden",
@@ -1462,14 +1652,16 @@
         "rendering",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S27",
       "dependencies": [
         "E11-F7-T1"
       ],
-      "body": "Objective: thread golden. Feature E11-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: thread golden. Feature E11-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F1-T1 app shell/window/theme/lifecycle",
@@ -1478,14 +1670,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S28",
       "dependencies": [
         "E15-F1-T1"
       ],
-      "body": "Objective: app shell/window/theme/lifecycle. Feature E12-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: app shell/window/theme/lifecycle. Feature E12-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F2-T1 workspace docking + layout persistence",
@@ -1494,14 +1688,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S28",
       "dependencies": [
         "E12-F1-T1"
       ],
-      "body": "Objective: workspace docking + layout persistence. Feature E12-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: workspace docking + layout persistence. Feature E12-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F1-T2 shell widget tests",
@@ -1510,14 +1706,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S28",
       "dependencies": [
         "E12-F1-T1"
       ],
-      "body": "Objective: shell widget tests. Feature E12-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: shell widget tests. Feature E12-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F3-T1 canvas hosting render viewport",
@@ -1526,7 +1724,8 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S29",
@@ -1534,7 +1733,8 @@
         "E12-F1-T1",
         "E11-F5-T1"
       ],
-      "body": "Objective: canvas hosting render viewport. Feature E12-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: canvas hosting render viewport. Feature E12-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F3-T2 gesture->Command dispatch",
@@ -1543,7 +1743,8 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S29",
@@ -1551,7 +1752,8 @@
         "E12-F3-T1",
         "E15-F1-T1"
       ],
-      "body": "Objective: gesture->Command dispatch. Feature E12-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: gesture->Command dispatch. Feature E12-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F3-T3 canvas interaction tests",
@@ -1560,14 +1762,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S29",
       "dependencies": [
         "E12-F3-T2"
       ],
-      "body": "Objective: canvas interaction tests. Feature E12-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: canvas interaction tests. Feature E12-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F4-T1 selection tool via Commands",
@@ -1576,14 +1780,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S30",
       "dependencies": [
         "E12-F3-T2"
       ],
-      "body": "Objective: selection tool via Commands. Feature E12-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: selection tool via Commands. Feature E12-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F4-T2 transform gizmos move/scale/rotate",
@@ -1592,14 +1798,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S30",
       "dependencies": [
         "E12-F4-T1"
       ],
-      "body": "Objective: transform gizmos move/scale/rotate. Feature E12-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: transform gizmos move/scale/rotate. Feature E12-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F4-T3 tool interaction tests",
@@ -1608,14 +1816,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S30",
       "dependencies": [
         "E12-F4-T2"
       ],
-      "body": "Objective: tool interaction tests. Feature E12-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: tool interaction tests. Feature E12-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F5-T1 pen tool",
@@ -1624,14 +1834,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S31",
       "dependencies": [
         "E12-F3-T2"
       ],
-      "body": "Objective: pen tool. Feature E12-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: pen tool. Feature E12-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F5-T2 shape/text tools",
@@ -1640,14 +1852,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S31",
       "dependencies": [
         "E12-F5-T1"
       ],
-      "body": "Objective: shape/text tools. Feature E12-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: shape/text tools. Feature E12-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F5-T3 tool-state isolation test",
@@ -1656,14 +1870,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S31",
       "dependencies": [
         "E12-F5-T1"
       ],
-      "body": "Objective: tool-state isolation test. Feature E12-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: tool-state isolation test. Feature E12-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F6-T1 property inspector edits via Commands",
@@ -1672,7 +1888,8 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S32",
@@ -1680,7 +1897,8 @@
         "E12-F2-T1",
         "E15-F2-T1"
       ],
-      "body": "Objective: property inspector edits via Commands. Feature E12-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: property inspector edits via Commands. Feature E12-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F6-T2 event-derived state binding",
@@ -1689,14 +1907,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S32",
       "dependencies": [
         "E12-F6-T1"
       ],
-      "body": "Objective: event-derived state binding. Feature E12-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: event-derived state binding. Feature E12-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F6-T3 inspector widget tests",
@@ -1705,14 +1925,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S32",
       "dependencies": [
         "E12-F6-T1"
       ],
-      "body": "Objective: inspector widget tests. Feature E12-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: inspector widget tests. Feature E12-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F7-T1 layer tree",
@@ -1721,14 +1943,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S33",
       "dependencies": [
         "E12-F2-T1"
       ],
-      "body": "Objective: layer tree. Feature E12-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: layer tree. Feature E12-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F7-T2 undo/redo/history view from events",
@@ -1737,7 +1961,8 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S33",
@@ -1745,7 +1970,8 @@
         "E12-F7-T1",
         "E15-F2-T1"
       ],
-      "body": "Objective: undo/redo/history view from events. Feature E12-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: undo/redo/history view from events. Feature E12-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F7-T3 panel widget tests",
@@ -1754,14 +1980,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S33",
       "dependencies": [
         "E12-F7-T1"
       ],
-      "body": "Objective: panel widget tests. Feature E12-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: panel widget tests. Feature E12-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F8-T1 thread panel assign via Command",
@@ -1770,14 +1998,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S34",
       "dependencies": [
         "E12-F2-T1"
       ],
-      "body": "Objective: thread panel assign via Command. Feature E12-F8. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: thread panel assign via Command. Feature E12-F8. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F8-T2 machine-profile panel",
@@ -1786,14 +2016,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S34",
       "dependencies": [
         "E12-F8-T1"
       ],
-      "body": "Objective: machine-profile panel. Feature E12-F8. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: machine-profile panel. Feature E12-F8. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F8-T3 panel widget tests",
@@ -1802,14 +2034,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S34",
       "dependencies": [
         "E12-F8-T1"
       ],
-      "body": "Objective: panel widget tests. Feature E12-F8. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: panel widget tests. Feature E12-F8. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F9-T1 import dialog wired to pipeline",
@@ -1818,7 +2052,8 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S35",
@@ -1826,7 +2061,8 @@
         "E12-F2-T1",
         "E6-F2-T1"
       ],
-      "body": "Objective: import dialog wired to pipeline. Feature E12-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: import dialog wired to pipeline. Feature E12-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F9-T2 export dialog wired to generators",
@@ -1835,7 +2071,8 @@
         "ui",
         "flutter",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S35",
@@ -1843,7 +2080,8 @@
         "E12-F9-T1",
         "E9-F1-T1"
       ],
-      "body": "Objective: export dialog wired to generators. Feature E12-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: export dialog wired to generators. Feature E12-F9. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E12-F9-T3 import/export integration test",
@@ -1852,14 +2090,16 @@
         "ui",
         "flutter",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M8 Desktop Editor",
       "sprint": "S35",
       "dependencies": [
         "E12-F9-T2"
       ],
-      "body": "Objective: import/export integration test. Feature E12-F9. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: import/export integration test. Feature E12-F9. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F1-T1 knowledge-graph model",
@@ -1868,7 +2108,8 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S36",
@@ -1876,7 +2117,8 @@
         "E7-F1-T1",
         "E8-F1-T1"
       ],
-      "body": "Objective: knowledge-graph model. Feature E13-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: knowledge-graph model. Feature E13-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F1-T2 knowledge-graph loader + query",
@@ -1885,14 +2127,16 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S36",
       "dependencies": [
         "E13-F1-T1"
       ],
-      "body": "Objective: knowledge-graph loader + query. Feature E13-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: knowledge-graph loader + query. Feature E13-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F1-T3 knowledge-graph unit tests",
@@ -1901,14 +2145,16 @@
         "ai",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S36",
       "dependencies": [
         "E13-F1-T2"
       ],
-      "body": "Objective: knowledge-graph unit tests. Feature E13-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: knowledge-graph unit tests. Feature E13-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F2-T1 deterministic rule evaluation",
@@ -1917,14 +2163,16 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S37",
       "dependencies": [
         "E13-F1-T2"
       ],
-      "body": "Objective: deterministic rule evaluation. Feature E13-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: deterministic rule evaluation. Feature E13-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F2-T2 digitizing rule set",
@@ -1933,14 +2181,16 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S37",
       "dependencies": [
         "E13-F2-T1"
       ],
-      "body": "Objective: digitizing rule set. Feature E13-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: digitizing rule set. Feature E13-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F2-T3 rule-eval tests",
@@ -1949,14 +2199,16 @@
         "ai",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S37",
       "dependencies": [
         "E13-F2-T1"
       ],
-      "body": "Objective: rule-eval tests. Feature E13-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: rule-eval tests. Feature E13-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F3-T1 confidence scoring",
@@ -1965,14 +2217,16 @@
         "ai",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S38",
       "dependencies": [
         "E13-F2-T1"
       ],
-      "body": "Objective: confidence scoring. Feature E13-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: confidence scoring. Feature E13-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F3-T2 explanation generator",
@@ -1981,14 +2235,16 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S38",
       "dependencies": [
         "E13-F3-T1"
       ],
-      "body": "Objective: explanation generator. Feature E13-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: explanation generator. Feature E13-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F3-T3 explainability tests",
@@ -1997,14 +2253,16 @@
         "ai",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S38",
       "dependencies": [
         "E13-F3-T2"
       ],
-      "body": "Objective: explainability tests. Feature E13-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: explainability tests. Feature E13-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F4-T1 artwork analyzer/classifier",
@@ -2013,7 +2271,8 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S39",
@@ -2021,7 +2280,8 @@
         "E13-F1-T2",
         "E6-F1-T1"
       ],
-      "body": "Objective: artwork analyzer/classifier. Feature E13-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: artwork analyzer/classifier. Feature E13-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F6-T1 quality inspector risk flags",
@@ -2030,7 +2290,8 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S39",
@@ -2038,7 +2299,8 @@
         "E13-F2-T1",
         "E8-F1-T1"
       ],
-      "body": "Objective: quality inspector risk flags. Feature E13-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: quality inspector risk flags. Feature E13-F6. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F6-T2 quality eval suite",
@@ -2047,14 +2309,16 @@
         "ai",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S39",
       "dependencies": [
         "E13-F6-T1"
       ],
-      "body": "Objective: quality eval suite. Feature E13-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: quality eval suite. Feature E13-F6. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F5-T1 stitch strategy planner",
@@ -2063,7 +2327,8 @@
         "ai",
         "rust",
         "P2",
-        "size/L"
+        "size/L",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S40",
@@ -2071,7 +2336,8 @@
         "E13-F2-T1",
         "E7-F1-T1"
       ],
-      "body": "Objective: stitch strategy planner. Feature E13-F5. Estimate: L. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: stitch strategy planner. Feature E13-F5. Estimate: L. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F5-T2 emit plan as Commands (no direct mutation)",
@@ -2080,14 +2346,16 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S40",
       "dependencies": [
         "E13-F5-T1"
       ],
-      "body": "Objective: emit plan as Commands (no direct mutation). Feature E13-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: emit plan as Commands (no direct mutation). Feature E13-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F5-T3 digitizer integration test",
@@ -2096,14 +2364,16 @@
         "ai",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S40",
       "dependencies": [
         "E13-F5-T2"
       ],
-      "body": "Objective: digitizer integration test. Feature E13-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: digitizer integration test. Feature E13-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F7-T1 assistant/chat tool-calling",
@@ -2112,14 +2382,16 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S41",
       "dependencies": [
         "E13-F5-T2"
       ],
-      "body": "Objective: assistant/chat tool-calling. Feature E13-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: assistant/chat tool-calling. Feature E13-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F7-T2 approval + audit + permission gate",
@@ -2128,7 +2400,8 @@
         "ai",
         "rust",
         "P2",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S41",
@@ -2136,7 +2409,8 @@
         "E13-F7-T1",
         "E16-F4-T1"
       ],
-      "body": "Objective: approval + audit + permission gate. Feature E13-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: approval + audit + permission gate. Feature E13-F7. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E13-F7-T3 assistant integration test",
@@ -2145,14 +2419,16 @@
         "ai",
         "rust",
         "P2",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
       "milestone": "M9 AI",
       "sprint": "S41",
       "dependencies": [
         "E13-F7-T2"
       ],
-      "body": "Objective: assistant integration test. Feature E13-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: assistant integration test. Feature E13-F7. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F1-T1 plugin runtime/lifecycle",
@@ -2161,14 +2437,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S42",
       "dependencies": [
         "E1-F1-T1"
       ],
-      "body": "Objective: plugin runtime/lifecycle. Feature E14-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: plugin runtime/lifecycle. Feature E14-F1. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F3-T1 extension registry",
@@ -2177,14 +2455,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S42",
       "dependencies": [
         "E14-F1-T1"
       ],
-      "body": "Objective: extension registry. Feature E14-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: extension registry. Feature E14-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F1-T2 plugin runtime unit tests",
@@ -2193,14 +2473,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S42",
       "dependencies": [
         "E14-F1-T1"
       ],
-      "body": "Objective: plugin runtime unit tests. Feature E14-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: plugin runtime unit tests. Feature E14-F1. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F2-T1 sandbox isolation",
@@ -2209,15 +2491,17 @@
         "plugin",
         "rust",
         "P3",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S43",
       "dependencies": [
         "E14-F1-T1",
         "E16-F4-T1"
       ],
-      "body": "Objective: sandbox isolation. Feature E14-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: sandbox isolation. Feature E14-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F2-T2 permission-gated engine access",
@@ -2226,14 +2510,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S43",
       "dependencies": [
         "E14-F2-T1"
       ],
-      "body": "Objective: permission-gated engine access. Feature E14-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: permission-gated engine access. Feature E14-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F2-T3 sandbox tests",
@@ -2242,14 +2528,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S43",
       "dependencies": [
         "E14-F2-T1"
       ],
-      "body": "Objective: sandbox tests. Feature E14-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: sandbox tests. Feature E14-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F4-T1 plugin importer/exporter hook",
@@ -2258,15 +2546,17 @@
         "plugin",
         "rust",
         "P3",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S44",
       "dependencies": [
         "E14-F3-T1",
         "E9-F1-T1"
       ],
-      "body": "Objective: plugin importer/exporter hook. Feature E14-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: plugin importer/exporter hook. Feature E14-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F4-T2 plugin stitch-algorithm hook",
@@ -2275,15 +2565,17 @@
         "plugin",
         "rust",
         "P3",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S44",
       "dependencies": [
         "E14-F3-T1",
         "E7-F1-T1"
       ],
-      "body": "Objective: plugin stitch-algorithm hook. Feature E14-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: plugin stitch-algorithm hook. Feature E14-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F4-T3 plugin IR-contract integration test",
@@ -2292,14 +2584,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S44",
       "dependencies": [
         "E14-F4-T1"
       ],
-      "body": "Objective: plugin IR-contract integration test. Feature E14-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: plugin IR-contract integration test. Feature E14-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F5-T1 host plugin-contributed panels",
@@ -2308,15 +2602,17 @@
         "plugin",
         "rust",
         "P3",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S45",
       "dependencies": [
         "E14-F3-T1",
         "E12-F2-T1"
       ],
-      "body": "Objective: host plugin-contributed panels. Feature E14-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: host plugin-contributed panels. Feature E14-F5. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F5-T2 panel isolation/safety",
@@ -2325,14 +2621,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S45",
       "dependencies": [
         "E14-F5-T1"
       ],
-      "body": "Objective: panel isolation/safety. Feature E14-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: panel isolation/safety. Feature E14-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E14-F5-T3 plugin panel widget test",
@@ -2341,14 +2639,16 @@
         "plugin",
         "rust",
         "P3",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S45",
       "dependencies": [
         "E14-F5-T1"
       ],
-      "body": "Objective: plugin panel widget test. Feature E14-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: plugin panel widget test. Feature E14-F5. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F2-T1 perf-benchmark CI gate",
@@ -2357,14 +2657,16 @@
         "testing",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S46",
       "dependencies": [
         "E3-F1-T1"
       ],
-      "body": "Objective: perf-benchmark CI gate. Feature E16-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: perf-benchmark CI gate. Feature E16-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F2-T2 large-document perf pass",
@@ -2373,14 +2675,16 @@
         "testing",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S46",
       "dependencies": [
         "E16-F2-T1"
       ],
-      "body": "Objective: large-document perf pass. Feature E16-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: large-document perf pass. Feature E16-F2. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F2-T3 regression budgets wired",
@@ -2389,14 +2693,16 @@
         "testing",
         "rust",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S46",
       "dependencies": [
         "E16-F2-T1"
       ],
-      "body": "Objective: regression budgets wired. Feature E16-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: regression budgets wired. Feature E16-F2. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F3-T1 real-world file compat suite",
@@ -2405,15 +2711,17 @@
         "testing",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S47",
       "dependencies": [
         "E6-F2-T1",
         "E9-F1-T1"
       ],
-      "body": "Objective: real-world file compat suite. Feature E16-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: real-world file compat suite. Feature E16-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F3-T2 storage/lifecycle fault-injection",
@@ -2422,14 +2730,16 @@
         "testing",
         "rust",
         "P1",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S47",
       "dependencies": [
         "E5-F1-T1"
       ],
-      "body": "Objective: storage/lifecycle fault-injection. Feature E16-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: storage/lifecycle fault-injection. Feature E16-F3. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F3-T3 recovery verification",
@@ -2438,14 +2748,16 @@
         "testing",
         "rust",
         "P1",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S47",
       "dependencies": [
         "E16-F3-T2"
       ],
-      "body": "Objective: recovery verification. Feature E16-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: recovery verification. Feature E16-F3. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F4-T1 security gateway + audit hardening",
@@ -2454,14 +2766,16 @@
         "testing",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S48",
       "dependencies": [
         "E1-F1-T1"
       ],
-      "body": "Objective: security gateway + audit hardening. Feature E16-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: security gateway + audit hardening. Feature E16-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F4-T2 signed/notarized builds",
@@ -2470,14 +2784,16 @@
         "testing",
         "rust",
         "P0",
-        "size/M"
+        "size/M",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S48",
       "dependencies": [
         "E16-F4-T1"
       ],
-      "body": "Objective: signed/notarized builds. Feature E16-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: signed/notarized builds. Feature E16-F4. Estimate: M. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
     },
     {
       "title": "E16-F4-T3 release checklist dry-run",
@@ -2486,14 +2802,473 @@
         "testing",
         "rust",
         "P0",
-        "size/S"
+        "size/S",
+        "post-mvp"
       ],
-      "milestone": "M10",
+      "milestone": "M10 Production Ready",
       "sprint": "S48",
       "dependencies": [
         "E16-F4-T2"
       ],
-      "body": "Objective: release checklist dry-run. Feature E16-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic."
+      "body": "Objective: release checklist dry-run. Feature E16-F4. Estimate: S. Source: docs/03-domain + docs/04-ui + docs/06-ai per epic.",
+      "phase": "post-mvp"
+    },
+    {
+      "title": "MVP-S1-T1 Flutter/Dart workspace + lint/test + CI",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "ci-cd"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S1",
+      "phase": "mvp",
+      "dependencies": [],
+      "body": "Create app + Dart package workspace; wire analyze/test/format; CI commands. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S1-T2 studio_diagnostics package",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/S",
+        "kernel"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S1",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S1-T1"
+      ],
+      "body": "Severity + diagnostic sink, no Flutter dep. Unit tests. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S1-T3 studio_core package (ids/time/registry)",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "kernel"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S1",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S1-T2"
+      ],
+      "body": "ids, clock, service registry; no Flutter dep. Unit tests. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S2-T1 studio_events event system",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "runtime"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S2",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S1-T3"
+      ],
+      "body": "Immutable Event + EventBus. Unit tests. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S2-T2 studio_commands command system",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "runtime"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S2",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S2-T1"
+      ],
+      "body": "Command + CommandBus; only mutation path. Unit tests. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S2-T3 studio_document skeleton + undo/redo",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "storage"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S2",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S2-T2"
+      ],
+      "body": "Document/layers/project; command-driven mutation; undo/redo. Integration test. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S3-T1 Geometry coordinates + paths",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "geometry"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S3",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S1-T3"
+      ],
+      "body": "mm-internal coords, Path, Point; no Flutter dep. Unit + golden. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S3-T2 Curves + transforms + bbox",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "geometry"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S3",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S3-T1"
+      ],
+      "body": "beziers, affine transforms, bounding boxes. Unit + golden. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S4-T1 Embroidery object + stitch model",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "embroidery"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S4",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S3-T2"
+      ],
+      "body": "embroidery objects + stitch model; no Flutter dep. Unit. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S4-T2 Running stitch + satin/fill skeleton",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "embroidery"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S4",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S4-T1"
+      ],
+      "body": "running stitch deterministic; satin/fill stubs. Golden + determinism. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S5-T1 Machine model + commands",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/S",
+        "machine"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S5",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S1-T3"
+      ],
+      "body": "machine model + machine commands. Unit. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S5-T2 Machine IR (Dart) + validation",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "machine"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S5",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S5-T1",
+        "MVP-S4-T2"
+      ],
+      "body": "Dart Machine IR + limit/hoop validation skeleton. Unit + validation. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S6-T1 DST MVP exporter + golden",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "export"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S6",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S5-T2"
+      ],
+      "body": "Machine IR \u2192 DST bytes; binary golden. No optimization in encoder. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S6-T2 EXP MVP exporter + diagnostics",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/S",
+        "export"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S6",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S6-T1"
+      ],
+      "body": "Machine IR \u2192 EXP; export diagnostics. Binary golden. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S7-T1 Raster import",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P1",
+        "size/M",
+        "import"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S7",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S3-T2"
+      ],
+      "body": "raster \u2192 geometry model via normalization. Golden. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S7-T2 Vector import + normalization skeleton",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P1",
+        "size/M",
+        "import"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S7",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S7-T1"
+      ],
+      "body": "SVG/vector skeleton + normalization pipeline. Golden. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S8-T1 Desktop app shell + menu/toolbar",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "ui",
+        "flutter"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S8",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S2-T2"
+      ],
+      "body": "apps/studio shell, menus/toolbars dispatch commands. Widget test. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S8-T2 Panels + canvas placeholder",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "ui",
+        "flutter"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S8",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S8-T1"
+      ],
+      "body": "dockable panels + canvas placeholder. Widget test. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S9-T1 Canvas viewport + pan/zoom",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "ui",
+        "flutter"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S9",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S8-T2",
+        "MVP-S3-T2"
+      ],
+      "body": "viewport render + pan/zoom. Interaction test. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S9-T2 Selection + transform handles + tools",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "ui",
+        "flutter"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S9",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S9-T1"
+      ],
+      "body": "selection, transform gizmos, basic draw/edit tools; commands only. Interaction test. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S10-T1 Project save/load",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "storage"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S10",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S2-T3"
+      ],
+      "body": "MVP project persistence round-trip. Integration test. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S10-T2 Inspector + import/export UI",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P0",
+        "size/M",
+        "ui",
+        "flutter"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S10",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S10-T1",
+        "MVP-S6-T1",
+        "MVP-S7-T2"
+      ],
+      "body": "property inspector; import + export dialogs wired. Widget + integration. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S10-T3 Basic simulation preview",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P1",
+        "size/M",
+        "simulation"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S10",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S4-T2"
+      ],
+      "body": "playback preview of stitch order. Consistency test. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S10-T4 MVP AI assistant hooks",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P1",
+        "size/S",
+        "ai"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S10",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S2-T2"
+      ],
+      "body": "lightweight assistant hooks emitting Commands only. Eval. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
+    },
+    {
+      "title": "MVP-S10-T5 MVP QA/testing pass",
+      "labels": [
+        "task",
+        "dart",
+        "mvp",
+        "P1",
+        "size/M",
+        "testing"
+      ],
+      "milestone": "MVP (Flutter/Dart)",
+      "sprint": "MVP-S10",
+      "phase": "mvp",
+      "dependencies": [
+        "MVP-S10-T2"
+      ],
+      "body": "golden/determinism + integration sweep across MVP. Meta. Phase: MVP Flutter/Dart. Source: docs/08-implementation/004-development-order.md (MVP)."
     }
   ]
 }

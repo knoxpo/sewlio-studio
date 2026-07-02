@@ -67,6 +67,29 @@ Canonical role prompts live once in `agents/<role>.md`. Each runner loads them a
 | AI | `ai` | write | `agents/ai.md` |
 | QA / Review | `qa-review` | read-only | `agents/qa-review.md` |
 
+Project-specific task agents (workflow + guardrails):
+
+| Role | Slug | Sandbox | Loads from |
+|---|---|---|---|
+| Sprint Runner (orchestrator) | `sprint-runner` | write | `agents/sprint-runner.md` |
+| IR Guardian | `ir-guardian` | read-only | `agents/ir-guardian.md` |
+| FFI Bridge | `ffi-bridge` | write | `agents/ffi-bridge.md` |
+| Golden Runner | `golden-runner` | write | `agents/golden-runner.md` |
+| Dependency Fitness | `dep-fitness` | read-only | `agents/dep-fitness.md` |
+
+## Workflow & model routing
+
+Execution model is **hybrid** — see [`WORKFLOW.md`](WORKFLOW.md) for the full loop:
+
+- **Claude Code (Opus)** plans, decides architecture, authors ADRs, and does final review.
+- **opencode** runs the implementer agents on **local models** via the `omlx_remote` provider.
+  Per-agent model is set in [`.opencode/opencode.json`](.opencode/opencode.json) (`agent.<name>.model`):
+  coding roles → `Qwen3-Coder-30B-A3B`; compiler/IR roles → `Qwen3.6-35B-A3B`; review/orchestrate →
+  `Qwen3.5-27B-Opus-Distilled`. Per-agent model lives here, not in the shared `agents/*.md`
+  frontmatter, because Claude's `model:` field can't take an opencode provider string.
+- The two runners hand off through GitHub issues + git branches, not a single tool call. Anything
+  crossing a package boundary or changing an IR schema escalates to Claude Code for an ADR first.
+
 ## How each runner loads the team
 
 - **Claude Code** — `.claude/agents` → symlink to `agents/`. Reads each file's `name` + `description`.

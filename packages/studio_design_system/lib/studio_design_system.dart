@@ -3,7 +3,7 @@
 /// Real tokens, themes, and components land later (see docs/04-ui/100-design-system.md,
 /// 101-color-system.md, 105-themes.md). For now this exposes a couple of seed tokens so
 /// the package is a real, testable dependency for the app shell.
-library studio_design_system;
+library;
 
 import 'package:flutter/widgets.dart';
 

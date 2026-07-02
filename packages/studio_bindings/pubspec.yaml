@@ -2,9 +2,10 @@ name: studio_bindings
 description: Dart bindings to the Sewlio Rust engine via flutter_rust_bridge (skeleton).
 version: 0.1.0
 publish_to: none
+resolution: workspace
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ^3.6.0
   flutter: ">=3.24.0"
 
 dependencies:

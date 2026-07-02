@@ -2,9 +2,10 @@ name: studio_design_system
 description: Sewlio Studio design tokens and shared UI primitives (skeleton).
 version: 0.1.0
 publish_to: none
+resolution: workspace
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ^3.6.0
   flutter: ">=3.24.0"
 
 dependencies:

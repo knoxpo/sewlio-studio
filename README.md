@@ -1,13 +1,45 @@
 # Sewlio Studio
 
-Cross-platform embroidery design studio. **Flutter** for UI/app shell, **Rust** for the
-engine (geometry, domain, import/export, simulation), bridged by
-[`flutter_rust_bridge`](https://cjycode.com/flutter_rust_bridge/). Flutter never mutates state —
-it sends commands to Rust and renders events. See `docs/` for the full architecture
-(`docs/08-implementation/000-implementation-roadmap.md` is the build plan).
+Cross-platform embroidery design studio.
 
-> Status: **Task 1 — skeleton only.** Crate/package boundaries, toolchain, and one
-> Flutter → FFI → Rust round trip. No embroidery, export, AI, or rendering logic yet.
+## MVP strategy (ADR-026)
+
+> MVP implementation is **Flutter-only using Dart packages**.
+>
+> **Rust** remains part of the long-term architecture and will be introduced after MVP validation
+> for performance-critical modules.
+>
+> The codebase must maintain **clean interfaces** so Dart implementations can later be replaced by
+> Rust modules **without changing UI or product workflows**.
+
+Long-term (Phase 2) architecture: **Flutter** UI + **Rust** engine bridged by
+[`flutter_rust_bridge`](https://cjycode.com/flutter_rust_bridge/) — preserved in `docs/` and the
+`crates/es_*` scaffold, deferred per [ADR-026](docs/07-adr/026-use-dart-engine-for-mvp.md). Across
+both phases: UI never mutates state directly — it sends **commands** to the engine and renders
+**events**. Plan: [`docs/08-implementation/000-roadmap.md`](docs/08-implementation/000-roadmap.md).
+
+> Status: **MVP planning.** Phase 1 = pure-Dart engine + Flutter shell (packages planned, see
+> package map). The Task-1 Rust skeleton (`crates/es_*`, `ffi/es_ffi`, `packages/studio_bindings`)
+> stays in-tree, compiling, as the Phase 2 migration target — not an MVP deliverable.
+
+## MVP development (Flutter/Dart)
+
+```bash
+# Flutter SDK is pinned via FVM (.fvmrc). One-time:
+fvm install
+
+# per Dart/Flutter package (planned under packages/):
+fvm flutter pub get
+fvm flutter analyze
+fvm flutter test
+fvm dart format .
+
+# run the desktop app (once the app shell lands):
+cd apps/studio && fvm flutter run -d macos
+```
+
+Phase 2 (Rust) toolchain — Cargo workspace, `flutter_rust_bridge_codegen`, `make check` — is
+documented below and stays valid for when migration begins.
 
 ## Layout
 

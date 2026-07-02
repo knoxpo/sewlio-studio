@@ -1,6 +1,11 @@
 # System Overview
 ## Sewlio Studio
 
+> **MVP note (ADR-026):** the **MVP is implemented Dart-first**. This overview describes the
+> **long-term Flutter + Rust architecture**, which remains valid and is preserved as **Phase 2**.
+> The MVP provides Dart implementations behind the same interfaces; do not couple UI or product
+> workflows to the implementation language. See `docs/07-adr/026-use-dart-engine-for-mvp.md`.
+
 **Document ID:** ARCH-000  
 **Title:** System Overview  
 **Version:** 1.0.0  

@@ -1,0 +1,23 @@
+# ponytail: single job, no matrix/caching beyond flutter-action defaults —
+# add a platform matrix and cargo caching when CI time hurts.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4" # keep in sync with .fvmrc
+          cache: true
+      - run: flutter pub get
+      - run: make check FVM=
