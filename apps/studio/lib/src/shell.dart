@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_core/studio_core.dart';
@@ -14,6 +12,7 @@ import 'package:studio_machine/studio_machine.dart';
 import 'package:studio_tools/studio_tools.dart';
 
 import '../main.dart';
+import 'file_io.dart';
 import 'inspector.dart';
 import 'simulation_view.dart';
 
@@ -157,22 +156,25 @@ class _StudioShellState extends State<StudioShell> {
   Future<void> _saveProject() async {
     final path = await _pathDialog('Save project', suffix: '.embproj');
     if (path == null) return;
-    // Never silently overwrite existing files (non-negotiable #10-ish:
-    // user data loss). Confirm when the target exists.
-    final file = File(path);
-    if (file.existsSync() && !(await _confirmOverwrite(path))) return;
-    await file.writeAsString(encodeProject(session.document));
-    _toast('Saved $path');
+    try {
+      // Never silently overwrite existing files (user data loss).
+      // Confirm when the target exists.
+      if (fileExists(path) && !(await _confirmOverwrite(path))) return;
+      await writeFileString(path, encodeProject(session.document));
+      _toast('Saved $path');
+    } catch (e) {
+      _toast('Save failed: $e');
+    }
   }
 
   Future<void> _openProject() async {
     final path = await _pathDialog('Open project', suffix: '.embproj');
     if (path == null) return;
     try {
-      final document = decodeProject(await File(path).readAsString());
+      final document = decodeProject(await readFileString(path));
       setState(() => _bindSession(StudioSession(document: document)));
       _toast('Opened ${document.name}');
-    } on Exception catch (e) {
+    } catch (e) {
       _toast('Open failed: $e');
     }
   }
@@ -190,7 +192,7 @@ class _StudioShellState extends State<StudioShell> {
     final path = await _pathDialog('Import SVG', suffix: '.svg');
     if (path == null) return;
     try {
-      final paths = importSvg(await File(path).readAsString());
+      final paths = importSvg(await readFileString(path));
       if (paths.isEmpty) {
         _toast('No <path> outlines found in $path');
         return;
@@ -202,7 +204,7 @@ class _StudioShellState extends State<StudioShell> {
         )));
       }
       _toast('Imported ${paths.length} path(s)');
-    } on Exception catch (e) {
+    } catch (e) {
       _toast('Import failed: $e');
     }
   }
@@ -229,11 +231,14 @@ class _StudioShellState extends State<StudioShell> {
       _toast('Export blocked: ${sink.diagnostics.first.message}');
       return;
     }
-    final file = File(path);
-    if (file.existsSync() && !(await _confirmOverwrite(path))) return;
-    await file.writeAsBytes(bytes);
-    _toast('Exported $path'
-        '${skipped.isEmpty ? '' : ' (${skipped.length} object(s) skipped)'}');
+    try {
+      if (fileExists(path) && !(await _confirmOverwrite(path))) return;
+      await writeFileBytes(path, bytes);
+      _toast('Exported $path'
+          '${skipped.isEmpty ? '' : ' (${skipped.length} object(s) skipped)'}');
+    } catch (e) {
+      _toast('Export failed: $e');
+    }
   }
 
   Future<bool> _confirmOverwrite(String path) async {
