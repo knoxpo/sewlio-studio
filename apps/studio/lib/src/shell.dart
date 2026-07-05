@@ -6,10 +6,15 @@ import 'package:studio_core/studio_core.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
+import 'package:studio_diagnostics/studio_diagnostics.dart';
+import 'package:studio_export/studio_export.dart';
 import 'package:studio_geometry/studio_geometry.dart' as g;
+import 'package:studio_import/studio_import.dart';
+import 'package:studio_machine/studio_machine.dart';
 import 'package:studio_tools/studio_tools.dart';
 
 import '../main.dart';
+import 'inspector.dart';
 
 /// Desktop shell: menu bar, toolbar, side panels, canvas placeholder.
 /// Rebuilds on engine events — it renders state, never mutates it.
@@ -72,6 +77,18 @@ class _StudioShellState extends State<StudioShell> {
                     onPressed: _openProject,
                     child: const Text('Open…'),
                   ),
+                  MenuItemButton(
+                    onPressed: _importSvg,
+                    child: const Text('Import SVG…'),
+                  ),
+                  MenuItemButton(
+                    onPressed: () => _export('.dst'),
+                    child: const Text('Export DST…'),
+                  ),
+                  MenuItemButton(
+                    onPressed: () => _export('.exp'),
+                    child: const Text('Export EXP…'),
+                  ),
                 ],
                 child: const Text('File'),
               ),
@@ -110,7 +127,15 @@ class _StudioShellState extends State<StudioShell> {
                     ),
                   ),
                 ),
-                const _Panel(title: 'Inspector', width: 240),
+                SizedBox(
+                  width: 240,
+                  child: InspectorPanel(
+                    document: session.document,
+                    selectedId: selection.selected,
+                    onReplace: (object) =>
+                        session.history.execute(ReplaceObject(object)),
+                  ),
+                ),
               ],
             ),
           ),
@@ -140,6 +165,56 @@ class _StudioShellState extends State<StudioShell> {
     } on Exception catch (e) {
       _toast('Open failed: $e');
     }
+  }
+
+  Future<void> _importSvg() async {
+    final path = await _pathDialog('Import SVG', suffix: '.svg');
+    if (path == null) return;
+    try {
+      final paths = importSvg(await File(path).readAsString());
+      if (paths.isEmpty) {
+        _toast('No <path> outlines found in $path');
+        return;
+      }
+      for (final p in paths) {
+        session.history.execute(AddObject(RunningStitchObject(
+          id: session.registry.get<IdGenerator>().next(),
+          path: p,
+        )));
+      }
+      _toast('Imported ${paths.length} path(s)');
+    } on Exception catch (e) {
+      _toast('Import failed: $e');
+    }
+  }
+
+  Future<void> _export(String suffix) async {
+    final path = await _pathDialog('Export $suffix', suffix: suffix);
+    if (path == null) return;
+    final skipped = <EmbroideryObject>[];
+    final sequence =
+        digitizeObjects(session.document.objects, skipped: skipped);
+    if (sequence.ops.isEmpty) {
+      _toast('Nothing to export');
+      return;
+    }
+    final program = compileToMachine(sequence);
+    final sink = CollectingSink();
+    if (!program.validate(MachineModel.generic, sink)) {
+      _toast('Export blocked: ${sink.diagnostics.first.message}');
+      return;
+    }
+    final bytes =
+        suffix == '.dst' ? encodeDst(program) : encodeExp(program, sink: sink);
+    if (sink.hasErrors) {
+      _toast('Export blocked: ${sink.diagnostics.first.message}');
+      return;
+    }
+    final file = File(path);
+    if (file.existsSync() && !(await _confirmOverwrite(path))) return;
+    await file.writeAsBytes(bytes);
+    _toast('Exported $path'
+        '${skipped.isEmpty ? '' : ' (${skipped.length} object(s) skipped)'}');
   }
 
   Future<bool> _confirmOverwrite(String path) async {

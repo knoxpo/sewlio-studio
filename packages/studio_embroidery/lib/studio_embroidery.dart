@@ -5,6 +5,7 @@
 /// it never contains machine bytes, needle indexes, or format encoding.
 library;
 
+export 'src/digitize.dart';
 export 'src/objects.dart';
 export 'src/running_stitch.dart';
 export 'src/stitch_ir.dart';

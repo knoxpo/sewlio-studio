@@ -40,6 +40,18 @@ final class TransformObject extends Command {
   final Transform2 transform;
 }
 
+/// Replaces the object with the same id (parameter edits from the
+/// inspector). Undoable — the reverse restores the old object.
+final class ReplaceObject extends Command {
+  const ReplaceObject(this.object);
+  final EmbroideryObject object;
+}
+
+final class ObjectReplaced extends Event {
+  const ObjectReplaced(this.id);
+  final Id id;
+}
+
 final class ObjectAdded extends Event {
   const ObjectAdded(this.id);
   final Id id;
@@ -89,6 +101,21 @@ void registerDocumentHandlers(CommandBus bus, Document document) {
     return CommandOutcome(
       events: [ObjectRemoved(command.id)],
       reverse: AddObject(object, index: index),
+    );
+  });
+
+  bus.register<ReplaceObject>((command) {
+    final index =
+        document.objects.indexWhere((object) => object.id == command.object.id);
+    if (index < 0) {
+      throw StateError('No object with id ${command.object.id}');
+    }
+    final old = document.objects[index];
+    document.objects[index] = command.object;
+    document.revision++;
+    return CommandOutcome(
+      events: [ObjectReplaced(command.object.id)],
+      reverse: ReplaceObject(old),
     );
   });
 
