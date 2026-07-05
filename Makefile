@@ -2,8 +2,10 @@
 # CI runs without FVM: `make check FVM=`.
 FVM ?= fvm
 FLUTTER_PKGS := packages/studio_design_system packages/studio_bindings apps/studio
+# Pure-Dart packages (no Flutter dep) — tested with `dart test`.
+DART_PKGS := packages/studio_diagnostics
 
-.PHONY: help gen fmt fmt-check lint test check rust-test flutter-test clean
+.PHONY: help gen fmt fmt-check lint test check rust-test dart-test flutter-test clean
 
 help:
 	@echo "make gen          - regenerate flutter_rust_bridge glue"
@@ -38,7 +40,12 @@ flutter-test:
 		else echo "skip $$p (no test/)"; fi; \
 	done
 
-test: rust-test flutter-test
+dart-test:
+	@for p in $(DART_PKGS); do \
+		echo "test $$p"; (cd $$p && $(FVM) dart test) || exit 1; \
+	done
+
+test: rust-test dart-test flutter-test
 
 check: fmt-check lint test
 
