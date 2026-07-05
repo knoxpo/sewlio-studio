@@ -1,17 +1,192 @@
-/// Sewlio Studio design system — skeleton.
+/// Sewlio Studio design system.
 ///
-/// Real tokens, themes, and components land later (see docs/04-ui/100-design-system.md,
-/// 101-color-system.md, 105-themes.md). For now this exposes a couple of seed tokens so
-/// the package is a real, testable dependency for the app shell.
+/// Dark CAD-workspace palette and theme (docs/04-ui/100-design-system.md,
+/// 101-color-system.md). Tokens mirror the workspace mockup: near-black
+/// panels, hairline borders, pale-blue primary.
 library;
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
-/// Seed design tokens. Placeholder values; replaced by the real token set.
+/// Design tokens for the studio workspace.
 abstract final class AppTokens {
   /// Base spacing unit in logical pixels.
   static const double spacing = 8.0;
 
-  /// Primary brand seed color.
-  static const Color seed = Color(0xFF3A6EA5);
+  /// Primary accent (pale blue).
+  static const Color seed = Color(0xFFA2C9FF);
+  static const Color primary = Color(0xFFA2C9FF);
+  static const Color onPrimary = Color(0xFF00315C);
+
+  /// Window background.
+  static const Color background = Color(0xFF0B141C);
+
+  /// Panel chrome (darker than background).
+  static const Color panel = Color(0xFF060F16);
+
+  /// Raised/hover surfaces.
+  static const Color surfaceHigh = Color(0xFF222B33);
+
+  /// Hairline borders between panels.
+  static const Color border = Color(0xFF414752);
+
+  static const Color textPrimary = Color(0xFFDAE3EE);
+  static const Color textMuted = Color(0xFFC0C7D4);
+
+  /// Success/hoop accent (green).
+  static const Color accentGreen = Color(0xFF10B981);
+
+  /// Error accent.
+  static const Color error = Color(0xFFFFB4AB);
+}
+
+/// The studio dark theme.
+ThemeData studioTheme() {
+  const scheme = ColorScheme.dark(
+    primary: AppTokens.primary,
+    onPrimary: AppTokens.onPrimary,
+    secondary: AppTokens.accentGreen,
+    surface: AppTokens.background,
+    onSurface: AppTokens.textPrimary,
+    surfaceContainerHighest: AppTokens.surfaceHigh,
+    outline: AppTokens.border,
+    error: AppTokens.error,
+  );
+  final base = ThemeData(colorScheme: scheme, useMaterial3: true);
+  return base.copyWith(
+    scaffoldBackgroundColor: AppTokens.background,
+    dividerColor: AppTokens.border,
+    textTheme: base.textTheme.apply(
+      bodyColor: AppTokens.textPrimary,
+      displayColor: AppTokens.textPrimary,
+    ),
+    menuBarTheme: const MenuBarThemeData(
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(AppTokens.panel),
+        elevation: WidgetStatePropertyAll(0),
+      ),
+    ),
+    menuTheme: const MenuThemeData(
+      style: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(AppTokens.panel),
+      ),
+    ),
+    cardTheme: const CardThemeData(
+      color: AppTokens.panel,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: AppTokens.border),
+        borderRadius: BorderRadius.all(Radius.circular(4)),
+      ),
+      elevation: 0,
+      margin: EdgeInsets.zero,
+    ),
+    inputDecorationTheme: const InputDecorationTheme(
+      isDense: true,
+      border: OutlineInputBorder(
+        borderSide: BorderSide(color: AppTokens.border),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: AppTokens.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: AppTokens.primary),
+      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    ),
+  );
+}
+
+/// A workspace panel: dark chrome, hairline border, optional titled
+/// header row.
+class StudioPanel extends StatelessWidget {
+  const StudioPanel({
+    super.key,
+    this.title,
+    this.trailing,
+    required this.child,
+    this.width,
+  });
+
+  final String? title;
+  final Widget? trailing;
+  final Widget child;
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (title != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: const BoxDecoration(
+              color: AppTokens.background,
+              border: Border(bottom: BorderSide(color: AppTokens.border)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(title!,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w500, fontSize: 12)),
+                if (trailing != null) trailing!,
+              ],
+            ),
+          ),
+        Expanded(child: child),
+      ],
+    );
+    final panel = DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppTokens.panel,
+        border: Border.fromBorderSide(BorderSide(color: AppTokens.border)),
+      ),
+      child: content,
+    );
+    return width == null ? panel : SizedBox(width: width, child: panel);
+  }
+}
+
+/// A small icon button in the workspace chrome (tool rail, toolbars).
+class StudioIconButton extends StatelessWidget {
+  const StudioIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    this.onPressed,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: active ? AppTokens.surfaceHigh : null,
+            borderRadius: BorderRadius.circular(4),
+            border: active ? Border.all(color: AppTokens.border) : null,
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: onPressed == null
+                ? AppTokens.textMuted.withValues(alpha: 0.4)
+                : active
+                    ? AppTokens.primary
+                    : AppTokens.textMuted,
+          ),
+        ),
+      ),
+    );
+  }
 }

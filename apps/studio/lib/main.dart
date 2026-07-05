@@ -51,7 +51,7 @@ class StudioApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sewlio Studio',
-      theme: ThemeData(colorSchemeSeed: AppTokens.seed, useMaterial3: true),
+      theme: studioTheme(),
       home: StudioShell(session: session),
     );
   }

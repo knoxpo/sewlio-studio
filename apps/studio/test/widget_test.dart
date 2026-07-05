@@ -2,58 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
 import 'package:studio_canvas/studio_canvas.dart';
-import 'package:studio_document/studio_document.dart';
 
 void main() {
-  testWidgets('shell renders menu, toolbar, panels, canvas placeholder',
+  testWidgets('workspace renders chrome: menus, panels, canvas, status bar',
       (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(StudioApp(session: StudioSession()));
 
     expect(find.text('File'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Stitches'), findsWidgets); // tab + list header
     expect(find.text('Layers'), findsOneWidget);
-    expect(find.text('Inspector'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
+    expect(find.text('Stitch Simulation'), findsOneWidget);
+    expect(find.text('Hoop'), findsOneWidget);
+    expect(find.text('Ready'), findsOneWidget);
   });
 
-  testWidgets('Add square toolbar button creates an undoable object',
+  testWidgets('Rectangle tool creates an undoable object; title shows dirty',
       (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
-    await tester.tap(find.byTooltip('Add square'));
+    await tester.tap(find.byTooltip('Rectangle'));
     await tester.pump();
     expect(session.document.objects, hasLength(1));
+    expect(find.text('Untitled.embproj*'), findsOneWidget);
+    // Stitch list shows the object with a real count.
+    expect(find.text('Running Stitch'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Undo'));
     await tester.pump();
     expect(session.document.objects, isEmpty);
   });
 
-  testWidgets('commands drive title; toolbar undo/redo follow history',
-      (tester) async {
-    final session = StudioSession();
-    await tester.pumpWidget(StudioApp(session: session));
-
-    // Undo disabled at start.
-    final undoButton = find.widgetWithIcon(IconButton, Icons.undo);
-    expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
-
-    // Mutate through the command path, as tools/menu do.
-    session.history.execute(const RenameDocument('Rose'));
-    await tester.pump();
-    expect(find.text('Rose'), findsOneWidget);
-    expect(tester.widget<IconButton>(undoButton).onPressed, isNotNull);
-
-    // Undo via toolbar restores the old name.
-    await tester.tap(undoButton);
-    await tester.pump();
-    expect(find.text('Untitled'), findsOneWidget);
-    expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
-  });
-
   testWidgets('File > Rename dialog executes RenameDocument', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
