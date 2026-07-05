@@ -1,0 +1,16 @@
+name: studio_import
+description: Raster and vector import + normalization for Sewlio Studio (pure Dart).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  studio_diagnostics: ^0.1.0
+  studio_geometry: ^0.1.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0
