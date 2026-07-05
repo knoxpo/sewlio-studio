@@ -10,4 +10,5 @@ library;
 export 'src/bounds.dart';
 export 'src/path.dart';
 export 'src/point.dart';
+export 'src/shapes.dart';
 export 'src/transform.dart';

@@ -15,7 +15,10 @@ class CanvasView extends StatefulWidget {
     required this.viewport,
     this.selectedId,
     this.hoopSize,
+    this.previewPaths = const [],
+    this.markers = const [],
     this.onTapWorld,
+    this.onDoubleTapWorld,
     this.onHoverWorld,
     this.onDragStartWorld,
     this.onDragUpdateWorld,
@@ -31,7 +34,14 @@ class CanvasView extends StatefulWidget {
   /// Hoop outline (mm, centered on the world origin), drawn when set.
   final Size? hoopSize;
 
+  /// Live tool overlay geometry (rubber bands, ghosts).
+  final List<g.Path> previewPaths;
+
+  /// Anchor markers (node editing, pen points).
+  final List<g.Point> markers;
+
   final void Function(g.Point world)? onTapWorld;
+  final void Function(g.Point world)? onDoubleTapWorld;
 
   /// Pointer position in world mm (status bar readout).
   final void Function(g.Point world)? onHoverWorld;
@@ -61,6 +71,10 @@ class _CanvasViewState extends State<CanvasView> {
           behavior: HitTestBehavior.opaque,
           onTapUp: (details) => widget.onTapWorld
               ?.call(viewport.screenToWorld(details.localPosition)),
+          onDoubleTapDown: widget.onDoubleTapWorld == null
+              ? null
+              : (details) => widget.onDoubleTapWorld!(
+                  viewport.screenToWorld(details.localPosition)),
           // Scale gesture covers both one-pointer pan and pinch zoom.
           onScaleStart: (details) {
             _lastScale = 1;
@@ -95,6 +109,8 @@ class _CanvasViewState extends State<CanvasView> {
                 viewport: viewport,
                 selectedId: widget.selectedId,
                 hoopSize: widget.hoopSize,
+                previewPaths: widget.previewPaths,
+                markers: widget.markers,
                 colorScheme: Theme.of(context).colorScheme,
               ),
             ),
@@ -111,6 +127,8 @@ class _DesignPainter extends CustomPainter {
     required this.viewport,
     required this.selectedId,
     required this.hoopSize,
+    required this.previewPaths,
+    required this.markers,
     required this.colorScheme,
   });
 
@@ -118,6 +136,8 @@ class _DesignPainter extends CustomPainter {
   final ViewportController viewport;
   final Id? selectedId;
   final Size? hoopSize;
+  final List<g.Path> previewPaths;
+  final List<g.Point> markers;
   final ColorScheme colorScheme;
 
   @override
@@ -144,6 +164,31 @@ class _DesignPainter extends CustomPainter {
       if (object.id == selectedId) {
         _paintSelection(canvas, object.path.bounds());
       }
+    }
+
+    // Tool overlay: rubber bands / ghosts + anchor markers.
+    final overlay = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = colorScheme.secondary;
+    for (final p in previewPaths) {
+      final points = p.toPolyline();
+      final path = Path()
+        ..moveTo(viewport.worldToScreen(points.first).dx,
+            viewport.worldToScreen(points.first).dy);
+      for (final point in points.skip(1)) {
+        final o = viewport.worldToScreen(point);
+        path.lineTo(o.dx, o.dy);
+      }
+      canvas.drawPath(path, overlay);
+    }
+    final markerFill = Paint()..color = colorScheme.secondary;
+    for (final marker in markers) {
+      canvas.drawRect(
+        Rect.fromCenter(
+            center: viewport.worldToScreen(marker), width: 6, height: 6),
+        markerFill,
+      );
     }
   }
 
@@ -214,5 +259,7 @@ class _DesignPainter extends CustomPainter {
       oldDelegate.document.revision != document.revision ||
       oldDelegate.selectedId != selectedId ||
       oldDelegate.hoopSize != hoopSize ||
+      oldDelegate.previewPaths != previewPaths ||
+      oldDelegate.markers != markers ||
       oldDelegate.viewport != viewport;
 }

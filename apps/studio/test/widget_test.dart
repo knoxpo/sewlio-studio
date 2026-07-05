@@ -18,18 +18,31 @@ void main() {
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
     expect(find.text('Stitch Simulation'), findsOneWidget);
     expect(find.text('Hoop'), findsOneWidget);
-    expect(find.text('Ready'), findsOneWidget);
+    expect(find.textContaining('Select:'), findsOneWidget); // status bar
   });
 
-  testWidgets('Rectangle tool creates an undoable object; title shows dirty',
+  testWidgets('Pen tool draws an undoable path; title shows dirty',
       (tester) async {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
-    await tester.tap(find.byTooltip('Rectangle'));
+    await tester.tap(find.byTooltip('Pen'));
     await tester.pump();
+
+    final canvas = tester.getCenter(find.byType(CanvasView));
+    await tester.tapAt(canvas);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tapAt(canvas + const Offset(80, 0));
+    await tester.pump(const Duration(milliseconds: 400));
+    // Double tap finishes the path.
+    await tester.tapAt(canvas + const Offset(80, 60));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(canvas + const Offset(80, 60));
+    // Flush the double-tap recognizer's countdown timer.
+    await tester.pump(const Duration(milliseconds: 400));
+
     expect(session.document.objects, hasLength(1));
     expect(find.text('Untitled.embproj*'), findsOneWidget);
     // Stitch list shows the object with a real count.

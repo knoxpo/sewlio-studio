@@ -29,14 +29,20 @@ class StudioShell extends StatefulWidget {
   State<StudioShell> createState() => _StudioShellState();
 }
 
+enum ToolKind { select, node, pen, pencil, shape, text, pan, measure }
+
 class _StudioShellState extends State<StudioShell> {
   late StudioSession session;
 
   final viewport = ViewportController();
   final selection = SelectionController();
-  late SelectTool tool;
   MachineModel machine = hoopPresets.first;
   final cursor = ValueNotifier<g.Point?>(null);
+
+  late Map<ToolKind, Tool> tools;
+  ToolKind activeKind = ToolKind.select;
+
+  Tool get tool => tools[activeKind]!;
 
   @override
   void initState() {
@@ -49,14 +55,49 @@ class _StudioShellState extends State<StudioShell> {
   void _bindSession(StudioSession next) {
     session = next;
     selection.select(null);
-    tool = SelectTool(
-      document: session.document,
-      history: session.history,
-      selection: selection,
-    );
+    tools = {
+      ToolKind.select: SelectTool(
+        document: session.document,
+        history: session.history,
+        selection: selection,
+      ),
+      ToolKind.node: NodeTool(
+        document: session.document,
+        history: session.history,
+        selection: selection,
+      ),
+      ToolKind.pen: PenTool(onCreate: _addPath),
+      ToolKind.pencil: PencilTool(onCreate: _addPath),
+      ToolKind.shape: ShapeTool(onCreate: _addPath),
+      ToolKind.text: TextTool(onRequestText: _promptText, onCreate: _addPath),
+      ToolKind.pan: PanTool(),
+      ToolKind.measure: MeasureTool(),
+    };
+    for (final t in tools.values) {
+      t.addListener(_onToolChanged);
+    }
+    activeKind = ToolKind.select;
     // Any engine event may change what's on screen; a document revision
     // rebuild is cheap at MVP scale.
     session.events.events.listen((_) => setState(() {}));
+  }
+
+  void _onToolChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _selectTool(ToolKind kind) {
+    if (kind == activeKind) return;
+    tool.cancel();
+    setState(() => activeKind = kind);
+  }
+
+  /// Creation tools commit here: new running-stitch object per path.
+  void _addPath(g.Path path) {
+    session.history.execute(AddObject(RunningStitchObject(
+      id: session.registry.get<IdGenerator>().next(),
+      path: path,
+    )));
   }
 
   @override
@@ -205,7 +246,17 @@ class _StudioShellState extends State<StudioShell> {
 
   // ------------------------------------------------------------- tool rail
 
+  Widget _toolButton(ToolKind kind, IconData icon, String tooltip) {
+    return StudioIconButton(
+      icon: icon,
+      tooltip: tooltip,
+      active: activeKind == kind,
+      onPressed: () => _selectTool(kind),
+    );
+  }
+
   Widget _toolRail() {
+    final shapeTool = tools[ToolKind.shape]! as ShapeTool;
     return Container(
       width: 48,
       decoration: const BoxDecoration(
@@ -215,19 +266,33 @@ class _StudioShellState extends State<StudioShell> {
       child: Column(
         children: [
           const SizedBox(height: 8),
-          const StudioIconButton(
-              icon: Icons.north_west,
-              tooltip: 'Select',
-              onPressed: _noop,
-              active: true),
+          _toolButton(ToolKind.select, Icons.north_west, 'Select'),
+          _toolButton(ToolKind.node, Icons.timeline, 'Node'),
           const Divider(indent: 10, endIndent: 10),
-          StudioIconButton(
-              icon: Icons.crop_square,
-              tooltip: 'Rectangle',
-              onPressed: _addSquare),
-          const StudioIconButton(icon: Icons.edit, tooltip: 'Pen (soon)'),
-          const StudioIconButton(
-              icon: Icons.text_fields, tooltip: 'Text (soon)'),
+          _toolButton(ToolKind.pen, Icons.edit, 'Pen'),
+          _toolButton(ToolKind.pencil, Icons.gesture, 'Pencil'),
+          // Shape flyout: tap activates; tap again (or long-press)
+          // opens the kind picker.
+          GestureDetector(
+            onLongPress: _pickShape,
+            onSecondaryTap: _pickShape,
+            child: StudioIconButton(
+              icon: _shapeIcon(shapeTool.kind),
+              tooltip: 'Shape: ${shapeTool.kind.name} (long-press to change)',
+              active: activeKind == ToolKind.shape,
+              onPressed: () {
+                if (activeKind == ToolKind.shape) {
+                  _pickShape();
+                } else {
+                  _selectTool(ToolKind.shape);
+                }
+              },
+            ),
+          ),
+          _toolButton(ToolKind.text, Icons.text_fields, 'Text'),
+          const Divider(indent: 10, endIndent: 10),
+          _toolButton(ToolKind.pan, Icons.pan_tool, 'Pan'),
+          _toolButton(ToolKind.measure, Icons.straighten, 'Measure'),
           const Divider(indent: 10, endIndent: 10),
           StudioIconButton(
               icon: Icons.zoom_in,
@@ -242,7 +307,104 @@ class _StudioShellState extends State<StudioShell> {
     );
   }
 
-  static void _noop() {}
+  IconData _shapeIcon(ShapeKind kind) => switch (kind) {
+        ShapeKind.rectangle => Icons.crop_square,
+        ShapeKind.square => Icons.square_outlined,
+        ShapeKind.roundedRectangle => Icons.rounded_corner,
+        ShapeKind.circle => Icons.circle_outlined,
+        ShapeKind.ellipse => Icons.egg_outlined,
+        ShapeKind.triangle => Icons.change_history,
+        ShapeKind.pentagon => Icons.pentagon_outlined,
+        ShapeKind.hexagon => Icons.hexagon_outlined,
+        ShapeKind.polygon => Icons.polyline,
+        ShapeKind.star => Icons.star_border,
+        ShapeKind.spiral => Icons.all_inclusive,
+      };
+
+  Future<void> _pickShape() async {
+    final shapeTool = tools[ToolKind.shape]! as ShapeTool;
+    final kind = await showDialog<ShapeKind>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Shape'),
+        children: [
+          for (final kind in ShapeKind.values)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, kind),
+              child: Row(
+                children: [
+                  Icon(_shapeIcon(kind), size: 16),
+                  const SizedBox(width: 8),
+                  Text(kind.name),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (kind == null) return;
+    shapeTool.kind = kind;
+    if (kind == ShapeKind.polygon) {
+      final sides =
+          await _promptNumber('Polygon sides', shapeTool.sides.toDouble());
+      if (sides != null && sides >= 3) shapeTool.sides = sides.round();
+    }
+    if (kind == ShapeKind.star) {
+      final points =
+          await _promptNumber('Star points', shapeTool.starPoints.toDouble());
+      if (points != null && points >= 3) shapeTool.starPoints = points.round();
+    }
+    _selectTool(ToolKind.shape);
+    setState(() {});
+  }
+
+  Future<double?> _promptNumber(String title, double initial) async {
+    final controller = TextEditingController(text: initial.round().toString());
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              child: const Text('OK')),
+        ],
+      ),
+    );
+    return value == null ? null : double.tryParse(value);
+  }
+
+  Future<String?> _promptText() async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Text'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration:
+              const InputDecoration(hintText: 'A–Z, 0–9 (monoline font)'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              child: const Text('Place')),
+        ],
+      ),
+    );
+  }
 
   void _zoom(double factor) {
     final box = context.findRenderObject() as RenderBox?;
@@ -298,8 +460,14 @@ class _StudioShellState extends State<StudioShell> {
             viewport: viewport,
             selectedId: selection.selected,
             hoopSize: Size(machine.hoopWidthMm, machine.hoopHeightMm),
+            previewPaths: tool.preview,
+            markers: tool.markers,
             onTapWorld: tool.tap,
-            onHoverWorld: (p) => cursor.value = p,
+            onDoubleTapWorld: tool.doubleTap,
+            onHoverWorld: (p) {
+              cursor.value = p;
+              tool.hover(p);
+            },
             onDragStartWorld: tool.dragStart,
             onDragUpdateWorld: tool.dragUpdate,
             onDragEndWorld: tool.dragEnd,
@@ -366,7 +534,7 @@ class _StudioShellState extends State<StudioShell> {
                   color: AppTokens.accentGreen, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
-            const Text('Ready'),
+            Text(tool.status ?? 'Ready'),
             const Spacer(),
             ListenableBuilder(
               listenable: viewport,
@@ -468,28 +636,6 @@ class _StudioShellState extends State<StudioShell> {
     } catch (e) {
       _toast('Export failed: $e');
     }
-  }
-
-  /// Demo shape until draw tools land: a 20×20 mm running-stitch square.
-  void _addSquare() {
-    final id = session.registry.get<IdGenerator>().next();
-    const size = 20.0;
-    final origin = g.Point(
-      10.0 * session.document.objects.length,
-      10.0 * session.document.objects.length,
-    );
-    session.history.execute(AddObject(RunningStitchObject(
-      id: id,
-      path: g.Path(
-        start: origin,
-        segments: [
-          g.LineSegment(origin + const g.Point(size, 0)),
-          g.LineSegment(origin + const g.Point(size, size)),
-          g.LineSegment(origin + const g.Point(0, size)),
-        ],
-        closed: true,
-      ),
-    )));
   }
 
   Future<void> _renameDialog() async {

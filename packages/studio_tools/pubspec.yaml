@@ -15,6 +15,8 @@ dependencies:
     path: ../studio_core
   studio_document:
     path: ../studio_document
+  studio_embroidery:
+    path: ../studio_embroidery
   studio_geometry:
     path: ../studio_geometry
 
@@ -24,7 +26,5 @@ dev_dependencies:
     sdk: flutter
   studio_commands:
     path: ../studio_commands
-  studio_embroidery:
-    path: ../studio_embroidery
   studio_events:
     path: ../studio_events
