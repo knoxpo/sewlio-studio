@@ -16,3 +16,4 @@ workspace:
   - packages/studio_embroidery
   - packages/studio_events
   - packages/studio_geometry
+  - packages/studio_machine
