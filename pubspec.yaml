@@ -15,5 +15,6 @@ workspace:
   - packages/studio_document
   - packages/studio_embroidery
   - packages/studio_events
+  - packages/studio_export
   - packages/studio_geometry
   - packages/studio_machine
