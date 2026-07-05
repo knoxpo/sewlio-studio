@@ -1,43 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:studio_bindings/studio_bindings.dart';
+import 'package:studio_commands/studio_commands.dart';
+import 'package:studio_core/studio_core.dart';
 import 'package:studio_design_system/studio_design_system.dart';
+import 'package:studio_document/studio_document.dart';
+import 'package:studio_events/studio_events.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await initEngine();
-  runApp(const StudioApp());
+import 'src/shell.dart';
+
+void main() {
+  runApp(StudioApp(session: StudioSession()));
+}
+
+/// Composition root: wires the pure-Dart engine (document, buses,
+/// history) that the Flutter shell renders. Flutter never mutates state
+/// directly — everything goes through [commands] (ARCH-003).
+final class StudioSession {
+  StudioSession() {
+    registry
+      ..register<Clock>(const SystemClock())
+      ..register<IdGenerator>(SequentialIdGenerator(prefix: 'doc'));
+    document = Document(id: registry.get<IdGenerator>().next());
+    commands = CommandBus(events);
+    history = History(commands);
+    registerDocumentHandlers(commands, document);
+  }
+
+  final registry = ServiceRegistry();
+  final events = EventBus();
+  late final Document document;
+  late final CommandBus commands;
+  late final History history;
 }
 
 class StudioApp extends StatelessWidget {
-  const StudioApp({super.key});
+  const StudioApp({super.key, required this.session});
+
+  final StudioSession session;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Sewlio Studio',
-      theme: ThemeData(
-        colorSchemeSeed: AppTokens.seed,
-        useMaterial3: true,
-      ),
-      home: const _HomePage(),
-    );
-  }
-}
-
-class _HomePage extends StatelessWidget {
-  const _HomePage();
-
-  @override
-  Widget build(BuildContext context) {
-    // Proves the Flutter → FFI → Rust round trip: the version string comes from
-    // es_core via the flutter_rust_bridge boundary.
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppTokens.spacing * 2),
-          child: Text(appVersion(), key: const Key('engine-version')),
-        ),
-      ),
+      theme: ThemeData(colorSchemeSeed: AppTokens.seed, useMaterial3: true),
+      home: StudioShell(session: session),
     );
   }
 }

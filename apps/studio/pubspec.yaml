@@ -11,10 +11,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  studio_bindings:
-    path: ../../packages/studio_bindings
+  studio_commands:
+    path: ../../packages/studio_commands
+  studio_core:
+    path: ../../packages/studio_core
   studio_design_system:
     path: ../../packages/studio_design_system
+  studio_document:
+    path: ../../packages/studio_document
+  studio_events:
+    path: ../../packages/studio_events
 
 dev_dependencies:
   flutter_test:

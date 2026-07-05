@@ -5,5 +5,6 @@
 /// undoable command gets undo/redo for free.
 library;
 
+export 'src/commands.dart';
 export 'src/document.dart';
 export 'src/history.dart';
