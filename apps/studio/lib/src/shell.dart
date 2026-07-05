@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_core/studio_core.dart';
@@ -21,23 +23,31 @@ class StudioShell extends StatefulWidget {
 }
 
 class _StudioShellState extends State<StudioShell> {
-  StudioSession get session => widget.session;
+  late StudioSession session;
 
   final viewport = ViewportController();
   final selection = SelectionController();
-  late final SelectTool tool = SelectTool(
-    document: session.document,
-    history: session.history,
-    selection: selection,
-  );
+  late SelectTool tool;
 
   @override
   void initState() {
     super.initState();
+    selection.addListener(() => setState(() {}));
+    _bindSession(widget.session);
+  }
+
+  /// Points the shell at [next] (startup or after Open…).
+  void _bindSession(StudioSession next) {
+    session = next;
+    selection.select(null);
+    tool = SelectTool(
+      document: session.document,
+      history: session.history,
+      selection: selection,
+    );
     // Any engine event may change what's on screen; a document revision
     // rebuild is cheap at MVP scale.
     session.events.events.listen((_) => setState(() {}));
-    selection.addListener(() => setState(() {}));
   }
 
   @override
@@ -53,6 +63,14 @@ class _StudioShellState extends State<StudioShell> {
                   MenuItemButton(
                     onPressed: _renameDialog,
                     child: const Text('Rename…'),
+                  ),
+                  MenuItemButton(
+                    onPressed: _saveProject,
+                    child: const Text('Save…'),
+                  ),
+                  MenuItemButton(
+                    onPressed: _openProject,
+                    child: const Text('Open…'),
                   ),
                 ],
                 child: const Text('File'),
@@ -99,6 +117,84 @@ class _StudioShellState extends State<StudioShell> {
         ],
       ),
     );
+  }
+
+  Future<void> _saveProject() async {
+    final path = await _pathDialog('Save project', suffix: '.embproj');
+    if (path == null) return;
+    // Never silently overwrite existing files (non-negotiable #10-ish:
+    // user data loss). Confirm when the target exists.
+    final file = File(path);
+    if (file.existsSync() && !(await _confirmOverwrite(path))) return;
+    await file.writeAsString(encodeProject(session.document));
+    _toast('Saved $path');
+  }
+
+  Future<void> _openProject() async {
+    final path = await _pathDialog('Open project', suffix: '.embproj');
+    if (path == null) return;
+    try {
+      final document = decodeProject(await File(path).readAsString());
+      setState(() => _bindSession(StudioSession(document: document)));
+      _toast('Opened ${document.name}');
+    } on Exception catch (e) {
+      _toast('Open failed: $e');
+    }
+  }
+
+  Future<bool> _confirmOverwrite(String path) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Overwrite file?'),
+        content: Text('$path already exists.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Overwrite'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  // ponytail: plain path text field instead of a native file picker —
+  // swap in package:file_selector when the UX matters.
+  Future<String?> _pathDialog(String title, {required String suffix}) async {
+    final controller = TextEditingController();
+    final path = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(hintText: '/path/to/file$suffix'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    if (path == null || path.isEmpty) return null;
+    return path.endsWith(suffix) ? path : '$path$suffix';
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// Demo shape until draw tools land: a 20×20 mm running-stitch square.

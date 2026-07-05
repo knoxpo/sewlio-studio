@@ -8,3 +8,4 @@ library;
 export 'src/commands.dart';
 export 'src/document.dart';
 export 'src/history.dart';
+export 'src/project_io.dart';

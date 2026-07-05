@@ -15,14 +15,15 @@ void main() {
 /// history) that the Flutter shell renders. Flutter never mutates state
 /// directly — everything goes through [commands] (ARCH-003).
 final class StudioSession {
-  StudioSession() {
+  StudioSession({Document? document}) {
     registry
       ..register<Clock>(const SystemClock())
-      ..register<IdGenerator>(SequentialIdGenerator(prefix: 'doc'));
-    document = Document(id: registry.get<IdGenerator>().next());
+      ..register<IdGenerator>(SequentialIdGenerator(prefix: 'obj'));
+    this.document =
+        document ?? Document(id: registry.get<IdGenerator>().next());
     commands = CommandBus(events);
     history = History(commands);
-    registerDocumentHandlers(commands, document);
+    registerDocumentHandlers(commands, this.document);
   }
 
   final registry = ServiceRegistry();

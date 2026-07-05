@@ -11,6 +11,40 @@ sealed class EmbroideryObject {
 
   /// A copy of this object with [path] replaced (same id and params).
   EmbroideryObject withPath(Path path);
+
+  Map<String, dynamic> toJson() => {
+        'type': switch (this) {
+          RunningStitchObject() => 'running',
+          SatinObject() => 'satin',
+          FillObject() => 'fill',
+        },
+        'id': id.value,
+        'path': path.toJson(),
+        ...switch (this) {
+          RunningStitchObject(:final stitchLength) => {
+              'stitchLength': stitchLength
+            },
+          SatinObject(:final width) => {'width': width},
+          FillObject(:final spacing) => {'spacing': spacing},
+        },
+      };
+
+  static EmbroideryObject fromJson(Map<String, dynamic> json) {
+    final id = Id(json['id'] as String);
+    final path = Path.fromJson(json['path'] as Map<String, dynamic>);
+    return switch (json['type']) {
+      'running' => RunningStitchObject(
+          id: id,
+          path: path,
+          stitchLength: (json['stitchLength'] as num).toDouble(),
+        ),
+      'satin' => SatinObject(
+          id: id, path: path, width: (json['width'] as num).toDouble()),
+      'fill' => FillObject(
+          id: id, path: path, spacing: (json['spacing'] as num).toDouble()),
+      _ => throw FormatException('Unknown object type: ${json['type']}'),
+    };
+  }
 }
 
 /// A running stitch along the path.
