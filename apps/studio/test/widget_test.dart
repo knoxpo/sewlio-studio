@@ -1,19 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:studio_design_system/studio_design_system.dart';
+import 'package:studio/main.dart';
+import 'package:studio_document/studio_document.dart';
 
-// Skeleton test: verifies the app package and design system resolve and render.
-// It deliberately does NOT pump StudioApp, because that calls into the Rust engine
-// (appVersion) which needs the compiled es_ffi dylib — exercised by the manual
-// `flutter run` / integration-test path, not unit `flutter test`.
 void main() {
-  testWidgets('design tokens drive a themed widget', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(colorSchemeSeed: AppTokens.seed, useMaterial3: true),
-        home: const Scaffold(body: Center(child: Text('Sewlio Studio'))),
-      ),
-    );
-    expect(find.text('Sewlio Studio'), findsOneWidget);
+  testWidgets('shell renders menu, toolbar, panels, canvas placeholder',
+      (tester) async {
+    await tester.pumpWidget(StudioApp(session: StudioSession()));
+
+    expect(find.text('File'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Layers'), findsOneWidget);
+    expect(find.text('Inspector'), findsOneWidget);
+    expect(find.byKey(const Key('canvas-placeholder')), findsOneWidget);
+    expect(find.byKey(const Key('doc-title')), findsOneWidget);
+  });
+
+  testWidgets('commands drive title; toolbar undo/redo follow history',
+      (tester) async {
+    final session = StudioSession();
+    await tester.pumpWidget(StudioApp(session: session));
+
+    // Undo disabled at start.
+    final undoButton = find.widgetWithIcon(IconButton, Icons.undo);
+    expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
+
+    // Mutate through the command path, as tools/menu do.
+    session.history.execute(const RenameDocument('Rose'));
+    await tester.pump();
+    expect(find.text('Rose'), findsOneWidget);
+    expect(tester.widget<IconButton>(undoButton).onPressed, isNotNull);
+
+    // Undo via toolbar restores the old name.
+    await tester.tap(undoButton);
+    await tester.pump();
+    expect(find.text('Untitled'), findsOneWidget);
+    expect(tester.widget<IconButton>(undoButton).onPressed, isNull);
+  });
+
+  testWidgets('File > Rename dialog executes RenameDocument', (tester) async {
+    final session = StudioSession();
+    await tester.pumpWidget(StudioApp(session: session));
+
+    await tester.tap(find.text('File'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rename…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Tulip');
+    await tester.tap(find.text('Rename'));
+    await tester.pumpAndSettle();
+
+    expect(session.document.name, 'Tulip');
+    expect(session.history.canUndo, isTrue);
   });
 }
