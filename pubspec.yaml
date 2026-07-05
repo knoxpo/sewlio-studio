@@ -17,4 +17,5 @@ workspace:
   - packages/studio_events
   - packages/studio_export
   - packages/studio_geometry
+  - packages/studio_import
   - packages/studio_machine

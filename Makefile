@@ -6,7 +6,7 @@ FLUTTER_PKGS := packages/studio_design_system packages/studio_bindings apps/stud
 DART_PKGS := packages/studio_diagnostics packages/studio_core \
 	packages/studio_events packages/studio_commands packages/studio_document \
 	packages/studio_geometry packages/studio_embroidery packages/studio_machine \
-	packages/studio_export
+	packages/studio_export packages/studio_import
 
 .PHONY: help gen fmt fmt-check lint test check rust-test dart-test flutter-test clean
 
