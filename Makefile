@@ -4,7 +4,8 @@ FVM ?= fvm
 FLUTTER_PKGS := packages/studio_design_system packages/studio_bindings apps/studio
 # Pure-Dart packages (no Flutter dep) — tested with `dart test`.
 DART_PKGS := packages/studio_diagnostics packages/studio_core \
-	packages/studio_events packages/studio_commands packages/studio_document
+	packages/studio_events packages/studio_commands packages/studio_document \
+	packages/studio_geometry
 
 .PHONY: help gen fmt fmt-check lint test check rust-test dart-test flutter-test clean
 
