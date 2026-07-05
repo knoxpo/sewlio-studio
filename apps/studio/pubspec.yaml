@@ -35,6 +35,8 @@ dependencies:
     path: ../../packages/studio_import
   studio_machine:
     path: ../../packages/studio_machine
+  studio_simulation:
+    path: ../../packages/studio_simulation
   studio_tools:
     path: ../../packages/studio_tools
 

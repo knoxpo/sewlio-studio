@@ -15,6 +15,7 @@ import 'package:studio_tools/studio_tools.dart';
 
 import '../main.dart';
 import 'inspector.dart';
+import 'simulation_view.dart';
 
 /// Desktop shell: menu bar, toolbar, side panels, canvas placeholder.
 /// Rebuilds on engine events — it renders state, never mutates it.
@@ -105,6 +106,15 @@ class _StudioShellState extends State<StudioShell> {
                 ],
                 child: const Text('Edit'),
               ),
+              SubmenuButton(
+                menuChildren: [
+                  MenuItemButton(
+                    onPressed: _simulate,
+                    child: const Text('Simulate…'),
+                  ),
+                ],
+                child: const Text('View'),
+              ),
             ],
           ),
           _Toolbar(session: session, onAddSquare: _addSquare),
@@ -165,6 +175,15 @@ class _StudioShellState extends State<StudioShell> {
     } on Exception catch (e) {
       _toast('Open failed: $e');
     }
+  }
+
+  void _simulate() {
+    final sequence = digitizeObjects(session.document.objects);
+    if (sequence.ops.isEmpty) {
+      _toast('Nothing to simulate');
+      return;
+    }
+    showSimulationDialog(context, sequence);
   }
 
   Future<void> _importSvg() async {
