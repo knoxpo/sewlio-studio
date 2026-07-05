@@ -1,0 +1,16 @@
+name: studio_export
+description: Machine file encoders (DST, EXP) for Sewlio Studio — consume Machine IR only (pure Dart).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  studio_diagnostics: ^0.1.0
+  studio_machine: ^0.1.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0
