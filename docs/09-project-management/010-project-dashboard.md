@@ -17,9 +17,12 @@ Single-glance status. Update at every sprint boundary. Values below are the **cu
 | Field | Value |
 |---|---|
 | Current milestone | **M1 Foundation** |
-| Current sprint | Pre-S1 (skeleton done) |
-| Phase | Wave 1 (task-loaded) |
+| Current sprint | MVP-S1 ✅ done (2026-07-05) → MVP-S2 next |
+| Phase | Phase 1 MVP (Flutter/Dart, ADR-026) |
 | Overall | 🟢 on track |
+
+**MVP-S1 outcome:** workspace + CI verified (#160); `studio_diagnostics` (#161) and `studio_core`
+(#162) landed with unit tests; `make check` green.
 
 ---
 

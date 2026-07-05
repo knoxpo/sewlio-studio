@@ -9,5 +9,8 @@ workspace:
   - apps/studio
   - packages/studio_bindings
   - packages/studio_design_system
+  - packages/studio_commands
   - packages/studio_core
   - packages/studio_diagnostics
+  - packages/studio_document
+  - packages/studio_events
