@@ -16,13 +16,18 @@ Single-glance status. Update at every sprint boundary. Values below are the **cu
 
 | Field | Value |
 |---|---|
-| Current milestone | **M1 Foundation** |
-| Current sprint | MVP-S1 ✅ done (2026-07-05) → MVP-S2 next |
+| Current milestone | **M8 Desktop Editor (MVP candidate)** |
+| Current sprint | MVP-S1…S10 ✅ done (2026-07-05) — MVP acceptance next |
 | Phase | Phase 1 MVP (Flutter/Dart, ADR-026) |
 | Overall | 🟢 on track |
 
-**MVP-S1 outcome:** workspace + CI verified (#160); `studio_diagnostics` (#161) and `studio_core`
-(#162) landed with unit tests; `make check` green.
+**MVP-S1–S10 outcome (all `mvp`/`dart` tickets #160–#184 closed):** pure-Dart engine packages
+(`studio_diagnostics/core/events/commands/document/geometry/embroidery/machine/export/import/`
+`simulation/ai`), Flutter `studio_canvas`/`studio_tools`, and the desktop shell. Full loop proven
+headless by `apps/studio/test/full_loop_test.dart`: import SVG → command-driven edit → digitize →
+Machine IR → validated DST/EXP bytes → `.embproj` save/reopen → identical output. `make check`
+green. Deliberate MVP shortcuts tracked via `ponytail:` comments (JSON `.embproj` pending libSQL,
+regex SVG extraction, bbox hit-testing, satin/fill generators stubbed).
 
 ---
 
