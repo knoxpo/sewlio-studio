@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  studio_ai:
+    path: ../../packages/studio_ai
   studio_canvas:
     path: ../../packages/studio_canvas
   studio_commands:
