@@ -10,8 +10,8 @@ void main() {
       expect(const Point(1, 2) + const Point(3, 4), const Point(4, 6));
       expect(const Point(3, 4).length, 5);
       expect(const Point(0, 0).distanceTo(const Point(3, 4)), 5);
-      expect(const Point(0, 0).lerp(const Point(10, 20), 0.5),
-          const Point(5, 10));
+      expect(
+          const Point(0, 0).lerp(const Point(10, 20), 0.5), const Point(5, 10));
     });
 
     test('roundCoord normalizes for serialization', () {
@@ -99,10 +99,8 @@ void main() {
     test('translate, scale, rotate', () {
       expect(Transform2.translation(3, 4).apply(const Point(1, 1)),
           const Point(4, 5));
-      expect(Transform2.scaling(2).apply(const Point(3, 4)),
-          const Point(6, 8));
-      final rotated =
-          Transform2.rotation(math.pi / 2).apply(const Point(1, 0));
+      expect(Transform2.scaling(2).apply(const Point(3, 4)), const Point(6, 8));
+      final rotated = Transform2.rotation(math.pi / 2).apply(const Point(1, 0));
       expect(rotated.almostEquals(const Point(0, 1)), isTrue);
     });
 

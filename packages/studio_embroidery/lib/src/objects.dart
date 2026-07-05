@@ -8,6 +8,9 @@ sealed class EmbroideryObject {
 
   final Id id;
   final Path path;
+
+  /// A copy of this object with [path] replaced (same id and params).
+  EmbroideryObject withPath(Path path);
 }
 
 /// A running stitch along the path.
@@ -20,6 +23,10 @@ final class RunningStitchObject extends EmbroideryObject {
 
   /// Target stitch length in mm.
   final double stitchLength;
+
+  @override
+  RunningStitchObject withPath(Path path) =>
+      RunningStitchObject(id: id, path: path, stitchLength: stitchLength);
 }
 
 // ponytail: satin/fill are declared so the object model is complete,
@@ -31,6 +38,10 @@ final class SatinObject extends EmbroideryObject {
 
   /// Column width in mm.
   final double width;
+
+  @override
+  SatinObject withPath(Path path) =>
+      SatinObject(id: id, path: path, width: width);
 }
 
 /// A region fill bounded by the (closed) path. Generator not
@@ -41,4 +52,8 @@ final class FillObject extends EmbroideryObject {
 
   /// Fill line spacing in mm.
   final double spacing;
+
+  @override
+  FillObject withPath(Path path) =>
+      FillObject(id: id, path: path, spacing: spacing);
 }

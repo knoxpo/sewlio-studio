@@ -28,8 +28,7 @@ final class Transform2 {
     return Transform2(cos, sin, -sin, cos, 0, 0);
   }
 
-  Point apply(Point p) =>
-      Point(a * p.x + c * p.y + tx, b * p.x + d * p.y + ty);
+  Point apply(Point p) => Point(a * p.x + c * p.y + tx, b * p.x + d * p.y + ty);
 
   /// Composition: `(this * other)` applies [other] first, then this.
   Transform2 operator *(Transform2 o) => Transform2(
@@ -54,8 +53,9 @@ final class Transform2 {
         ia, ib, ic, id, -(ia * tx + ic * ty), -(ib * tx + id * ty));
   }
 
-  List<double> toJson() =>
-      [for (final v in [a, b, c, d, tx, ty]) roundCoord(v)];
+  List<double> toJson() => [
+        for (final v in [a, b, c, d, tx, ty]) roundCoord(v)
+      ];
 
   factory Transform2.fromJson(List<dynamic> json) => Transform2(
         (json[0] as num).toDouble(),

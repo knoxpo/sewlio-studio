@@ -1,5 +1,6 @@
 import 'bounds.dart';
 import 'point.dart';
+import 'transform.dart';
 
 /// A path segment: starts where the previous one ended.
 sealed class Segment {
@@ -58,7 +59,8 @@ final class CubicSegment extends Segment {
 /// An immutable path: a start point followed by segments, optionally
 /// closed (implicit line back to [start]).
 final class Path {
-  const Path({required this.start, this.segments = const [], this.closed = false});
+  const Path(
+      {required this.start, this.segments = const [], this.closed = false});
 
   final Point start;
   final List<Segment> segments;
@@ -112,6 +114,20 @@ final class Path {
     }
     return Bounds.fromPoints(points);
   }
+
+  /// A copy of this path with [t] applied to every point.
+  Path transformed(Transform2 t) => Path(
+        start: t.apply(start),
+        segments: [
+          for (final s in segments)
+            switch (s) {
+              LineSegment(:final end) => LineSegment(t.apply(end)),
+              CubicSegment(:final c1, :final c2, :final end) =>
+                CubicSegment(t.apply(c1), t.apply(c2), t.apply(end)),
+            }
+        ],
+        closed: closed,
+      );
 
   Map<String, dynamic> toJson() => {
         'start': start.toJson(),

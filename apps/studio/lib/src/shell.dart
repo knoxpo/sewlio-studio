@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:studio_canvas/studio_canvas.dart';
+import 'package:studio_core/studio_core.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
+import 'package:studio_embroidery/studio_embroidery.dart';
+import 'package:studio_geometry/studio_geometry.dart' as g;
+import 'package:studio_tools/studio_tools.dart';
 
 import '../main.dart';
 
@@ -18,12 +23,21 @@ class StudioShell extends StatefulWidget {
 class _StudioShellState extends State<StudioShell> {
   StudioSession get session => widget.session;
 
+  final viewport = ViewportController();
+  final selection = SelectionController();
+  late final SelectTool tool = SelectTool(
+    document: session.document,
+    history: session.history,
+    selection: selection,
+  );
+
   @override
   void initState() {
     super.initState();
     // Any engine event may change what's on screen; a document revision
     // rebuild is cheap at MVP scale.
     session.events.events.listen((_) => setState(() {}));
+    selection.addListener(() => setState(() {}));
   }
 
   @override
@@ -58,13 +72,26 @@ class _StudioShellState extends State<StudioShell> {
               ),
             ],
           ),
-          _Toolbar(session: session),
+          _Toolbar(session: session, onAddSquare: _addSquare),
           Expanded(
             child: Row(
               children: [
                 const _Panel(title: 'Layers', width: 200),
                 Expanded(
-                    child: _CanvasPlaceholder(name: session.document.name)),
+                  child: Card(
+                    margin: const EdgeInsets.all(AppTokens.spacing / 2),
+                    clipBehavior: Clip.antiAlias,
+                    child: CanvasView(
+                      document: session.document,
+                      viewport: viewport,
+                      selectedId: selection.selected,
+                      onTapWorld: tool.tap,
+                      onDragStartWorld: tool.dragStart,
+                      onDragUpdateWorld: tool.dragUpdate,
+                      onDragEndWorld: tool.dragEnd,
+                    ),
+                  ),
+                ),
                 const _Panel(title: 'Inspector', width: 240),
               ],
             ),
@@ -72,6 +99,28 @@ class _StudioShellState extends State<StudioShell> {
         ],
       ),
     );
+  }
+
+  /// Demo shape until draw tools land: a 20×20 mm running-stitch square.
+  void _addSquare() {
+    final id = session.registry.get<IdGenerator>().next();
+    const size = 20.0;
+    final origin = g.Point(
+      10.0 * session.document.objects.length,
+      10.0 * session.document.objects.length,
+    );
+    session.history.execute(AddObject(RunningStitchObject(
+      id: id,
+      path: g.Path(
+        start: origin,
+        segments: [
+          g.LineSegment(origin + const g.Point(size, 0)),
+          g.LineSegment(origin + const g.Point(size, size)),
+          g.LineSegment(origin + const g.Point(0, size)),
+        ],
+        closed: true,
+      ),
+    )));
   }
 
   Future<void> _renameDialog() async {
@@ -100,9 +149,10 @@ class _StudioShellState extends State<StudioShell> {
 }
 
 class _Toolbar extends StatelessWidget {
-  const _Toolbar({required this.session});
+  const _Toolbar({required this.session, required this.onAddSquare});
 
   final StudioSession session;
+  final VoidCallback onAddSquare;
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +172,11 @@ class _Toolbar extends StatelessWidget {
             tooltip: 'Redo',
             icon: const Icon(Icons.redo),
             onPressed: history.canRedo ? history.redo : null,
+          ),
+          IconButton(
+            tooltip: 'Add square',
+            icon: const Icon(Icons.crop_square),
+            onPressed: onAddSquare,
           ),
           const Spacer(),
           Text(session.document.name, key: const Key('doc-title')),
@@ -150,23 +205,6 @@ class _Panel extends StatelessWidget {
             child: Text(title, style: Theme.of(context).textTheme.titleSmall),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Placeholder until studio_canvas lands (MVP-S9).
-class _CanvasPlaceholder extends StatelessWidget {
-  const _CanvasPlaceholder({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(AppTokens.spacing / 2),
-      child: Center(
-        child: Text('$name — canvas', key: const Key('canvas-placeholder')),
       ),
     );
   }

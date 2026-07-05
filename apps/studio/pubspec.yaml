@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  studio_canvas:
+    path: ../../packages/studio_canvas
   studio_commands:
     path: ../../packages/studio_commands
   studio_core:
@@ -19,8 +21,14 @@ dependencies:
     path: ../../packages/studio_design_system
   studio_document:
     path: ../../packages/studio_document
+  studio_embroidery:
+    path: ../../packages/studio_embroidery
   studio_events:
     path: ../../packages/studio_events
+  studio_geometry:
+    path: ../../packages/studio_geometry
+  studio_tools:
+    path: ../../packages/studio_tools
 
 dev_dependencies:
   flutter_test:

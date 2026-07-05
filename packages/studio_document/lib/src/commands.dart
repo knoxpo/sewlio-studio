@@ -1,5 +1,8 @@
 import 'package:studio_commands/studio_commands.dart';
+import 'package:studio_core/studio_core.dart';
+import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_events/studio_events.dart';
+import 'package:studio_geometry/studio_geometry.dart';
 
 import 'document.dart';
 
@@ -16,6 +19,42 @@ final class DocumentRenamed extends Event {
   final String to;
 }
 
+/// Adds an object at [index] (end when null). Undoable.
+final class AddObject extends Command {
+  const AddObject(this.object, {this.index});
+  final EmbroideryObject object;
+  final int? index;
+}
+
+/// Removes the object with [id]. Undoable.
+final class RemoveObject extends Command {
+  const RemoveObject(this.id);
+  final Id id;
+}
+
+/// Applies [transform] to the object's geometry. Undoable via the
+/// inverse transform.
+final class TransformObject extends Command {
+  const TransformObject(this.id, this.transform);
+  final Id id;
+  final Transform2 transform;
+}
+
+final class ObjectAdded extends Event {
+  const ObjectAdded(this.id);
+  final Id id;
+}
+
+final class ObjectRemoved extends Event {
+  const ObjectRemoved(this.id);
+  final Id id;
+}
+
+final class ObjectTransformed extends Event {
+  const ObjectTransformed(this.id);
+  final Id id;
+}
+
 /// Registers handlers for the document commands on [bus], mutating
 /// [document]. The composition root calls this once at startup.
 void registerDocumentHandlers(CommandBus bus, Document document) {
@@ -26,6 +65,46 @@ void registerDocumentHandlers(CommandBus bus, Document document) {
     return CommandOutcome(
       events: [DocumentRenamed(from: from, to: command.name)],
       reverse: RenameDocument(from),
+    );
+  });
+
+  bus.register<AddObject>((command) {
+    final index = command.index ?? document.objects.length;
+    document.objects.insert(index, command.object);
+    document.revision++;
+    return CommandOutcome(
+      events: [ObjectAdded(command.object.id)],
+      reverse: RemoveObject(command.object.id),
+    );
+  });
+
+  bus.register<RemoveObject>((command) {
+    final index =
+        document.objects.indexWhere((object) => object.id == command.id);
+    if (index < 0) {
+      throw StateError('No object with id ${command.id}');
+    }
+    final object = document.objects.removeAt(index);
+    document.revision++;
+    return CommandOutcome(
+      events: [ObjectRemoved(command.id)],
+      reverse: AddObject(object, index: index),
+    );
+  });
+
+  bus.register<TransformObject>((command) {
+    final index =
+        document.objects.indexWhere((object) => object.id == command.id);
+    if (index < 0) {
+      throw StateError('No object with id ${command.id}');
+    }
+    final object = document.objects[index];
+    document.objects[index] =
+        object.withPath(object.path.transformed(command.transform));
+    document.revision++;
+    return CommandOutcome(
+      events: [ObjectTransformed(command.id)],
+      reverse: TransformObject(command.id, command.transform.invert()),
     );
   });
 }

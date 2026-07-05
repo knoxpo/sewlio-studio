@@ -32,8 +32,7 @@ final class Point {
   double distanceTo(Point o) => (o - this).length;
 
   /// Point at parameter [t] on the segment from this to [o].
-  Point lerp(Point o, double t) =>
-      Point(x + (o.x - x) * t, y + (o.y - y) * t);
+  Point lerp(Point o, double t) => Point(x + (o.x - x) * t, y + (o.y - y) * t);
 
   bool almostEquals(Point o, {double tolerance = epsilon}) =>
       (x - o.x).abs() <= tolerance && (y - o.y).abs() <= tolerance;

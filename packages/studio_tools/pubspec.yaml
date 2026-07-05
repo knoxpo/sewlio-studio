@@ -1,0 +1,30 @@
+name: studio_tools
+description: Selection and transform tools for Sewlio Studio — mutate only via commands (Flutter).
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.6.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  studio_core:
+    path: ../studio_core
+  studio_document:
+    path: ../studio_document
+  studio_geometry:
+    path: ../studio_geometry
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+  studio_commands:
+    path: ../studio_commands
+  studio_embroidery:
+    path: ../studio_embroidery
+  studio_events:
+    path: ../studio_events

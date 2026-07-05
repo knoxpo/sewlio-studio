@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
+import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_document/studio_document.dart';
 
 void main() {
@@ -12,8 +13,22 @@ void main() {
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Layers'), findsOneWidget);
     expect(find.text('Inspector'), findsOneWidget);
-    expect(find.byKey(const Key('canvas-placeholder')), findsOneWidget);
+    expect(find.byType(CanvasView), findsOneWidget);
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
+  });
+
+  testWidgets('Add square toolbar button creates an undoable object',
+      (tester) async {
+    final session = StudioSession();
+    await tester.pumpWidget(StudioApp(session: session));
+
+    await tester.tap(find.byTooltip('Add square'));
+    await tester.pump();
+    expect(session.document.objects, hasLength(1));
+
+    await tester.tap(find.byTooltip('Undo'));
+    await tester.pump();
+    expect(session.document.objects, isEmpty);
   });
 
   testWidgets('commands drive title; toolbar undo/redo follow history',

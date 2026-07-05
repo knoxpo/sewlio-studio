@@ -1,7 +1,8 @@
 # Sewlio Studio — dev tasks. Flutter/Dart run through FVM (pinned by .fvmrc).
 # CI runs without FVM: `make check FVM=`.
 FVM ?= fvm
-FLUTTER_PKGS := packages/studio_design_system packages/studio_bindings apps/studio
+FLUTTER_PKGS := packages/studio_design_system packages/studio_bindings \
+	packages/studio_canvas packages/studio_tools apps/studio
 # Pure-Dart packages (no Flutter dep) — tested with `dart test`.
 DART_PKGS := packages/studio_diagnostics packages/studio_core \
 	packages/studio_events packages/studio_commands packages/studio_document \
