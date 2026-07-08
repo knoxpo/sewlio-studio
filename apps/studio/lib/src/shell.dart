@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import '../main.dart';
 import 'bottom_panel.dart';
 import 'file_io.dart';
+import 'flyout.dart';
 import 'object_panel.dart';
 import 'right_panel.dart';
 import 'tool_options.dart';
@@ -291,12 +292,10 @@ class _StudioShellState extends State<StudioShell> {
     );
   }
 
-  final _shapeButtonKey = GlobalKey();
-
   Widget _toolRail() {
     final shapeTool = tools[ToolKind.shape]! as ShapeTool;
     return Container(
-      width: 48,
+      width: 44,
       decoration: const BoxDecoration(
         color: AppTokens.panel,
         border: Border(right: BorderSide(color: AppTokens.border)),
@@ -306,37 +305,24 @@ class _StudioShellState extends State<StudioShell> {
           const SizedBox(height: 8),
           _toolButton(ToolKind.select, Icons.near_me_outlined, 'Select (V)'),
           _toolButton(ToolKind.node, Icons.timeline, 'Node editing (A)'),
-          const Divider(indent: 10, endIndent: 10),
+          const RailSeparator(),
           _toolButton(ToolKind.pen, Icons.edit_outlined, 'Pen (P)'),
           _toolButton(ToolKind.pencil, Icons.gesture, 'Pencil (B)'),
-          // Shape group: tap activates; re-tap, long-press, or
-          // right-click opens the anchored flyout (corner triangle
-          // marks it, Illustrator-style).
-          GestureDetector(
-            key: _shapeButtonKey,
-            onLongPress: _showShapeFlyout,
-            onSecondaryTap: _showShapeFlyout,
-            child: StudioIconButton(
-              icon: shapeIcon(shapeTool.kind),
-              tooltip:
-                  '${shapeLabel(shapeTool.kind)} (M) — hold for more shapes',
-              active: activeKind == ToolKind.shape,
-              flyoutIndicator: true,
-              onPressed: () {
-                if (activeKind == ToolKind.shape) {
-                  _showShapeFlyout();
-                } else {
-                  _selectTool(ToolKind.shape);
-                }
-              },
-            ),
+          ShapeFlyoutButton(
+            shapeTool: shapeTool,
+            active: activeKind == ToolKind.shape,
+            onActivate: (kind) {
+              if (kind != null) shapeTool.kind = kind;
+              _selectTool(ToolKind.shape);
+              setState(() {}); // options bar picks up the new kind
+            },
           ),
           _toolButton(ToolKind.text, Icons.title, 'Text (T)'),
-          const Divider(indent: 10, endIndent: 10),
+          const RailSeparator(),
           _toolButton(ToolKind.pan, Icons.pan_tool_outlined, 'Pan (H)'),
           _toolButton(
               ToolKind.measure, Icons.straighten_outlined, 'Measure (R)'),
-          const Divider(indent: 10, endIndent: 10),
+          const RailSeparator(),
           StudioIconButton(
               icon: Icons.zoom_in,
               tooltip: 'Zoom in',
@@ -348,43 +334,6 @@ class _StudioShellState extends State<StudioShell> {
         ],
       ),
     );
-  }
-
-  /// Anchored flyout beside the shape button (Illustrator tool group).
-  Future<void> _showShapeFlyout() async {
-    final shapeTool = tools[ToolKind.shape]! as ShapeTool;
-    final box = _shapeButtonKey.currentContext!.findRenderObject() as RenderBox;
-    final origin = box.localToGlobal(Offset(box.size.width + 4, 0));
-    final kind = await showMenu<ShapeKind>(
-      context: context,
-      position: RelativeRect.fromLTRB(origin.dx, origin.dy, origin.dx, 0),
-      color: AppTokens.panel,
-      items: [
-        for (final kind in ShapeKind.values)
-          PopupMenuItem(
-            value: kind,
-            height: 32,
-            child: Row(children: [
-              Icon(shapeIcon(kind),
-                  size: 16,
-                  color: kind == shapeTool.kind
-                      ? AppTokens.primary
-                      : AppTokens.textMuted),
-              const SizedBox(width: 8),
-              Text(shapeLabel(kind),
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: kind == shapeTool.kind
-                          ? AppTokens.primary
-                          : AppTokens.textPrimary)),
-            ]),
-          ),
-      ],
-    );
-    if (kind == null) return;
-    shapeTool.kind = kind;
-    _selectTool(ToolKind.shape);
-    setState(() {}); // sides/points now editable in the options bar
   }
 
   Future<String?> _promptText() async {
