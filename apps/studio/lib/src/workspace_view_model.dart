@@ -81,9 +81,8 @@ final class WorkspaceViewModel extends BarleyViewModel {
       ToolKind.pencil: PencilTool(onCreate: addPath),
       ToolKind.shape: ShapeTool(onCreate: addPath),
       ToolKind.text: TextTool(
-        onRequestText: () async => onPromptText == null
-            ? null
-            : await onPromptText!(),
+        onRequestText: () async =>
+            onPromptText == null ? null : await onPromptText!(),
         onCreate: addPath,
       ),
       ToolKind.pan: PanTool(),
@@ -187,9 +186,8 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   void zoomBy(double factor) {
     final size = viewport.viewSize;
-    final center = size == null
-        ? Offset.zero
-        : Offset(size.width / 2, size.height / 2);
+    final center =
+        size == null ? Offset.zero : Offset(size.width / 2, size.height / 2);
     viewport.zoomAt(center, factor);
   }
 
@@ -232,8 +230,8 @@ final class WorkspaceViewModel extends BarleyViewModel {
     return null;
   }
 
-  void addGuide(GuideAxis axis, double positionMm, String name,
-      String? colorHex) {
+  void addGuide(
+      GuideAxis axis, double positionMm, String name, String? colorHex) {
     session.history.execute(AddGuide(Guide(
       id: session.registry.get<IdGenerator>().next(),
       axis: axis,
@@ -243,8 +241,8 @@ final class WorkspaceViewModel extends BarleyViewModel {
     )));
   }
 
-  void updateGuide(Guide existing, double positionMm, String name,
-      String? colorHex) {
+  void updateGuide(
+      Guide existing, double positionMm, String name, String? colorHex) {
     session.history.execute(UpdateGuide(Guide(
       id: existing.id,
       axis: existing.axis,

@@ -506,7 +506,8 @@ class _WorkspaceView extends StatelessWidget {
 
   /// Ruler tap: edit the nearest guide on that axis, or create one.
   void _onRulerTap(BuildContext context, GuideAxis axis, double mm) {
-    _guideDialog(context, axis: axis, mm: mm, existing: model.guideAt(axis, mm));
+    _guideDialog(context,
+        axis: axis, mm: mm, existing: model.guideAt(axis, mm));
   }
 
   /// Guide swatches: null = default guide color.
@@ -626,8 +627,7 @@ class _WorkspaceView extends StatelessWidget {
   // ---------------------------------------------------------------- actions
 
   Future<void> _saveProject(BuildContext context) async {
-    final path =
-        await _pathDialog(context, 'Save project', suffix: '.embproj');
+    final path = await _pathDialog(context, 'Save project', suffix: '.embproj');
     if (path == null || !context.mounted) return;
     try {
       // Never silently overwrite existing files (user data loss).
@@ -644,8 +644,7 @@ class _WorkspaceView extends StatelessWidget {
   }
 
   Future<void> _openProject(BuildContext context) async {
-    final path =
-        await _pathDialog(context, 'Open project', suffix: '.embproj');
+    final path = await _pathDialog(context, 'Open project', suffix: '.embproj');
     if (path == null || !context.mounted) return;
     try {
       final name = await model.openFrom(path);
@@ -697,8 +696,7 @@ class _WorkspaceView extends StatelessWidget {
   }
 
   Future<void> _renameDialog(BuildContext context) async {
-    final controller =
-        TextEditingController(text: model.session.document.name);
+    final controller = TextEditingController(text: model.session.document.name);
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(

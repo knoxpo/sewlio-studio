@@ -86,8 +86,7 @@ class BarleyView<T extends BarleyViewModel> extends StatefulWidget {
   State<BarleyView<T>> createState() => _BarleyViewState<T>();
 }
 
-class _BarleyViewState<T extends BarleyViewModel>
-    extends State<BarleyView<T>> {
+class _BarleyViewState<T extends BarleyViewModel> extends State<BarleyView<T>> {
   late final T model;
 
   @override
