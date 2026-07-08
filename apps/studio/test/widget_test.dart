@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
 import 'package:studio_canvas/studio_canvas.dart';
@@ -28,7 +29,7 @@ void main() {
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
-    await tester.tap(find.byTooltip('Pen'));
+    await tester.tap(find.byTooltip('Pen (P)'));
     await tester.pump();
 
     final canvas = tester.getCenter(find.byType(CanvasView));
@@ -51,6 +52,24 @@ void main() {
     await tester.tap(find.byTooltip('Undo'));
     await tester.pump();
     expect(session.document.objects, isEmpty);
+  });
+
+  testWidgets('single-key shortcuts switch tools, Esc cancels', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpWidget(StudioApp(session: StudioSession()));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
+    await tester.pump();
+    expect(find.textContaining('Pen:'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await tester.pump();
+    expect(find.textContaining('Measure:'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
+    await tester.pump();
+    expect(find.textContaining('Select:'), findsOneWidget);
   });
 
   testWidgets('File > Rename dialog executes RenameDocument', (tester) async {

@@ -11,11 +11,14 @@ import 'package:studio_import/studio_import.dart';
 import 'package:studio_machine/studio_machine.dart';
 import 'package:studio_tools/studio_tools.dart';
 
+import 'package:flutter/services.dart';
+
 import '../main.dart';
 import 'bottom_panel.dart';
 import 'file_io.dart';
 import 'object_panel.dart';
 import 'right_panel.dart';
+import 'tool_options.dart';
 
 /// CAD-workspace shell: header, tool rail, object properties, canvas,
 /// stitch inspector, simulation strip, status bar. Renders engine
@@ -100,47 +103,80 @@ class _StudioShellState extends State<StudioShell> {
     )));
   }
 
+  /// Illustrator-style single-key tool shortcuts.
+  static final _shortcuts = {
+    LogicalKeyboardKey.keyV: ToolKind.select,
+    LogicalKeyboardKey.keyA: ToolKind.node,
+    LogicalKeyboardKey.keyP: ToolKind.pen,
+    LogicalKeyboardKey.keyB: ToolKind.pencil,
+    LogicalKeyboardKey.keyM: ToolKind.shape,
+    LogicalKeyboardKey.keyT: ToolKind.text,
+    LogicalKeyboardKey.keyH: ToolKind.pan,
+    LogicalKeyboardKey.keyR: ToolKind.measure,
+  };
+
+  /// True while a text field owns focus — tool shortcuts must not
+  /// steal typed characters.
+  bool get _typing =>
+      FocusManager.instance.primaryFocus?.context?.widget is EditableText;
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || _typing) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      tool.cancel();
+      return KeyEventResult.handled;
+    }
+    final kind = _shortcuts[event.logicalKey];
+    if (kind == null) return KeyEventResult.ignored;
+    _selectTool(kind);
+    return KeyEventResult.handled;
+  }
+
   @override
   Widget build(BuildContext context) {
     // ponytail: re-digitized every build — cache per document revision
     // when designs get big enough to notice.
     final sequence = digitizeObjects(session.document.objects);
     return Scaffold(
-      body: Column(
-        children: [
-          _header(),
-          _documentTab(),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _toolRail(),
-                ObjectPropertiesPanel(
-                  document: session.document,
-                  selectedId: selection.selected,
-                  onCommand: (command) => session.history.execute(command),
-                  canUndo: session.history.canUndo,
-                  canRedo: session.history.canRedo,
-                  onUndo: session.history.undo,
-                  onRedo: session.history.redo,
-                ),
-                Expanded(child: _canvasColumn(sequence)),
-                StitchListPanel(
-                  document: session.document,
-                  selectedId: selection.selected,
-                  onSelect: selection.select,
-                ),
-              ],
+      body: Focus(
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: Column(
+          children: [
+            _header(),
+            _documentTab(),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _toolRail(),
+                  ObjectPropertiesPanel(
+                    document: session.document,
+                    selectedId: selection.selected,
+                    onCommand: (command) => session.history.execute(command),
+                    canUndo: session.history.canUndo,
+                    canRedo: session.history.canRedo,
+                    onUndo: session.history.undo,
+                    onRedo: session.history.redo,
+                  ),
+                  Expanded(child: _canvasColumn(sequence)),
+                  StitchListPanel(
+                    document: session.document,
+                    selectedId: selection.selected,
+                    onSelect: selection.select,
+                  ),
+                ],
+              ),
             ),
-          ),
-          BottomPanel(
-            sequence: sequence,
-            machine: machine,
-            onMachineChanged: (m) => setState(() => machine = m),
-            onExport: _export,
-          ),
-          _statusBar(),
-        ],
+            BottomPanel(
+              sequence: sequence,
+              machine: machine,
+              onMachineChanged: (m) => setState(() => machine = m),
+              onExport: _export,
+            ),
+            _statusBar(),
+          ],
+        ),
       ),
     );
   }
@@ -255,6 +291,8 @@ class _StudioShellState extends State<StudioShell> {
     );
   }
 
+  final _shapeButtonKey = GlobalKey();
+
   Widget _toolRail() {
     final shapeTool = tools[ToolKind.shape]! as ShapeTool;
     return Container(
@@ -266,33 +304,38 @@ class _StudioShellState extends State<StudioShell> {
       child: Column(
         children: [
           const SizedBox(height: 8),
-          _toolButton(ToolKind.select, Icons.north_west, 'Select'),
-          _toolButton(ToolKind.node, Icons.timeline, 'Node'),
+          _toolButton(ToolKind.select, Icons.near_me_outlined, 'Select (V)'),
+          _toolButton(ToolKind.node, Icons.timeline, 'Node editing (A)'),
           const Divider(indent: 10, endIndent: 10),
-          _toolButton(ToolKind.pen, Icons.edit, 'Pen'),
-          _toolButton(ToolKind.pencil, Icons.gesture, 'Pencil'),
-          // Shape flyout: tap activates; tap again (or long-press)
-          // opens the kind picker.
+          _toolButton(ToolKind.pen, Icons.edit_outlined, 'Pen (P)'),
+          _toolButton(ToolKind.pencil, Icons.gesture, 'Pencil (B)'),
+          // Shape group: tap activates; re-tap, long-press, or
+          // right-click opens the anchored flyout (corner triangle
+          // marks it, Illustrator-style).
           GestureDetector(
-            onLongPress: _pickShape,
-            onSecondaryTap: _pickShape,
+            key: _shapeButtonKey,
+            onLongPress: _showShapeFlyout,
+            onSecondaryTap: _showShapeFlyout,
             child: StudioIconButton(
-              icon: _shapeIcon(shapeTool.kind),
-              tooltip: 'Shape: ${shapeTool.kind.name} (long-press to change)',
+              icon: shapeIcon(shapeTool.kind),
+              tooltip:
+                  '${shapeLabel(shapeTool.kind)} (M) — hold for more shapes',
               active: activeKind == ToolKind.shape,
+              flyoutIndicator: true,
               onPressed: () {
                 if (activeKind == ToolKind.shape) {
-                  _pickShape();
+                  _showShapeFlyout();
                 } else {
                   _selectTool(ToolKind.shape);
                 }
               },
             ),
           ),
-          _toolButton(ToolKind.text, Icons.text_fields, 'Text'),
+          _toolButton(ToolKind.text, Icons.title, 'Text (T)'),
           const Divider(indent: 10, endIndent: 10),
-          _toolButton(ToolKind.pan, Icons.pan_tool, 'Pan'),
-          _toolButton(ToolKind.measure, Icons.straighten, 'Measure'),
+          _toolButton(ToolKind.pan, Icons.pan_tool_outlined, 'Pan (H)'),
+          _toolButton(
+              ToolKind.measure, Icons.straighten_outlined, 'Measure (R)'),
           const Divider(indent: 10, endIndent: 10),
           StudioIconButton(
               icon: Icons.zoom_in,
@@ -307,79 +350,41 @@ class _StudioShellState extends State<StudioShell> {
     );
   }
 
-  IconData _shapeIcon(ShapeKind kind) => switch (kind) {
-        ShapeKind.rectangle => Icons.crop_square,
-        ShapeKind.square => Icons.square_outlined,
-        ShapeKind.roundedRectangle => Icons.rounded_corner,
-        ShapeKind.circle => Icons.circle_outlined,
-        ShapeKind.ellipse => Icons.egg_outlined,
-        ShapeKind.triangle => Icons.change_history,
-        ShapeKind.pentagon => Icons.pentagon_outlined,
-        ShapeKind.hexagon => Icons.hexagon_outlined,
-        ShapeKind.polygon => Icons.polyline,
-        ShapeKind.star => Icons.star_border,
-        ShapeKind.spiral => Icons.all_inclusive,
-      };
-
-  Future<void> _pickShape() async {
+  /// Anchored flyout beside the shape button (Illustrator tool group).
+  Future<void> _showShapeFlyout() async {
     final shapeTool = tools[ToolKind.shape]! as ShapeTool;
-    final kind = await showDialog<ShapeKind>(
+    final box = _shapeButtonKey.currentContext!.findRenderObject() as RenderBox;
+    final origin = box.localToGlobal(Offset(box.size.width + 4, 0));
+    final kind = await showMenu<ShapeKind>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('Shape'),
-        children: [
-          for (final kind in ShapeKind.values)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, kind),
-              child: Row(
-                children: [
-                  Icon(_shapeIcon(kind), size: 16),
-                  const SizedBox(width: 8),
-                  Text(kind.name),
-                ],
-              ),
-            ),
-        ],
-      ),
+      position: RelativeRect.fromLTRB(origin.dx, origin.dy, origin.dx, 0),
+      color: AppTokens.panel,
+      items: [
+        for (final kind in ShapeKind.values)
+          PopupMenuItem(
+            value: kind,
+            height: 32,
+            child: Row(children: [
+              Icon(shapeIcon(kind),
+                  size: 16,
+                  color: kind == shapeTool.kind
+                      ? AppTokens.primary
+                      : AppTokens.textMuted),
+              const SizedBox(width: 8),
+              Text(shapeLabel(kind),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: kind == shapeTool.kind
+                          ? AppTokens.primary
+                          : AppTokens.textPrimary)),
+            ]),
+          ),
+      ],
     );
     if (kind == null) return;
     shapeTool.kind = kind;
-    if (kind == ShapeKind.polygon) {
-      final sides =
-          await _promptNumber('Polygon sides', shapeTool.sides.toDouble());
-      if (sides != null && sides >= 3) shapeTool.sides = sides.round();
-    }
-    if (kind == ShapeKind.star) {
-      final points =
-          await _promptNumber('Star points', shapeTool.starPoints.toDouble());
-      if (points != null && points >= 3) shapeTool.starPoints = points.round();
-    }
     _selectTool(ToolKind.shape);
-    setState(() {});
-  }
-
-  Future<double?> _promptNumber(String title, double initial) async {
-    final controller = TextEditingController(text: initial.round().toString());
-    final value = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text),
-              child: const Text('OK')),
-        ],
-      ),
-    );
-    return value == null ? null : double.tryParse(value);
+    setState(() {}); // sides/points now editable in the options bar
   }
 
   Future<String?> _promptText() async {
@@ -454,6 +459,8 @@ class _StudioShellState extends State<StudioShell> {
             ],
           ),
         ),
+        // Contextual tool options (Illustrator control bar).
+        ToolOptionsBar(tool: tool, onChanged: () => setState(() {})),
         Expanded(
           child: CanvasView(
             document: session.document,

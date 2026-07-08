@@ -10,7 +10,8 @@ final class PencilTool extends Tool {
   final void Function(Path path) onCreate;
 
   /// Simplification tolerance — larger = smoother, fewer nodes.
-  final double toleranceMm;
+  /// Adjustable from the tool options bar.
+  double toleranceMm;
 
   final List<Point> _trace = [];
 

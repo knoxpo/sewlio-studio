@@ -148,6 +148,8 @@ class StudioPanel extends StatelessWidget {
 }
 
 /// A small icon button in the workspace chrome (tool rail, toolbars).
+/// [flyoutIndicator] draws the Illustrator-style corner triangle that
+/// marks a button with a hidden flyout menu.
 class StudioIconButton extends StatelessWidget {
   const StudioIconButton({
     super.key,
@@ -155,17 +157,25 @@ class StudioIconButton extends StatelessWidget {
     required this.tooltip,
     this.onPressed,
     this.active = false,
+    this.flyoutIndicator = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
   final bool active;
+  final bool flyoutIndicator;
 
   @override
   Widget build(BuildContext context) {
+    final color = onPressed == null
+        ? AppTokens.textMuted.withValues(alpha: 0.4)
+        : active
+            ? AppTokens.primary
+            : AppTokens.textMuted;
     return Tooltip(
       message: tooltip,
+      waitDuration: const Duration(milliseconds: 400),
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(4),
@@ -176,17 +186,43 @@ class StudioIconButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             border: active ? Border.all(color: AppTokens.border) : null,
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: onPressed == null
-                ? AppTokens.textMuted.withValues(alpha: 0.4)
-                : active
-                    ? AppTokens.primary
-                    : AppTokens.textMuted,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(icon, size: 18, color: color),
+              if (flyoutIndicator)
+                Positioned(
+                  right: -4,
+                  bottom: -4,
+                  child: CustomPaint(
+                    size: const Size(5, 5),
+                    painter: _FlyoutTrianglePainter(color),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+class _FlyoutTrianglePainter extends CustomPainter {
+  _FlyoutTrianglePainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_FlyoutTrianglePainter oldDelegate) =>
+      oldDelegate.color != color;
 }
