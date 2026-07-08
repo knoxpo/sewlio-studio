@@ -52,6 +52,7 @@ class StudioApp extends StatelessWidget {
     return MaterialApp(
       title: 'Sewlio Studio',
       theme: studioTheme(),
+      debugShowCheckedModeBanner: false,
       home: StudioShell(session: session),
     );
   }

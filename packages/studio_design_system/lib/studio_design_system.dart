@@ -1,8 +1,9 @@
 /// Sewlio Studio design system.
 ///
-/// Dark CAD-workspace palette and theme (docs/04-ui/100-design-system.md,
-/// 101-color-system.md). Tokens mirror the workspace mockup: near-black
-/// panels, hairline borders, pale-blue primary.
+/// Affinity-Designer-style dark theme (docs/04-ui/100-design-system.md,
+/// 101-color-system.md): neutral gray chrome, hairline separators
+/// darker than the panels, and a saturated blue accent for the active
+/// tool and selection.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,31 +13,32 @@ abstract final class AppTokens {
   /// Base spacing unit in logical pixels.
   static const double spacing = 8.0;
 
-  /// Primary accent (pale blue).
-  static const Color seed = Color(0xFFA2C9FF);
-  static const Color primary = Color(0xFFA2C9FF);
-  static const Color onPrimary = Color(0xFF00315C);
+  /// Accent blue (active tool, selection, primary actions).
+  static const Color seed = Color(0xFF3E8BFF);
+  static const Color primary = Color(0xFF3E8BFF);
+  static const Color onPrimary = Color(0xFFFFFFFF);
 
-  /// Window background.
-  static const Color background = Color(0xFF0B141C);
+  /// Canvas surround / window background (lighter than panels,
+  /// Affinity-style).
+  static const Color background = Color(0xFF2E3032);
 
-  /// Panel chrome (darker than background).
-  static const Color panel = Color(0xFF060F16);
+  /// Panel chrome.
+  static const Color panel = Color(0xFF262829);
 
-  /// Raised/hover surfaces.
-  static const Color surfaceHigh = Color(0xFF222B33);
+  /// Hover/raised surfaces.
+  static const Color surfaceHigh = Color(0xFF3A3D40);
 
-  /// Hairline borders between panels.
-  static const Color border = Color(0xFF414752);
+  /// Hairline separators — darker than the panels they divide.
+  static const Color border = Color(0xFF1B1C1E);
 
-  static const Color textPrimary = Color(0xFFDAE3EE);
-  static const Color textMuted = Color(0xFFC0C7D4);
+  static const Color textPrimary = Color(0xFFD6D8DA);
+  static const Color textMuted = Color(0xFF9EA1A4);
 
-  /// Success/hoop accent (green).
-  static const Color accentGreen = Color(0xFF10B981);
+  /// Hoop/success accent (green).
+  static const Color accentGreen = Color(0xFF34C759);
 
   /// Error accent.
-  static const Color error = Color(0xFFFFB4AB);
+  static const Color error = Color(0xFFFF6B6B);
 }
 
 /// The studio dark theme.
@@ -118,17 +120,20 @@ class StudioPanel extends StatelessWidget {
       children: [
         if (title != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: const BoxDecoration(
-              color: AppTokens.background,
               border: Border(bottom: BorderSide(color: AppTokens.border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title!,
+                // Affinity-style small-caps panel label.
+                Text(title!.toUpperCase(),
                     style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 12)),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 10,
+                        letterSpacing: 0.8,
+                        color: AppTokens.textMuted)),
                 if (trailing != null) trailing!,
               ],
             ),
@@ -168,10 +173,12 @@ class StudioIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Affinity-style: active tool sits on a solid accent square with a
+    // white glyph.
     final color = onPressed == null
         ? AppTokens.textMuted.withValues(alpha: 0.4)
         : active
-            ? AppTokens.primary
+            ? AppTokens.onPrimary
             : AppTokens.textMuted;
     return Tooltip(
       message: tooltip,
@@ -179,12 +186,12 @@ class StudioIconButton extends StatelessWidget {
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(4),
+        hoverColor: AppTokens.surfaceHigh,
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: active ? AppTokens.surfaceHigh : null,
+            color: active ? AppTokens.primary : null,
             borderRadius: BorderRadius.circular(4),
-            border: active ? Border.all(color: AppTokens.border) : null,
           ),
           child: Stack(
             clipBehavior: Clip.none,

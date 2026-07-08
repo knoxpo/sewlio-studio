@@ -170,7 +170,7 @@ class _DesignPainter extends CustomPainter {
     final overlay = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..color = colorScheme.secondary;
+      ..color = colorScheme.primary;
     for (final p in previewPaths) {
       final points = p.toPolyline();
       final path = Path()
@@ -182,7 +182,7 @@ class _DesignPainter extends CustomPainter {
       }
       canvas.drawPath(path, overlay);
     }
-    final markerFill = Paint()..color = colorScheme.secondary;
+    final markerFill = Paint()..color = colorScheme.primary;
     for (final marker in markers) {
       canvas.drawRect(
         Rect.fromCenter(
@@ -240,9 +240,9 @@ class _DesignPainter extends CustomPainter {
       rect,
       Paint()
         ..style = PaintingStyle.stroke
-        ..color = colorScheme.secondary,
+        ..color = colorScheme.primary,
     );
-    final handle = Paint()..color = colorScheme.secondary;
+    final handle = Paint()..color = colorScheme.primary;
     for (final corner in [
       rect.topLeft,
       rect.topRight,

@@ -17,8 +17,8 @@ void main() {
     expect(find.text('Layers'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
-    expect(find.text('Stitch Simulation'), findsOneWidget);
-    expect(find.text('Hoop'), findsOneWidget);
+    expect(find.text('STITCH SIMULATION'), findsOneWidget);
+    expect(find.text('HOOP'), findsOneWidget);
     expect(find.textContaining('Select:'), findsOneWidget); // status bar
   });
 
