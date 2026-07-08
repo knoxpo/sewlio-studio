@@ -13,8 +13,17 @@ final class ViewportController extends ChangeNotifier {
   /// Screen position of the world origin.
   Offset pan;
 
+  /// Current canvas size in logical pixels, recorded by [CanvasView]
+  /// on every layout. Needed for fit/center operations.
+  Size? viewSize;
+
   static const double minZoom = 0.5;
   static const double maxZoom = 100;
+
+  /// Zoom at which the percentage readout shows 100%.
+  static const double baseZoom = 4;
+
+  double get percent => zoom / baseZoom * 100;
 
   Offset worldToScreen(g.Point p) =>
       Offset(p.x * zoom + pan.dx, p.y * zoom + pan.dy);
@@ -33,6 +42,34 @@ final class ViewportController extends ChangeNotifier {
     final world = screenToWorld(focal);
     zoom = next;
     pan = focal - Offset(world.x * zoom, world.y * zoom);
+    notifyListeners();
+  }
+
+  /// Sets the zoom to [percent] (of [baseZoom]), keeping the view
+  /// center fixed.
+  void setPercent(double percent) {
+    final size = viewSize;
+    final focal =
+        size == null ? Offset.zero : Offset(size.width / 2, size.height / 2);
+    zoomAt(focal, (percent / 100 * baseZoom) / zoom);
+  }
+
+  /// Fits [bounds] (mm) into the current view, centered, with
+  /// [paddingPx] breathing room. No-op before the first layout.
+  void fitBounds(g.Bounds bounds, {double paddingPx = 40}) {
+    final size = viewSize;
+    if (size == null || size.isEmpty) return;
+    final availableW = size.width - 2 * paddingPx;
+    final availableH = size.height - 2 * paddingPx;
+    if (availableW <= 0 || availableH <= 0) return;
+    final fit = bounds.width <= 0 || bounds.height <= 0
+        ? baseZoom
+        : [availableW / bounds.width, availableH / bounds.height]
+            .reduce((a, b) => a < b ? a : b);
+    zoom = fit.clamp(minZoom, maxZoom);
+    final center = bounds.center;
+    pan = Offset(
+        size.width / 2 - center.x * zoom, size.height / 2 - center.y * zoom);
     notifyListeners();
   }
 }

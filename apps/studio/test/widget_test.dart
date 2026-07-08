@@ -82,7 +82,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Rename…'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Tulip');
+    await tester.enterText(
+        find.descendant(
+            of: find.byType(AlertDialog), matching: find.byType(TextField)),
+        'Tulip');
     await tester.tap(find.text('Rename'));
     await tester.pumpAndSettle();
 

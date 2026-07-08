@@ -53,6 +53,22 @@ class _StudioShellState extends State<StudioShell> {
     super.initState();
     selection.addListener(() => setState(() {}));
     _bindSession(widget.session);
+    // Center + fit once the canvas has its first layout.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fitCanvas());
+  }
+
+  /// Fits the design (or the hoop when empty) into the canvas area.
+  void _fitCanvas() {
+    var bounds = g.Bounds(
+      -machine.hoopWidthMm / 2,
+      -machine.hoopHeightMm / 2,
+      machine.hoopWidthMm / 2,
+      machine.hoopHeightMm / 2,
+    );
+    for (final object in session.document.objects) {
+      bounds = bounds.union(object.path.bounds());
+    }
+    viewport.fitBounds(bounds);
   }
 
   /// Points the shell at [next] (startup or after Open…).
@@ -360,6 +376,56 @@ class _StudioShellState extends State<StudioShell> {
     );
   }
 
+  static const _zoomPresets = [25.0, 50.0, 75.0, 100.0, 150.0, 200.0, 400.0];
+
+  /// Editable zoom percentage with a preset dropdown ("Fit" + %).
+  Widget _zoomControl() {
+    return ListenableBuilder(
+      listenable: viewport,
+      builder: (context, _) => Row(mainAxisSize: MainAxisSize.min, children: [
+        SizedBox(
+          width: 52,
+          height: 22,
+          child: TextFormField(
+            key: ValueKey('zoom-${viewport.percent.round()}'),
+            initialValue: '${viewport.percent.round()}%',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11),
+            decoration: const InputDecoration(
+                contentPadding: EdgeInsets.symmetric(vertical: 3)),
+            onFieldSubmitted: (text) {
+              final value = double.tryParse(text.replaceAll('%', '').trim());
+              if (value != null && value > 0) viewport.setPercent(value);
+            },
+          ),
+        ),
+        PopupMenuButton<double?>(
+          tooltip: 'Zoom presets',
+          color: AppTokens.popoverSurface,
+          icon: const Icon(Icons.arrow_drop_down,
+              size: 16, color: AppTokens.textMuted),
+          padding: EdgeInsets.zero,
+          onSelected: (value) =>
+              value == null ? _fitCanvas() : viewport.setPercent(value),
+          itemBuilder: (context) => [
+            const PopupMenuItem<double?>(
+              value: null,
+              height: 30,
+              child: Text('Fit', style: TextStyle(fontSize: 12)),
+            ),
+            for (final preset in _zoomPresets)
+              PopupMenuItem<double?>(
+                value: preset,
+                height: 30,
+                child: Text('${preset.round()}%',
+                    style: const TextStyle(fontSize: 12)),
+              ),
+          ],
+        ),
+      ]),
+    );
+  }
+
   void _zoom(double factor) {
     final box = context.findRenderObject() as RenderBox?;
     final center = box == null
@@ -390,17 +456,14 @@ class _StudioShellState extends State<StudioShell> {
                   style: TextStyle(color: AppTokens.primary, fontSize: 11)),
               const Spacer(),
               StudioIconButton(
+                  icon: Icons.fit_screen_outlined,
+                  tooltip: 'Fit to canvas',
+                  onPressed: _fitCanvas),
+              StudioIconButton(
                   icon: Icons.zoom_out,
                   tooltip: 'Zoom out',
                   onPressed: () => _zoom(0.8)),
-              ListenableBuilder(
-                listenable: viewport,
-                builder: (context, _) => Text(
-                  '${(viewport.zoom / 4 * 100).round()}%',
-                  style:
-                      const TextStyle(color: AppTokens.textMuted, fontSize: 11),
-                ),
-              ),
+              _zoomControl(),
               StudioIconButton(
                   icon: Icons.zoom_in,
                   tooltip: 'Zoom in',
@@ -495,7 +558,7 @@ class _StudioShellState extends State<StudioShell> {
             ListenableBuilder(
               listenable: viewport,
               builder: (context, _) =>
-                  Text('Zoom: ${(viewport.zoom / 4 * 100).round()}%'),
+                  Text('Zoom: ${viewport.percent.round()}%'),
             ),
             const SizedBox(width: 24),
             ValueListenableBuilder(
@@ -535,6 +598,7 @@ class _StudioShellState extends State<StudioShell> {
     try {
       final document = decodeProject(await readFileString(path));
       setState(() => _bindSession(StudioSession(document: document)));
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fitCanvas());
       _toast('Opened ${document.name}');
     } catch (e) {
       _toast('Open failed: $e');

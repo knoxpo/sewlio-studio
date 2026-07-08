@@ -63,6 +63,14 @@ class _CanvasViewState extends State<CanvasView> {
   @override
   Widget build(BuildContext context) {
     final viewport = widget.viewport;
+    return LayoutBuilder(builder: (context, constraints) {
+      // Record the live canvas size for fit/center operations.
+      viewport.viewSize = constraints.biggest;
+      return _gestures(viewport);
+    });
+  }
+
+  Widget _gestures(ViewportController viewport) {
     return ClipRect(
       child: MouseRegion(
         onHover: (event) => widget.onHoverWorld
