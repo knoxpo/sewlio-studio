@@ -226,14 +226,13 @@ class _DesignPainter extends CustomPainter {
     }
   }
 
-  /// Hoop outline centered on the world origin.
+  /// Hoop outline anchored at the world origin (top-left corner at
+  /// 0,0 so rulers read from the hoop corner).
   void _paintHoop(Canvas canvas) {
     final hoop = hoopSize;
     if (hoop == null) return;
-    final min =
-        viewport.worldToScreen(g.Point(-hoop.width / 2, -hoop.height / 2));
-    final max =
-        viewport.worldToScreen(g.Point(hoop.width / 2, hoop.height / 2));
+    final min = viewport.worldToScreen(g.Point.zero);
+    final max = viewport.worldToScreen(g.Point(hoop.width, hoop.height));
     canvas.drawRRect(
       RRect.fromRectAndRadius(
           Rect.fromPoints(min, max), Radius.circular(8 * viewport.zoom / 4)),

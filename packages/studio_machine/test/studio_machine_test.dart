@@ -59,6 +59,22 @@ void main() {
     });
   });
 
+  test('origin offset re-centers design space onto the machine origin', () {
+    // Design anchored at hoop top-left (0,0); hoop 100x100 => center 50,50.
+    const seq = StitchSequence(threads: [
+      red
+    ], ops: [
+      StitchOp.stitch(Point(50, 50)), // hoop center
+      StitchOp.stitch(Point(52.5, 50)),
+    ]);
+    final program = compileToMachine(seq, origin: const Point(50, 50));
+    expect(program.ops.first, const MachineOp(MachineOpKind.stitch, 0, 0));
+    expect(program.ops[1], const MachineOp(MachineOpKind.stitch, 25, 0));
+    final sink = CollectingSink();
+    expect(program.validate(MachineModel.generic, sink), isTrue,
+        reason: sink.diagnostics.join('\n'));
+  });
+
   group('validation', () {
     test('flags over-limit movement and hoop escape', () {
       const program = MachineProgram(threadColors: [

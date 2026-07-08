@@ -1,18 +1,21 @@
 import 'package:studio_embroidery/studio_embroidery.dart';
+import 'package:studio_geometry/studio_geometry.dart';
 
 import 'machine_ir.dart';
 import 'machine_model.dart';
 
 /// Compiles Stitch IR into Machine IR for [machine].
 ///
-/// Positions (mm) become integer machine-unit deltas; the first op
-/// moves from the origin (hoop center) to the first stitch. Movements
-/// longer than the machine's limit are split into equal sub-moves —
-/// intermediate legs of a long stitch become jumps so no extra needle
-/// penetrations are invented.
+/// Positions (mm) become integer machine-unit deltas relative to
+/// [origin] — pass the hoop center when the design space anchors the
+/// hoop elsewhere (e.g. top-left at 0,0), since machine coordinates
+/// are hoop-centered. Movements longer than the machine's limit are
+/// split into equal sub-moves — intermediate legs of a long stitch
+/// become jumps so no extra needle penetrations are invented.
 MachineProgram compileToMachine(
   StitchSequence sequence, {
   MachineModel machine = MachineModel.generic,
+  Point origin = Point.zero,
 }) {
   final ops = <MachineOp>[];
   var x = 0, y = 0;
@@ -39,7 +42,8 @@ MachineProgram compileToMachine(
   int toUnits(double mm) => (mm * unitsPerMm).round();
 
   for (final op in sequence.ops) {
-    final tx = toUnits(op.position.x), ty = toUnits(op.position.y);
+    final tx = toUnits(op.position.x - origin.x);
+    final ty = toUnits(op.position.y - origin.y);
     switch (op.kind) {
       case StitchKind.stitch:
         move(MachineOpKind.stitch, tx, ty, machine.maxStitchLengthMm);

@@ -58,13 +58,9 @@ class _StudioShellState extends State<StudioShell> {
   }
 
   /// Fits the design (or the hoop when empty) into the canvas area.
+  /// The hoop is anchored with its top-left corner at world 0,0.
   void _fitCanvas() {
-    var bounds = g.Bounds(
-      -machine.hoopWidthMm / 2,
-      -machine.hoopHeightMm / 2,
-      machine.hoopWidthMm / 2,
-      machine.hoopHeightMm / 2,
-    );
+    var bounds = g.Bounds(0, 0, machine.hoopWidthMm, machine.hoopHeightMm);
     for (final object in session.document.objects) {
       bounds = bounds.union(object.path.bounds());
     }
@@ -865,7 +861,13 @@ class _StudioShellState extends State<StudioShell> {
       _toast('Nothing to export');
       return;
     }
-    final program = compileToMachine(sequence, machine: machine);
+    // Machine coordinates are hoop-centered; design space anchors the
+    // hoop's top-left at 0,0.
+    final program = compileToMachine(
+      sequence,
+      machine: machine,
+      origin: g.Point(machine.hoopWidthMm / 2, machine.hoopHeightMm / 2),
+    );
     final sink = CollectingSink();
     if (!program.validate(machine, sink)) {
       _toast('Export blocked: ${sink.diagnostics.first.message}');
