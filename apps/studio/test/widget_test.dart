@@ -69,6 +69,29 @@ void main() {
     expect(find.byType(Ruler), findsNothing);
   });
 
+  testWidgets('tapping a ruler adds a named guide via dialog',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    final session = StudioSession();
+    await tester.pumpWidget(StudioApp(session: session));
+
+    // Tap the top ruler (vertical guide).
+    final ruler = find.byType(Ruler).first;
+    await tester.tapAt(tester.getCenter(ruler));
+    await tester.pumpAndSettle();
+    expect(find.text('Add Guide'), findsOneWidget);
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Name').first, 'Center line');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    expect(session.document.guides, hasLength(1));
+    expect(session.document.guides.single.name, 'Center line');
+    expect(session.history.canUndo, isTrue);
+  });
+
   testWidgets('single-key shortcuts switch tools, Esc cancels', (tester) async {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;

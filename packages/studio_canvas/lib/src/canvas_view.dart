@@ -148,10 +148,14 @@ class _DesignPainter extends CustomPainter {
   final List<g.Point> markers;
   final ColorScheme colorScheme;
 
+  /// Default guide color when a guide has no override.
+  static const defaultGuideColor = Color(0xFF26C6DA);
+
   @override
   void paint(Canvas canvas, Size size) {
     _paintGrid(canvas, size);
     _paintHoop(canvas);
+    _paintGuides(canvas, size);
 
     final stroke = Paint()
       ..style = PaintingStyle.stroke
@@ -238,6 +242,38 @@ class _DesignPainter extends CustomPainter {
         ..strokeWidth = 2
         ..color = colorScheme.secondary.withValues(alpha: 0.5),
     );
+  }
+
+  /// Named guide lines across the canvas.
+  void _paintGuides(Canvas canvas, Size size) {
+    for (final guide in document.guides) {
+      final color = guide.colorHex == null
+          ? defaultGuideColor
+          : Color(
+              0xFF000000 | int.parse(guide.colorHex!.substring(1), radix: 16));
+      final paint = Paint()
+        ..color = color.withValues(alpha: 0.8)
+        ..strokeWidth = 1;
+      final vertical = guide.axis == GuideAxis.vertical;
+      final px = vertical
+          ? viewport.worldToScreen(g.Point(guide.positionMm, 0)).dx
+          : viewport.worldToScreen(g.Point(0, guide.positionMm)).dy;
+      if (vertical) {
+        canvas.drawLine(Offset(px, 0), Offset(px, size.height), paint);
+      } else {
+        canvas.drawLine(Offset(0, px), Offset(size.width, px), paint);
+      }
+      if (guide.name.isNotEmpty) {
+        final label = TextPainter(
+          text: TextSpan(
+              text: guide.name,
+              style: TextStyle(color: color, fontSize: 9)),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        label.paint(
+            canvas, vertical ? Offset(px + 4, 4) : Offset(4, px + 3));
+      }
+    }
   }
 
   void _paintSelection(Canvas canvas, g.Bounds bounds) {

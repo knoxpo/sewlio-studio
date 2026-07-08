@@ -415,6 +415,153 @@ class _StudioShellState extends State<StudioShell> {
     );
   }
 
+  Color _guideColor(Guide guide) => guide.colorHex == null
+      ? const Color(0xFF26C6DA)
+      : Color(0xFF000000 | int.parse(guide.colorHex!.substring(1), radix: 16));
+
+  List<RulerMarker> _markersFor(GuideAxis axis) => [
+        for (final guide in session.document.guides)
+          if (guide.axis == axis)
+            RulerMarker(positionMm: guide.positionMm, color: _guideColor(guide)),
+      ];
+
+  /// Ruler tap: edit the nearest guide on that axis, or create one.
+  void _onRulerTap(GuideAxis axis, double mm) {
+    final tolerance = 6 / viewport.zoom;
+    Guide? hit;
+    for (final guide in session.document.guides) {
+      if (guide.axis == axis && (guide.positionMm - mm).abs() <= tolerance) {
+        hit = guide;
+        break;
+      }
+    }
+    _guideDialog(axis: axis, mm: mm, existing: hit);
+  }
+
+  /// Guide swatches: null = default guide color.
+  static const _guideSwatches = <String?>[
+    null,
+    '#ff6b6b',
+    '#ffb74d',
+    '#ffd54f',
+    '#66bb6a',
+    '#5c9dff',
+    '#ba68c8',
+    '#f06292',
+  ];
+
+  Future<void> _guideDialog({
+    required GuideAxis axis,
+    required double mm,
+    Guide? existing,
+  }) async {
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    final positionController = TextEditingController(
+        text: (existing?.positionMm ?? mm).toStringAsFixed(1));
+    String? colorHex = existing?.colorHex;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(existing == null ? 'Add Guide' : 'Edit Guide'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: positionController,
+                decoration: InputDecoration(
+                    labelText:
+                        '${axis == GuideAxis.vertical ? 'X' : 'Y'} position (mm)'),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              const Text('Color',
+                  style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+              const SizedBox(height: 6),
+              Row(children: [
+                for (final swatch in _guideSwatches)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: InkWell(
+                      onTap: () => setDialogState(() => colorHex = swatch),
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: swatch == null
+                              ? const Color(0xFF26C6DA)
+                              : Color(0xFF000000 |
+                                  int.parse(swatch.substring(1), radix: 16)),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: colorHex == swatch
+                                ? Colors.white
+                                : AppTokens.border,
+                            width: colorHex == swatch ? 2 : 1,
+                          ),
+                        ),
+                        child: swatch == null
+                            ? const Icon(Icons.star,
+                                size: 10, color: Colors.white70)
+                            : null,
+                      ),
+                    ),
+                  ),
+              ]),
+            ],
+          ),
+          actions: [
+            if (existing != null)
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'delete'),
+                child: const Text('Delete',
+                    style: TextStyle(color: AppTokens.error)),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, 'save'),
+              child: Text(existing == null ? 'Add' : 'Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    if (result == 'delete') {
+      session.history.execute(RemoveGuide(existing!.id));
+      return;
+    }
+    final position =
+        double.tryParse(positionController.text) ?? (existing?.positionMm ?? mm);
+    if (existing == null) {
+      session.history.execute(AddGuide(Guide(
+        id: session.registry.get<IdGenerator>().next(),
+        axis: axis,
+        positionMm: position,
+        name: nameController.text.trim(),
+        colorHex: colorHex,
+      )));
+    } else {
+      session.history.execute(UpdateGuide(Guide(
+        id: existing.id,
+        axis: axis,
+        positionMm: position,
+        name: nameController.text.trim(),
+        colorHex: colorHex,
+      )));
+    }
+  }
+
   /// Wraps the canvas in top/left mm rulers when enabled (View menu).
   Widget _rulerFrame(Widget canvas) {
     if (!_showRulers) return canvas;
@@ -445,7 +592,12 @@ class _StudioShellState extends State<StudioShell> {
               border: Border(bottom: BorderSide(color: AppTokens.border)),
             ),
             child: Ruler(
-                viewport: viewport, axis: Axis.horizontal, cursor: cursor),
+              viewport: viewport,
+              axis: Axis.horizontal,
+              cursor: cursor,
+              markers: _markersFor(GuideAxis.vertical),
+              onTapMm: (mm) => _onRulerTap(GuideAxis.vertical, mm),
+            ),
           ),
         ),
       ]),
@@ -456,8 +608,13 @@ class _StudioShellState extends State<StudioShell> {
               color: AppTokens.panel,
               border: Border(right: BorderSide(color: AppTokens.border)),
             ),
-            child:
-                Ruler(viewport: viewport, axis: Axis.vertical, cursor: cursor),
+            child: Ruler(
+              viewport: viewport,
+              axis: Axis.vertical,
+              cursor: cursor,
+              markers: _markersFor(GuideAxis.horizontal),
+              onTapMm: (mm) => _onRulerTap(GuideAxis.horizontal, mm),
+            ),
           ),
           Expanded(child: canvas),
         ]),

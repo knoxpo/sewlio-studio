@@ -4,6 +4,7 @@ import 'package:studio_core/studio_core.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 
 import 'document.dart';
+import 'guide.dart';
 
 /// `.embproj` schema version. Bump + migrate on breaking change (ADR).
 const String projectVersion = '1';
@@ -19,6 +20,8 @@ String encodeProject(Document document) =>
       'id': document.id.value,
       'name': document.name,
       'objects': [for (final object in document.objects) object.toJson()],
+      if (document.guides.isNotEmpty)
+        'guides': [for (final guide in document.guides) guide.toJson()],
     });
 
 /// Parses `.embproj` JSON into a fresh [Document].
@@ -36,6 +39,9 @@ Document decodeProject(String source) {
   for (final object in json['objects'] as List) {
     document.objects
         .add(EmbroideryObject.fromJson(object as Map<String, dynamic>));
+  }
+  for (final guide in (json['guides'] as List?) ?? const []) {
+    document.guides.add(Guide.fromJson(guide as Map<String, dynamic>));
   }
   return document;
 }

@@ -97,6 +97,42 @@ void main() {
     });
   });
 
+  group('guide commands', () {
+    const guide = Guide(
+      id: Id('g1'),
+      axis: GuideAxis.vertical,
+      positionMm: 25,
+      name: 'Center',
+      colorHex: '#ff6b6b',
+    );
+
+    test('add/update/remove round trip with undo', () {
+      history.execute(const AddGuide(guide));
+      expect(doc.guides, hasLength(1));
+
+      history.execute(UpdateGuide(guide.copyWith(name: 'Left', positionMm: 10)));
+      expect(doc.guideById(const Id('g1'))!.name, 'Left');
+
+      history.execute(const RemoveGuide(Id('g1')));
+      expect(doc.guides, isEmpty);
+
+      history.undo(); // un-remove
+      history.undo(); // un-update
+      expect(doc.guideById(const Id('g1'))!.name, 'Center');
+      history.undo(); // un-add
+      expect(doc.guides, isEmpty);
+    });
+
+    test('guides persist through .embproj', () {
+      doc.guides.add(guide);
+      final decoded = decodeProject(encodeProject(doc));
+      expect(decoded.guides, hasLength(1));
+      expect(decoded.guides.single.name, 'Center');
+      expect(decoded.guides.single.colorHex, '#ff6b6b');
+      expect(decoded.guides.single.axis, GuideAxis.vertical);
+    });
+  });
+
   test('.embproj encode/decode round trips (golden shape)', () {
     doc.name = 'Rose';
     doc.objects.add(const RunningStitchObject(

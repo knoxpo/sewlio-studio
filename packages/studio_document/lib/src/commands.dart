@@ -5,6 +5,7 @@ import 'package:studio_events/studio_events.dart';
 import 'package:studio_geometry/studio_geometry.dart';
 
 import 'document.dart';
+import 'guide.dart';
 
 /// Renames the document. Undoable.
 final class RenameDocument extends Command {
@@ -67,6 +68,29 @@ final class ObjectTransformed extends Event {
   final Id id;
 }
 
+/// Adds a ruler guide. Undoable.
+final class AddGuide extends Command {
+  const AddGuide(this.guide);
+  final Guide guide;
+}
+
+/// Removes the guide with [id]. Undoable.
+final class RemoveGuide extends Command {
+  const RemoveGuide(this.id);
+  final Id id;
+}
+
+/// Replaces the guide with the same id (rename, recolor, move).
+/// Undoable.
+final class UpdateGuide extends Command {
+  const UpdateGuide(this.guide);
+  final Guide guide;
+}
+
+final class GuidesChanged extends Event {
+  const GuidesChanged();
+}
+
 /// Registers handlers for the document commands on [bus], mutating
 /// [document]. The composition root calls this once at startup.
 void registerDocumentHandlers(CommandBus bus, Document document) {
@@ -116,6 +140,44 @@ void registerDocumentHandlers(CommandBus bus, Document document) {
     return CommandOutcome(
       events: [ObjectReplaced(command.object.id)],
       reverse: ReplaceObject(old),
+    );
+  });
+
+  bus.register<AddGuide>((command) {
+    document.guides.add(command.guide);
+    document.revision++;
+    return CommandOutcome(
+      events: const [GuidesChanged()],
+      reverse: RemoveGuide(command.guide.id),
+    );
+  });
+
+  bus.register<RemoveGuide>((command) {
+    final index =
+        document.guides.indexWhere((guide) => guide.id == command.id);
+    if (index < 0) {
+      throw StateError('No guide with id ${command.id}');
+    }
+    final guide = document.guides.removeAt(index);
+    document.revision++;
+    return CommandOutcome(
+      events: const [GuidesChanged()],
+      reverse: AddGuide(guide),
+    );
+  });
+
+  bus.register<UpdateGuide>((command) {
+    final index = document.guides
+        .indexWhere((guide) => guide.id == command.guide.id);
+    if (index < 0) {
+      throw StateError('No guide with id ${command.guide.id}');
+    }
+    final old = document.guides[index];
+    document.guides[index] = command.guide;
+    document.revision++;
+    return CommandOutcome(
+      events: const [GuidesChanged()],
+      reverse: UpdateGuide(old),
     );
   });
 

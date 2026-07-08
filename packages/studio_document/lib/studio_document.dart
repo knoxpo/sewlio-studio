@@ -7,5 +7,6 @@ library;
 
 export 'src/commands.dart';
 export 'src/document.dart';
+export 'src/guide.dart';
 export 'src/history.dart';
 export 'src/project_io.dart';

@@ -1,6 +1,8 @@
 import 'package:studio_core/studio_core.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 
+import 'guide.dart';
+
 /// Root of the in-memory project document.
 ///
 /// Mutable, but only command handlers may mutate it — everything else
@@ -15,6 +17,16 @@ final class Document {
 
   /// Design elements in stacking order.
   final List<EmbroideryObject> objects = [];
+
+  /// Ruler guides.
+  final List<Guide> guides = [];
+
+  Guide? guideById(Id id) {
+    for (final guide in guides) {
+      if (guide.id == id) return guide;
+    }
+    return null;
+  }
 
   /// Incremented by handlers on every mutation. Lets observers cheaply
   /// detect "document changed" without diffing.
