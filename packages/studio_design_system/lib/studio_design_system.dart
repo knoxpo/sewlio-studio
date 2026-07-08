@@ -34,6 +34,11 @@ abstract final class AppTokens {
   static const Color textPrimary = Color(0xFFD6D8DA);
   static const Color textMuted = Color(0xFF9EA1A4);
 
+  /// Floating popovers/flyouts — raised above panels: lighter surface,
+  /// brighter border, so they read as a separate layer.
+  static const Color popoverSurface = Color(0xFF35383B);
+  static const Color popoverBorder = Color(0xFF4C5054);
+
   /// Hoop/success accent (green).
   static const Color accentGreen = Color(0xFF34C759);
 

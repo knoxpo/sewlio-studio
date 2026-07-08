@@ -28,7 +28,20 @@ class ShapeFlyoutButton extends StatefulWidget {
   State<ShapeFlyoutButton> createState() => _ShapeFlyoutButtonState();
 }
 
-class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton> {
+class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animation = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 160),
+      reverseDuration: const Duration(milliseconds: 110),
+    );
+  }
+
   OverlayEntry? _popover;
   Timer? _openTimer;
   Timer? _closeTimer;
@@ -39,11 +52,15 @@ class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton> {
   void dispose() {
     _openTimer?.cancel();
     _closeTimer?.cancel();
-    _removePopover();
+    _popover?.remove();
+    _popover = null;
+    _animation.dispose();
     super.dispose();
   }
 
-  void _removePopover() {
+  Future<void> _dismiss() async {
+    if (_popover == null) return;
+    await _animation.reverse();
     _popover?.remove();
     _popover = null;
   }
@@ -52,7 +69,14 @@ class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton> {
     if (_popover != null || !mounted) return;
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
-    final origin = box.localToGlobal(Offset(box.size.width + 6, -4));
+    final origin = box.localToGlobal(Offset(box.size.width + 8, -4));
+    final fade = CurvedAnimation(
+      parent: _animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeIn,
+    );
+    final slide = Tween<Offset>(begin: const Offset(-10, 0), end: Offset.zero)
+        .animate(fade);
     _popover = OverlayEntry(
       builder: (context) => Positioned(
         left: origin.dx,
@@ -63,23 +87,31 @@ class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton> {
             _pointerInPopover = false;
             _scheduleClose();
           },
-          child: _ShapePopover(
-            current: widget.shapeTool.kind,
-            onPick: (kind) {
-              _removePopover();
-              widget.onActivate(kind);
-            },
+          child: AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) => Opacity(
+              opacity: fade.value,
+              child: Transform.translate(offset: slide.value, child: child),
+            ),
+            child: _ShapePopover(
+              current: widget.shapeTool.kind,
+              onPick: (kind) {
+                _dismiss();
+                widget.onActivate(kind);
+              },
+            ),
           ),
         ),
       ),
     );
     Overlay.of(context).insert(_popover!);
+    _animation.forward(from: 0);
   }
 
   void _scheduleClose() {
     _closeTimer?.cancel();
     _closeTimer = Timer(const Duration(milliseconds: 250), () {
-      if (!_pointerInButton && !_pointerInPopover) _removePopover();
+      if (!_pointerInButton && !_pointerInPopover) _dismiss();
     });
   }
 
@@ -127,15 +159,21 @@ class _ShapePopover extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: Container(
-        width: 176,
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        width: 180,
+        padding: const EdgeInsets.symmetric(vertical: 5),
         decoration: BoxDecoration(
-          color: AppTokens.panel,
-          border: Border.all(color: AppTokens.border),
-          borderRadius: BorderRadius.circular(6),
+          color: AppTokens.popoverSurface,
+          border: Border.all(color: AppTokens.popoverBorder),
+          borderRadius: BorderRadius.circular(7),
           boxShadow: const [
+            // Deep drop + tight contact shadow lift the popover off the
+            // panel chrome.
             BoxShadow(
-                color: Color(0x66000000), blurRadius: 12, offset: Offset(0, 4))
+                color: Color(0x99000000),
+                blurRadius: 24,
+                offset: Offset(0, 10)),
+            BoxShadow(
+                color: Color(0x66000000), blurRadius: 6, offset: Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -145,7 +183,7 @@ class _ShapePopover extends StatelessWidget {
             for (final kind in ShapeKind.values)
               InkWell(
                 onTap: () => onPick(kind),
-                hoverColor: AppTokens.surfaceHigh,
+                hoverColor: AppTokens.primary.withValues(alpha: 0.25),
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -154,7 +192,7 @@ class _ShapePopover extends StatelessWidget {
                         size: 16,
                         color: kind == current
                             ? AppTokens.primary
-                            : AppTokens.textMuted),
+                            : AppTokens.textPrimary),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(shapeLabel(kind),
