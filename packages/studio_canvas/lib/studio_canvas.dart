@@ -5,4 +5,5 @@
 library;
 
 export 'src/canvas_view.dart';
+export 'src/ruler.dart';
 export 'src/viewport.dart';

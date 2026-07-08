@@ -250,6 +250,23 @@ class _StudioShellState extends State<StudioShell> {
                 ],
                 child: const Text('Edit'),
               ),
+              SubmenuButton(
+                menuChildren: [
+                  MenuItemButton(
+                    leadingIcon: Icon(
+                      _showRulers ? Icons.check : null,
+                      size: 14,
+                    ),
+                    onPressed: () => setState(() => _showRulers = !_showRulers),
+                    child: const Text('Show Rulers'),
+                  ),
+                  MenuItemButton(
+                    onPressed: _fitCanvas,
+                    child: const Text('Zoom to Fit'),
+                  ),
+                ],
+                child: const Text('View'),
+              ),
             ],
           ),
           const Spacer(),
@@ -376,6 +393,78 @@ class _StudioShellState extends State<StudioShell> {
     );
   }
 
+  var _showRulers = true;
+
+  Widget _buildCanvas() {
+    return CanvasView(
+      document: session.document,
+      viewport: viewport,
+      selectedId: selection.selected,
+      hoopSize: Size(machine.hoopWidthMm, machine.hoopHeightMm),
+      previewPaths: tool.preview,
+      markers: tool.markers,
+      onTapWorld: tool.tap,
+      onDoubleTapWorld: tool.doubleTap,
+      onHoverWorld: (p) {
+        cursor.value = p;
+        tool.hover(p);
+      },
+      onDragStartWorld: tool.dragStart,
+      onDragUpdateWorld: tool.dragUpdate,
+      onDragEndWorld: tool.dragEnd,
+    );
+  }
+
+  /// Wraps the canvas in top/left mm rulers when enabled (View menu).
+  Widget _rulerFrame(Widget canvas) {
+    if (!_showRulers) return canvas;
+    const corner = SizedBox(
+      width: rulerThickness,
+      height: rulerThickness,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppTokens.panel,
+          border: Border(
+            right: BorderSide(color: AppTokens.border),
+            bottom: BorderSide(color: AppTokens.border),
+          ),
+        ),
+        child: Center(
+          child: Text('mm',
+              style: TextStyle(fontSize: 7, color: AppTokens.textMuted)),
+        ),
+      ),
+    );
+    return Column(children: [
+      Row(children: [
+        corner,
+        Expanded(
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              color: AppTokens.panel,
+              border: Border(bottom: BorderSide(color: AppTokens.border)),
+            ),
+            child: Ruler(
+                viewport: viewport, axis: Axis.horizontal, cursor: cursor),
+          ),
+        ),
+      ]),
+      Expanded(
+        child: Row(children: [
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              color: AppTokens.panel,
+              border: Border(right: BorderSide(color: AppTokens.border)),
+            ),
+            child:
+                Ruler(viewport: viewport, axis: Axis.vertical, cursor: cursor),
+          ),
+          Expanded(child: canvas),
+        ]),
+      ),
+    ]);
+  }
+
   static const _zoomPresets = [25.0, 50.0, 75.0, 100.0, 150.0, 200.0, 400.0];
 
   /// Editable zoom percentage with a preset dropdown ("Fit" + %).
@@ -473,25 +562,7 @@ class _StudioShellState extends State<StudioShell> {
         ),
         // Contextual tool options (Illustrator control bar).
         ToolOptionsBar(tool: tool, onChanged: () => setState(() {})),
-        Expanded(
-          child: CanvasView(
-            document: session.document,
-            viewport: viewport,
-            selectedId: selection.selected,
-            hoopSize: Size(machine.hoopWidthMm, machine.hoopHeightMm),
-            previewPaths: tool.preview,
-            markers: tool.markers,
-            onTapWorld: tool.tap,
-            onDoubleTapWorld: tool.doubleTap,
-            onHoverWorld: (p) {
-              cursor.value = p;
-              tool.hover(p);
-            },
-            onDragStartWorld: tool.dragStart,
-            onDragUpdateWorld: tool.dragUpdate,
-            onDragEndWorld: tool.dragEnd,
-          ),
-        ),
+        Expanded(child: _rulerFrame(_buildCanvas())),
         // Thread palette bar
         Container(
           height: 34,

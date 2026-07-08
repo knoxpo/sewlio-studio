@@ -54,6 +54,21 @@ void main() {
     expect(session.document.objects, isEmpty);
   });
 
+  testWidgets('rulers show by default and toggle via View menu',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpWidget(StudioApp(session: StudioSession()));
+
+    expect(find.byType(Ruler), findsNWidgets(2)); // top + left
+
+    await tester.tap(find.text('View'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show Rulers'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Ruler), findsNothing);
+  });
+
   testWidgets('single-key shortcuts switch tools, Esc cancels', (tester) async {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
