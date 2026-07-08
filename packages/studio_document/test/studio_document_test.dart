@@ -110,7 +110,8 @@ void main() {
       history.execute(const AddGuide(guide));
       expect(doc.guides, hasLength(1));
 
-      history.execute(UpdateGuide(guide.copyWith(name: 'Left', positionMm: 10)));
+      history
+          .execute(UpdateGuide(guide.copyWith(name: 'Left', positionMm: 10)));
       expect(doc.guideById(const Id('g1'))!.name, 'Left');
 
       history.execute(const RemoveGuide(Id('g1')));

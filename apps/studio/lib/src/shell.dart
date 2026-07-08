@@ -422,7 +422,8 @@ class _StudioShellState extends State<StudioShell> {
   List<RulerMarker> _markersFor(GuideAxis axis) => [
         for (final guide in session.document.guides)
           if (guide.axis == axis)
-            RulerMarker(positionMm: guide.positionMm, color: _guideColor(guide)),
+            RulerMarker(
+                positionMm: guide.positionMm, color: _guideColor(guide)),
       ];
 
   /// Ruler tap: edit the nearest guide on that axis, or create one.
@@ -541,8 +542,8 @@ class _StudioShellState extends State<StudioShell> {
       session.history.execute(RemoveGuide(existing!.id));
       return;
     }
-    final position =
-        double.tryParse(positionController.text) ?? (existing?.positionMm ?? mm);
+    final position = double.tryParse(positionController.text) ??
+        (existing?.positionMm ?? mm);
     if (existing == null) {
       session.history.execute(AddGuide(Guide(
         id: session.registry.get<IdGenerator>().next(),

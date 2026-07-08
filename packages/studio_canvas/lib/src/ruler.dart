@@ -57,8 +57,7 @@ class Ruler extends StatelessWidget {
             ? null
             : (details) => onTapMm!(_toMm(details.localPosition)),
         child: ListenableBuilder(
-          listenable:
-              Listenable.merge([viewport, if (cursor != null) cursor!]),
+          listenable: Listenable.merge([viewport, if (cursor != null) cursor!]),
           builder: (context, _) => CustomPaint(
             size: Size.infinite,
             painter: _RulerPainter(

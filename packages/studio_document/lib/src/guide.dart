@@ -27,8 +27,7 @@ final class Guide {
   /// Optional `#RRGGBB` override; null = app default guide color.
   final String? colorHex;
 
-  Guide copyWith({double? positionMm, String? name, String? colorHex}) =>
-      Guide(
+  Guide copyWith({double? positionMm, String? name, String? colorHex}) => Guide(
         id: id,
         axis: axis,
         positionMm: positionMm ?? this.positionMm,

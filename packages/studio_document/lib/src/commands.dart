@@ -153,8 +153,7 @@ void registerDocumentHandlers(CommandBus bus, Document document) {
   });
 
   bus.register<RemoveGuide>((command) {
-    final index =
-        document.guides.indexWhere((guide) => guide.id == command.id);
+    final index = document.guides.indexWhere((guide) => guide.id == command.id);
     if (index < 0) {
       throw StateError('No guide with id ${command.id}');
     }
@@ -167,8 +166,8 @@ void registerDocumentHandlers(CommandBus bus, Document document) {
   });
 
   bus.register<UpdateGuide>((command) {
-    final index = document.guides
-        .indexWhere((guide) => guide.id == command.guide.id);
+    final index =
+        document.guides.indexWhere((guide) => guide.id == command.guide.id);
     if (index < 0) {
       throw StateError('No guide with id ${command.guide.id}');
     }

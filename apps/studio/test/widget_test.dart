@@ -69,8 +69,7 @@ void main() {
     expect(find.byType(Ruler), findsNothing);
   });
 
-  testWidgets('tapping a ruler adds a named guide via dialog',
-      (tester) async {
+  testWidgets('tapping a ruler adds a named guide via dialog', (tester) async {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
     final session = StudioSession();

@@ -266,12 +266,10 @@ class _DesignPainter extends CustomPainter {
       if (guide.name.isNotEmpty) {
         final label = TextPainter(
           text: TextSpan(
-              text: guide.name,
-              style: TextStyle(color: color, fontSize: 9)),
+              text: guide.name, style: TextStyle(color: color, fontSize: 9)),
           textDirection: TextDirection.ltr,
         )..layout();
-        label.paint(
-            canvas, vertical ? Offset(px + 4, 4) : Offset(4, px + 3));
+        label.paint(canvas, vertical ? Offset(px + 4, 4) : Offset(4, px + 3));
       }
     }
   }
