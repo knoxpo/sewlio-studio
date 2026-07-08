@@ -7,6 +7,7 @@ environment:
 
 workspace:
   - apps/studio
+  - packages/barley
   - packages/studio_ai
   - packages/studio_bindings
   - packages/studio_canvas

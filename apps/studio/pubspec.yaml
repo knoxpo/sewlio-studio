@@ -9,6 +9,8 @@ environment:
   flutter: ">=3.24.0"
 
 dependencies:
+  barley:
+    path: ../../packages/barley
   flutter:
     sdk: flutter
   studio_ai:
