@@ -18,6 +18,9 @@ Every PR passes this before merge. Ties to `agents/qa-review.md`, `agents/archit
 - [ ] Mutation only through Commands; state changes emit Events; Flutter owns no business logic.
 - [ ] Touched IR stays immutable + versioned + deterministic; schema change carries an ADR.
 - [ ] Exporters consume Machine IR only; digitizer outputs Stitch IR; no hidden coupling.
+- [ ] Machine IR references are embroidery-specific; Loom IR and Print IR are not routed through Machine IR.
+- [ ] Project Type is persistent project data, not a temporary workspace or mode.
+- [ ] Production plans are derived/regenerable; editable design intent remains authoritative.
 - [ ] Package still owns one responsibility; public API minimal; internals not leaked.
 
 # Correctness

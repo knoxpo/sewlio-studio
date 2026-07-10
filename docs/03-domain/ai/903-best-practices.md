@@ -40,6 +40,8 @@ ARCH-030 Coding Standards
 
 # Purpose
 
+Best practices are domain-specific. Shared AI may explain common design concepts, but production recommendations must come from the active Project Type's knowledge module.
+
 This document defines the best practices governing every AI feature within Sewlio Studio.
 
 These practices ensure that AI remains reliable, explainable, deterministic, safe, and commercially useful.

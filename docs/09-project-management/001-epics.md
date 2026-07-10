@@ -36,6 +36,10 @@ Dependencies reference `docs/08-implementation/002-dependency-map.md`.
 | E14 | Plugin System | Plugin runtime, sandbox, extension registry, lifecycle. | stable public APIs (post-E9) | L | ~4 | P3 | M10 |
 | E15 | FFI Bridge | flutter_rust_bridge boundary: Command dispatch, Event stream, progress; WASM path. | E1 | M | ~3 | P1 | M1/M8 |
 | E16 | Testing, CI/CD & Security | Golden/perf/compat/fault harness, pipelines, dependency-direction enforcement, permissions/audit. Cross-cutting. | E1 | L | continuous | P0 | all |
+| E17 | Shared Textile Platform | Universal Design Document, Project Type architecture, production engine framework, dynamic UI contributions. | E1, E4 | L | ~4 | P0/P1 | MVP/1.5 |
+| E18 | Weaving Engine | Weave Plan, Loom IR, weaving UI, loom/controller capabilities and exporters. | E17 | XL | research | P2 | Post-MVP |
+| E19 | Digital Printing Engine | Print Plan, Print IR, color/RIP pipeline, printing UI, print exporters. | E17 | XL | research | P2 | Post-MVP |
+| E20 | Cross-Domain Conversion | Explicit derivation workflows between Project Types with diagnostics. | E17 | L | research | P3 | Post-MVP |
 
 ---
 
@@ -47,4 +51,4 @@ Dependencies reference `docs/08-implementation/002-dependency-map.md`.
   hangs off it.
 - Durations sum to the ~53-sprint / 2-year budget with hardening slack; see `010-milestones.md`.
 
-Features per epic: `002-features.md`. Sprint loading: `003-sprints.md`.
+Features per epic: `002-features.md`. Sprint loading: `003-sprints.md`. E17-E20 extend the program for the expanded Sewlio Studio platform; E18-E20 do not move weaving or printing into the embroidery MVP.

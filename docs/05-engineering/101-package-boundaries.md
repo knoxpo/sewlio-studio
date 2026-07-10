@@ -21,6 +21,12 @@ docs/02-architecture/028-observability.md
 
 # Purpose
 
+Package boundaries separate shared platform packages from production-domain packages.
+
+Embroidery remains the active MVP domain. Weaving and digital printing packages are future additions and must not be introduced before they have real implementation work.
+
+Production-domain packages own their domain rules, production plans, compilers, IRs, validators, simulation, and exporters. UI packages consume them through public APIs and commands only.
+
 This document defines how package boundaries should be implemented in Sewlio Studio.
 
 It translates the platform architecture into engineering constraints, package boundaries, runtime responsibilities, and measurable quality gates.

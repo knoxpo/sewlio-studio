@@ -21,6 +21,10 @@ docs/02-architecture/028-observability.md
 
 # Purpose
 
+Sewlio Studio engineering is organized around a Flutter/Pure Dart embroidery-first MVP, shared platform extraction where needed, and a deferred Rust migration for measured performance-critical systems.
+
+The expanded platform supports future weaving and digital printing domains through Project Type, production engine, validation, simulation, export, and AI module boundaries.
+
 This document defines how engineering overview should be implemented in Sewlio Studio.
 
 It translates the platform architecture into engineering constraints, package boundaries, runtime responsibilities, and measurable quality gates.

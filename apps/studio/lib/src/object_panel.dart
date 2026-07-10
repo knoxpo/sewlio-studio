@@ -1,96 +1,181 @@
 import 'package:flutter/material.dart';
 import 'package:studio_commands/studio_commands.dart';
-import 'package:studio_core/studio_core.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart' as g;
 
-/// Left "Object Properties" panel: transform fields for the selection.
-/// Edits dispatch commands via [onCommand] — the panel never mutates.
+/// Properties panel: object transform fields for a single object
+/// selection, or basic hierarchy controls for layers/groups.
 class ObjectPropertiesPanel extends StatelessWidget {
   const ObjectPropertiesPanel({
     super.key,
     required this.document,
-    required this.selectedId,
+    required this.selectedRefs,
+    required this.primarySelection,
     required this.onCommand,
     required this.canUndo,
     required this.canRedo,
     required this.onUndo,
     required this.onRedo,
+    this.framed = true,
   });
 
   final Document document;
-  final Id? selectedId;
+  final List<DocumentNodeRef> selectedRefs;
+  final DocumentNodeRef? primarySelection;
   final void Function(Command command) onCommand;
   final bool canUndo;
   final bool canRedo;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
+  final bool framed;
 
   @override
   Widget build(BuildContext context) {
-    final object = selectedId == null ? null : document.objectById(selectedId!);
-    return StudioPanel(
-      width: 240,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: AppTokens.background,
-              border: Border(bottom: BorderSide(color: AppTokens.border)),
-            ),
-            child: Row(
-              children: [
-                StudioIconButton(
-                    icon: Icons.undo,
-                    tooltip: 'Undo',
-                    onPressed: canUndo ? onUndo : null),
-                StudioIconButton(
-                    icon: Icons.redo,
-                    tooltip: 'Redo',
-                    onPressed: canRedo ? onRedo : null),
-                const SizedBox(width: 8),
-                const StudioIconButton(
-                    icon: Icons.content_copy, tooltip: 'Copy (soon)'),
-                const StudioIconButton(
-                    icon: Icons.content_paste, tooltip: 'Paste (soon)'),
-              ],
-            ),
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppTokens.background,
+            border: Border(bottom: BorderSide(color: AppTokens.border)),
           ),
-          Expanded(
-            child: object == null
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Text('No selection',
-                        style: TextStyle(color: AppTokens.textMuted)),
-                  )
-                : _Properties(object: object, onCommand: onCommand),
+          child: Row(
+            children: [
+              StudioIconButton(
+                  icon: Icons.undo,
+                  tooltip: 'Undo',
+                  onPressed: canUndo ? onUndo : null),
+              StudioIconButton(
+                  icon: Icons.redo,
+                  tooltip: 'Redo',
+                  onPressed: canRedo ? onRedo : null),
+              const SizedBox(width: 8),
+              const StudioIconButton(
+                  icon: Icons.content_copy, tooltip: 'Copy (soon)'),
+              const StudioIconButton(
+                  icon: Icons.content_paste, tooltip: 'Paste (soon)'),
+            ],
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: primarySelection == null
+              ? Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text('No selection',
+                      style: TextStyle(color: AppTokens.textMuted)),
+                )
+              : _bodyFor(primarySelection!),
+        ),
+      ],
+    );
+    return framed ? StudioPanel(width: 240, child: content) : content;
+  }
+
+  Widget _bodyFor(DocumentNodeRef ref) {
+    if (selectedRefs.length > 1) {
+      return Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Properties',
+                style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 12),
+            Text('${selectedRefs.length} items selected',
+                style: TextStyle(color: AppTokens.textMuted)),
+          ],
+        ),
+      );
+    }
+    return switch (ref.kind) {
+      DocumentNodeKind.object => _ObjectProperties(
+          object: document.objectById(ref.id)!,
+          onCommand: onCommand,
+        ),
+      DocumentNodeKind.group => _HierarchyProperties(
+          name: document.groupById(ref.id)!.name,
+          visible: document.groupById(ref.id)!.visible,
+          locked: document.groupById(ref.id)!.locked,
+          onRename: (name) => onCommand(RenameGroup(ref.id, name)),
+          onVisible: (value) => onCommand(SetNodeVisible(ref, value)),
+          onLocked: (value) => onCommand(SetNodeLocked(ref, value)),
+          title: 'Group Properties',
+        ),
+      DocumentNodeKind.layer => _HierarchyProperties(
+          name: document.layerById(ref.id)!.name,
+          visible: document.layerById(ref.id)!.visible,
+          locked: document.layerById(ref.id)!.locked,
+          onRename: (name) => onCommand(RenameLayer(ref.id, name)),
+          onVisible: (value) => onCommand(SetNodeVisible(ref, value)),
+          onLocked: (value) => onCommand(SetNodeLocked(ref, value)),
+          title: 'Layer Properties',
+        ),
+    };
+  }
+}
+
+class _HierarchyProperties extends StatelessWidget {
+  const _HierarchyProperties({
+    required this.name,
+    required this.visible,
+    required this.locked,
+    required this.onRename,
+    required this.onVisible,
+    required this.onLocked,
+    required this.title,
+  });
+
+  final String name;
+  final bool visible;
+  final bool locked;
+  final void Function(String name) onRename;
+  final void Function(bool value) onVisible;
+  final void Function(bool value) onLocked;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 12),
+        Text('Name', style: TextStyle(color: AppTokens.textMuted)),
+        const SizedBox(height: 8),
+        StudioTextField(
+          key: ValueKey('name-$name'),
+          initialValue: name,
+          onSubmitted: (value) {
+            if (value.isNotEmpty) onRename(value);
+          },
+        ),
+        const SizedBox(height: 12),
+        StudioSwitch(label: 'Visible', value: visible, onChanged: onVisible),
+        StudioSwitch(label: 'Locked', value: locked, onChanged: onLocked),
+      ],
     );
   }
 }
 
-class _Properties extends StatelessWidget {
-  const _Properties({required this.object, required this.onCommand});
+class _ObjectProperties extends StatelessWidget {
+  const _ObjectProperties({required this.object, required this.onCommand});
 
   final EmbroideryObject object;
   final void Function(Command command) onCommand;
 
   @override
   Widget build(BuildContext context) {
-    final bounds = object.path.bounds();
+    final bounds = object.bounds();
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
         const Text('Object Properties',
             style: TextStyle(fontWeight: FontWeight.w500)),
         const SizedBox(height: 12),
-        const Text('Transform', style: TextStyle(color: AppTokens.textMuted)),
+        Text('Transform', style: TextStyle(color: AppTokens.textMuted)),
         const SizedBox(height: 8),
         _mmField(
           'X',
@@ -107,6 +192,7 @@ class _Properties extends StatelessWidget {
         _mmField(
           'W',
           bounds.width,
+          min: 0.01,
           bounds.width <= 0
               ? null
               : (v) => onCommand(TransformObject(
@@ -115,64 +201,96 @@ class _Properties extends StatelessWidget {
         _mmField(
           'H',
           bounds.height,
+          min: 0.01,
           bounds.height <= 0
               ? null
               : (v) => onCommand(TransformObject(
                   object.id, _scaleAbout(bounds, 1, v / bounds.height))),
         ),
         const Divider(height: 24),
-        const Text('Stitch', style: TextStyle(color: AppTokens.textMuted)),
+        Text('Stitch', style: TextStyle(color: AppTokens.textMuted)),
         const SizedBox(height: 8),
         Text(switch (object) {
           RunningStitchObject() => 'Type: running stitch',
           SatinObject() => 'Type: satin (generator pending)',
           FillObject() => 'Type: fill (generator pending)',
+          TextObject(:final text) => 'Type: text — "$text"',
         }),
         if (object case RunningStitchObject(:final stitchLength)) ...[
           const SizedBox(height: 8),
           _mmField(
             'Len',
             stitchLength,
-            (v) {
-              if (v <= 0) return;
-              onCommand(ReplaceObject(RunningStitchObject(
-                  id: object.id, path: object.path, stitchLength: v)));
-            },
+            min: 0.1,
+            (v) => onCommand(ReplaceObject(RunningStitchObject(
+                id: object.id,
+                path: object.path,
+                stroke: object.stroke,
+                stitchLength: v))),
           ),
         ],
+        const Divider(height: 24),
+        Text('Stroke', style: TextStyle(color: AppTokens.textMuted)),
+        const SizedBox(height: 8),
+        _mmField(
+          'W',
+          object.stroke.widthMm,
+          min: 0.05,
+          (v) => onCommand(ReplaceObject(
+              object.withStroke(object.stroke.copyWith(widthMm: v)))),
+        ),
+        const SizedBox(height: 6),
+        Row(children: [
+          StudioDropdown<String>(
+            value: object.stroke.cap,
+            width: 92,
+            items: const [
+              ('butt', 'Butt'),
+              ('round', 'Round'),
+              ('square', 'Square'),
+            ],
+            onChanged: (v) => onCommand(ReplaceObject(
+                object.withStroke(object.stroke.copyWith(cap: v)))),
+          ),
+          const SizedBox(width: 6),
+          StudioDropdown<String>(
+            value: object.stroke.join,
+            width: 92,
+            items: const [
+              ('miter', 'Mitre'),
+              ('round', 'Round'),
+              ('bevel', 'Bevel'),
+            ],
+            onChanged: (v) => onCommand(ReplaceObject(
+                object.withStroke(object.stroke.copyWith(join: v)))),
+          ),
+        ]),
       ],
     );
   }
 
-  /// Scale about the bounds origin so the object stays anchored.
   static g.Transform2 _scaleAbout(g.Bounds b, double sx, double sy) =>
       g.Transform2.translation(b.minX, b.minY) *
       g.Transform2.scaling(sx, sy) *
       g.Transform2.translation(-b.minX, -b.minY);
 
-  Widget _mmField(String label, double value, void Function(double)? submit) {
+  Widget _mmField(String label, double value, void Function(double)? submit,
+      {double min = double.negativeInfinity}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           SizedBox(
               width: 28,
-              child: Text(label,
-                  style: const TextStyle(color: AppTokens.textMuted))),
+              child: Text(label, style: TextStyle(color: AppTokens.textMuted))),
           Expanded(
-            child: TextFormField(
-              key: ValueKey('$label-${value.toStringAsFixed(2)}'),
-              initialValue: value.toStringAsFixed(2),
-              enabled: submit != null,
-              style: const TextStyle(fontSize: 12),
-              onFieldSubmitted: (text) {
-                final v = double.tryParse(text);
-                if (v != null) submit?.call(v);
-              },
+            child: StudioNumberField(
+              value: value,
+              min: min,
+              suffix: 'mm',
+              onSubmitted: submit,
             ),
           ),
-          const SizedBox(width: 6),
-          const Text('mm', style: TextStyle(color: AppTokens.textMuted)),
         ],
       ),
     );

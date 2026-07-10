@@ -21,6 +21,8 @@ docs/02-architecture/008-rendering-architecture.md
 
 # Purpose
 
+Terminology note: Print Preview previews document output for normal printing or page-style review. It is not the same as a Digital Printing Project, Print Engine, Print Plan, Print IR, or RIP integration.
+
 This document defines the print preview architecture for Sewlio Studio.
 
 It describes how the UI surface supports a professional embroidery, CAD, and digitizing workflow without owning domain logic.

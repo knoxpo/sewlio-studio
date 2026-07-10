@@ -28,7 +28,7 @@ This provides:
 - Easier parallel development
 - Clear ownership
 
-Every Rust crate and Flutter package ultimately depends on the contracts defined in this document.
+Every Dart package, future Rust crate, and Flutter package ultimately depends on the contracts defined in this document.
 
 ---
 
@@ -168,7 +168,7 @@ AI never manipulates private runtime state.
 
 # Overview
 
-Sewlio Studio defines five official IRs.
+The embroidery MVP defines five official IRs.
 
 | IR | Purpose |
 |-----|---------|
@@ -177,6 +177,15 @@ Sewlio Studio defines five official IRs.
 | Stitch IR | Machine-independent embroidery |
 | Playback IR | Simulation timeline |
 | Machine IR | Machine instruction model |
+
+Future production domains add their own production IRs.
+
+| IR | Purpose |
+|-----|---------|
+| Loom IR | Loom/controller-ready weaving production model |
+| Print IR | Printer/RIP-ready digital printing production model |
+
+Machine IR remains embroidery-specific. Use Production IR only when referring to the general architectural role shared by Machine IR, Loom IR, and Print IR.
 
 ---
 

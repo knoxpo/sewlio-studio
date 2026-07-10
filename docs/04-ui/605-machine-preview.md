@@ -24,6 +24,8 @@ docs/03-domain/machine/308-manufacturing.md
 
 This document defines the machine preview architecture for Sewlio Studio.
 
+Machine Preview is the embroidery production preview. The shared concept is Production Preview; future Weaving and Digital Printing Projects may provide Loom Preview or Print/RIP Preview without routing through Machine IR.
+
 It describes how the UI surface supports a professional embroidery, CAD, and digitizing workflow without owning domain logic.
 
 All behavior described here is presentation, interaction, or workflow orchestration layered on top of the command system and state projections exposed by the runtime.
@@ -51,7 +53,7 @@ The interface should feel precise, low-latency, and trustworthy for expert opera
 
 # Definition
 
-Machine Preview is the UI subsystem responsible for exposing hoop positioning and needle path preview to end users.
+Machine Preview is the Embroidery Project UI subsystem responsible for exposing hoop positioning and needle path preview to end users.
 
 Its state is derived from document snapshots, view models, user preferences, task status, and permission-aware extension contributions.
 

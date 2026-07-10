@@ -1,5 +1,7 @@
 import 'package:studio_geometry/studio_geometry.dart';
 
+import 'text_font.dart';
+
 /// Built-in single-stroke (monoline) vector font for the Text tool.
 ///
 /// Glyphs are polyline strokes on a 4-wide × 6-tall grid (y up,
@@ -221,28 +223,93 @@ const Map<String, List<List<(double, double)>>> _glyphs = {
   ' ': [],
 };
 
-/// Converts [text] to stitchable monoline paths (one per pen stroke).
-/// [origin] is the baseline left; [sizeMm] is the capital height.
-/// Unsupported characters are skipped (lowercase maps to uppercase).
-List<Path> textToPaths(String text,
-    {required Point origin, double sizeMm = 10}) {
-  final scale = sizeMm / _capHeight;
-  final paths = <Path>[];
-  var penX = origin.x;
-  for (final rune in text.toUpperCase().runes) {
-    final strokes = _glyphs[String.fromCharCode(rune)];
-    if (strokes != null) {
-      for (final stroke in strokes) {
-        if (stroke.length < 2) continue;
-        Point map((double, double) p) =>
-            Point(penX + p.$1 * scale, origin.y - p.$2 * scale);
-        paths.add(Path(
-          start: map(stroke.first),
-          segments: [for (final p in stroke.skip(1)) LineSegment(map(p))],
-        ));
-      }
-    }
-    penX += _advance * scale;
+/// The built-in single-stroke font as a [TextFont]. Uppercase-only:
+/// lowercase maps to uppercase; unsupported runes draw nothing but
+/// still advance (fixed-pitch grid).
+final class MonolineTextFont implements TextFont {
+  const MonolineTextFont();
+
+  @override
+  String get family => 'Monoline';
+
+  @override
+  bool supports(int rune) =>
+      _glyphs.containsKey(String.fromCharCode(rune).toUpperCase());
+
+  @override
+  double advanceMm(int rune, double sizeMm) => _advance * (sizeMm / _capHeight);
+
+  @override
+  List<Path> glyphPaths(int rune, Point origin, double sizeMm) {
+    final strokes = _glyphs[String.fromCharCode(rune).toUpperCase()];
+    if (strokes == null) return const [];
+    final scale = sizeMm / _capHeight;
+    return [
+      for (final stroke in strokes)
+        if (stroke.length >= 2)
+          Path(
+            start: _map(stroke.first, origin, scale),
+            segments: [
+              for (final p in stroke.skip(1))
+                LineSegment(_map(p, origin, scale))
+            ],
+          ),
+    ];
   }
-  return paths;
+
+  static Point _map((double, double) p, Point origin, double scale) =>
+      Point(origin.x + p.$1 * scale, origin.y - p.$2 * scale);
 }
+
+// Backwards-compatible wrappers around the generic layout with the
+// built-in font (existing tests/tools call these).
+
+double monoAdvanceMm(double sizeMm, {double trackingMm = 0}) =>
+    const MonolineTextFont().advanceMm(0x41, sizeMm) + trackingMm;
+
+double monoLineWidthMm(String line, double sizeMm, {double trackingMm = 0}) =>
+    textLineWidthMm(line, const MonolineTextFont(), sizeMm,
+        trackingMm: trackingMm);
+
+List<String> monoWrapText(
+  String text, {
+  required double sizeMm,
+  double trackingMm = 0,
+  double? frameWidthMm,
+}) =>
+    wrapText(text, const MonolineTextFont(),
+        sizeMm: sizeMm, trackingMm: trackingMm, frameWidthMm: frameWidthMm);
+
+List<Path> textToPaths(
+  String text, {
+  required Point origin,
+  double sizeMm = 10,
+  double trackingMm = 0,
+  double lineHeight = 1.4,
+  MonoTextAlign align = MonoTextAlign.left,
+  double? frameWidthMm,
+}) =>
+    layoutText(text, const MonolineTextFont(),
+        origin: origin,
+        sizeMm: sizeMm,
+        trackingMm: trackingMm,
+        lineHeight: lineHeight,
+        align: align,
+        frameWidthMm: frameWidthMm);
+
+Point monoCaretPosition(
+  String text, {
+  required Point origin,
+  double sizeMm = 10,
+  double trackingMm = 0,
+  double lineHeight = 1.4,
+  MonoTextAlign align = MonoTextAlign.left,
+  double? frameWidthMm,
+}) =>
+    layoutCaret(text, const MonolineTextFont(),
+        origin: origin,
+        sizeMm: sizeMm,
+        trackingMm: trackingMm,
+        lineHeight: lineHeight,
+        align: align,
+        frameWidthMm: frameWidthMm);

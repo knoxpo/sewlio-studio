@@ -20,7 +20,7 @@ Maintain smooth canvas interaction (target 60 FPS on recommended hardware).
 
 # Engineering Metrics
 
->90% unit test coverage for Rust core crates.
+High unit-test coverage for core/domain packages; future Rust crates inherit the same bar.
 
 Zero circular dependencies between packages.
 
@@ -58,6 +58,6 @@ No agent modifies architecture without an approved Architecture Decision Record 
 
 Sewlio Studio becomes:
 
-- The reference open-source embroidery platform.
-- A reusable Rust embroidery engine for other applications.
-- A thriving ecosystem for plugins, templates, automation, and future AI-assisted embroidery workflows.
+- The reference open-source textile design and production platform.
+- A reusable production engine architecture for other applications.
+- A thriving ecosystem for plugins, templates, automation, and future AI-assisted textile workflows.

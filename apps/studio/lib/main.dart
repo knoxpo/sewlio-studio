@@ -6,10 +6,17 @@ import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
 import 'package:studio_events/studio_events.dart';
 
-import 'src/shell.dart';
+import 'src/app_shell.dart';
+import 'src/app_view_model.dart';
+import 'src/file_io.dart';
+import 'src/recents.dart';
 
 void main() {
-  runApp(StudioApp(session: StudioSession()));
+  final recentsPath = appStatePath('recents.json');
+  runApp(StudioApp(
+    recents:
+        recentsPath == null ? RecentsStore.memory() : RecentsStore(recentsPath),
+  ));
 }
 
 /// Composition root: wires the pure-Dart engine (document, buses,
@@ -42,18 +49,60 @@ final class StudioSession {
   late final History history;
 }
 
-class StudioApp extends StatelessWidget {
-  const StudioApp({super.key, required this.session});
+class StudioApp extends StatefulWidget {
+  const StudioApp({super.key, this.session, this.recents});
 
-  final StudioSession session;
+  /// When given, opens as an already-active document tab (test hook —
+  /// production startup always lands on the Home Workspace).
+  final StudioSession? session;
+  final RecentsStore? recents;
+
+  @override
+  State<StudioApp> createState() => _StudioAppState();
+}
+
+class _StudioAppState extends State<StudioApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild on both the in-app theme choice and OS light/dark flips
+    // (the latter matters when the mode is ThemeMode.system).
+    WidgetsBinding.instance.addObserver(this);
+    studioThemeMode.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    studioThemeMode.removeListener(_onThemeChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _onThemeChanged() => setState(() {});
+
+  @override
+  void didChangePlatformBrightness() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
+    final dark = switch (studioThemeMode.value) {
+      ThemeMode.dark => true,
+      ThemeMode.light => false,
+      ThemeMode.system =>
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark,
+    };
+    AppTokens.setDark(dark);
     return MaterialApp(
       title: 'Sewlio Studio',
       theme: studioTheme(),
       debugShowCheckedModeBanner: false,
-      home: StudioShell(session: session),
+      home: AppShell(create: () {
+        final app =
+            AppViewModel(recents: widget.recents ?? RecentsStore.memory());
+        if (widget.session != null) app.adoptSession(widget.session!);
+        return app;
+      }),
     );
   }
 }

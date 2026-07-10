@@ -20,6 +20,8 @@ features. Vertical slice (SVG→DST) before horizontal build-out.**
 
 All Dart. Each step depends only on earlier ones. No Rust required.
 
+Project Type architecture may be introduced during MVP only where it directly supports Embroidery Project creation, export filtering, or UI contribution boundaries. Weaving and printing implementation waits until the additional-domain phase.
+
 | # | Stage | Package(s) | Prereq |
 |---|---|---|---|
 | 1 | Flutter/Dart monorepo setup (workspace, lint/test, CI commands, roadmap docs) | apps/studio, workspace | — |

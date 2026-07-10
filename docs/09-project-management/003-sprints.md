@@ -1,5 +1,9 @@
 # Project Management
 
+> **Platform update:** MVP sprints remain Flutter/Dart and embroidery-first. Platform
+> generalization can add Project Type and dynamic contribution seams where they support Embroidery
+> Projects. Weaving and printing implementation starts after MVP acceptance.
+
 ## PM-003 Sprint Plan (Rolling Wave)
 
 **Document ID:** PM-003

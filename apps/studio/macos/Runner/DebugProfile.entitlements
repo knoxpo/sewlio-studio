@@ -2,9 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- ponytail: sandbox off — save/open/export write user-typed paths via
-	     dart:io. Re-enable with user-selected.read-write once a native file
-	     picker (file_selector) replaces the path dialogs. -->
+	<!-- ponytail: sandbox off — pickers are native (file_selector) now, but
+	     recents reopen and save-to-known-path still use raw dart:io paths.
+	     Re-enable with user-selected.read-write + security-scoped bookmarks
+	     for recent projects. -->
 	<key>com.apple.security.app-sandbox</key>
 	<false/>
 	<key>com.apple.security.cs.allow-jit</key>

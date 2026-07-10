@@ -22,7 +22,9 @@ ARCH-011 Machine Compiler
 
 # Purpose
 
-The Export Pipeline is responsible for converting **Machine IR** into one or more machine-readable embroidery file formats.
+For Embroidery Projects, the Export Pipeline converts **Machine IR** into one or more machine-readable embroidery file formats.
+
+For future Weaving and Digital Printing Projects, domain exporters consume Loom IR or Print IR through the same shared export framework.
 
 The Export Pipeline is **not** responsible for:
 
@@ -85,7 +87,7 @@ Each export format is an independent backend.
 
 ## Format Independent
 
-The Export Pipeline accepts only Machine IR.
+The embroidery Export Pipeline accepts only Machine IR.
 
 It never consumes Geometry IR or Stitch IR.
 

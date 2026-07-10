@@ -6,29 +6,51 @@ import 'package:studio_tools/studio_tools.dart';
 
 import 'tool_options.dart';
 
-/// Affinity-style tool-group button: hovering (or clicking when already
-/// active, long-press, right-click) opens a popover beside the rail
-/// listing the group's variants. The slot shows the current variant and
-/// a corner-triangle flyout indicator.
-class ShapeFlyoutButton extends StatefulWidget {
-  const ShapeFlyoutButton({
-    super.key,
-    required this.shapeTool,
-    required this.active,
-    required this.onActivate,
+/// One row in a tool-group flyout.
+final class FlyoutEntry {
+  const FlyoutEntry({
+    required this.icon,
+    required this.label,
+    this.selected = false,
+    this.onPick,
   });
 
-  final ShapeTool shapeTool;
-  final bool active;
+  final IconData icon;
+  final String label;
+  final bool selected;
 
-  /// Called with the picked kind (or null to just activate the tool).
-  final void Function(ShapeKind? kind) onActivate;
-
-  @override
-  State<ShapeFlyoutButton> createState() => _ShapeFlyoutButtonState();
+  /// Null = future tool: rendered dimmed and inert.
+  final VoidCallback? onPick;
 }
 
-class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton>
+/// Affinity-style tool-group slot: hovering (or clicking when already
+/// active, long-press, right-click) opens a popover beside the rail
+/// listing the group's tools. The slot shows the group's current tool
+/// and a corner-triangle flyout indicator; the last-picked tool stays
+/// on the slot.
+class ToolFlyoutSlot extends StatefulWidget {
+  const ToolFlyoutSlot({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.active,
+    required this.onActivate,
+    required this.entries,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final bool active;
+
+  /// Slot tap when the group is not active.
+  final VoidCallback onActivate;
+  final List<FlyoutEntry> entries;
+
+  @override
+  State<ToolFlyoutSlot> createState() => _ToolFlyoutSlotState();
+}
+
+class _ToolFlyoutSlotState extends State<ToolFlyoutSlot>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animation;
 
@@ -93,12 +115,9 @@ class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton>
               opacity: fade.value,
               child: Transform.translate(offset: slide.value, child: child),
             ),
-            child: _ShapePopover(
-              current: widget.shapeTool.kind,
-              onPick: (kind) {
-                _dismiss();
-                widget.onActivate(kind);
-              },
+            child: _FlyoutPopover(
+              entries: widget.entries,
+              onPicked: _dismiss,
             ),
           ),
         ),
@@ -131,15 +150,15 @@ class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton>
         onLongPress: _open,
         onSecondaryTap: _open,
         child: StudioIconButton(
-          icon: shapeIcon(widget.shapeTool.kind),
-          tooltip: '${shapeLabel(widget.shapeTool.kind)} (M)',
+          icon: widget.icon,
+          tooltip: widget.tooltip,
           active: widget.active,
           flyoutIndicator: true,
           onPressed: () {
             if (widget.active) {
               _open();
             } else {
-              widget.onActivate(null);
+              widget.onActivate();
             }
           },
         ),
@@ -148,11 +167,11 @@ class _ShapeFlyoutButtonState extends State<ShapeFlyoutButton>
   }
 }
 
-class _ShapePopover extends StatelessWidget {
-  const _ShapePopover({required this.current, required this.onPick});
+class _FlyoutPopover extends StatelessWidget {
+  const _FlyoutPopover({required this.entries, required this.onPicked});
 
-  final ShapeKind current;
-  final void Function(ShapeKind kind) onPick;
+  final List<FlyoutEntry> entries;
+  final VoidCallback onPicked;
 
   @override
   Widget build(BuildContext context) {
@@ -180,37 +199,85 @@ class _ShapePopover extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final kind in ShapeKind.values)
+            for (final entry in entries)
               InkWell(
-                onTap: () => onPick(kind),
+                onTap: entry.onPick == null
+                    ? null
+                    : () {
+                        onPicked();
+                        entry.onPick!();
+                      },
                 hoverColor: AppTokens.primary.withValues(alpha: 0.25),
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: Row(children: [
-                    Icon(shapeIcon(kind),
+                    Icon(entry.icon,
                         size: 16,
-                        color: kind == current
-                            ? AppTokens.primary
-                            : AppTokens.textPrimary),
+                        color: entry.onPick == null
+                            ? AppTokens.textMuted.withValues(alpha: 0.4)
+                            : entry.selected
+                                ? AppTokens.primary
+                                : AppTokens.textPrimary),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(shapeLabel(kind),
+                      child: Text(entry.label,
                           style: TextStyle(
                               fontSize: 12,
-                              color: kind == current
-                                  ? AppTokens.primary
-                                  : AppTokens.textPrimary)),
+                              color: entry.onPick == null
+                                  ? AppTokens.textMuted.withValues(alpha: 0.4)
+                                  : entry.selected
+                                      ? AppTokens.primary
+                                      : AppTokens.textPrimary)),
                     ),
-                    if (kind == current)
+                    if (entry.selected)
                       const Icon(Icons.check,
                           size: 12, color: AppTokens.primary),
+                    if (entry.onPick == null)
+                      Text('soon',
+                          style: TextStyle(
+                              fontSize: 9, color: AppTokens.textMuted)),
                   ]),
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shape tool-group slot: the generic flyout fed by [ShapeKind].
+class ShapeFlyoutButton extends StatelessWidget {
+  const ShapeFlyoutButton({
+    super.key,
+    required this.shapeTool,
+    required this.active,
+    required this.onActivate,
+  });
+
+  final ShapeTool shapeTool;
+  final bool active;
+
+  /// Called with the picked kind (or null to just activate the tool).
+  final void Function(ShapeKind? kind) onActivate;
+
+  @override
+  Widget build(BuildContext context) {
+    return ToolFlyoutSlot(
+      icon: shapeIcon(shapeTool.kind),
+      tooltip: '${shapeLabel(shapeTool.kind)} (M)',
+      active: active,
+      onActivate: () => onActivate(null),
+      entries: [
+        for (final kind in ShapeKind.values)
+          FlyoutEntry(
+            icon: shapeIcon(kind),
+            label: shapeLabel(kind),
+            selected: kind == shapeTool.kind,
+            onPick: () => onActivate(kind),
+          ),
+      ],
     );
   }
 }

@@ -25,13 +25,15 @@ ARCH-011 Export Pipeline
 
 # Purpose
 
-The Digitizer Pipeline is responsible for converting editable vector artwork into a machine-independent embroidery representation (**Stitch IR**).
+The Digitizer Pipeline is the embroidery production pipeline responsible for converting editable vector artwork into a machine-independent embroidery representation (**Stitch IR**).
 
-The Digitizer is the heart of Sewlio Studio.
+The Digitizer is the heart of the Embroidery Project Type.
 
 Everything before the Digitizer is design.
 
 Everything after the Digitizer is manufacturing.
+
+Weaving and Digital Printing do not use the Digitizer Pipeline. They use their own production engines, plans, and IRs.
 
 ---
 
@@ -1018,3 +1020,16 @@ The Digitizer Pipeline is complete when
 ✓ Large designs compile efficiently.
 
 ✓ The Digitizer remains independently testable.
+
+---
+
+## MVP status (Dart engine — ADR-026/028)
+
+`studio_embroidery.digitizeObjects` is the MVP digitizer: a pure function
+from visible document objects to the Stitch IR, re-run whenever the document
+changes (preview, simulation, export). Stitches are derived, disposable
+output — never part of the editing model (ADR-028). `generateStitches`
+dispatches per object type: running stitch is implemented; text objects
+stitch their cached glyph outlines as outline lettering with trims/jumps
+between contours; satin and fill generators land in their own sprint and
+will slot into the same dispatch.

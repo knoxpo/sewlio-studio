@@ -8,5 +8,8 @@ library;
 export 'src/commands.dart';
 export 'src/document.dart';
 export 'src/guide.dart';
+export 'src/hoop.dart';
+export 'src/hierarchy.dart';
 export 'src/history.dart';
 export 'src/project_io.dart';
+export 'src/units.dart';

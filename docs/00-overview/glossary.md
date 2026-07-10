@@ -156,6 +156,26 @@ Rust subsystem responsible for vector mathematics.
 
 Rust subsystem converting geometry into embroidery stitches.
 
+## Universal Design Document
+
+The editable source of truth for a Sewlio Studio project. It stores shared design intent such as geometry, text, layers, assets, colors, materials, transforms, and metadata. Production plans and export output are derived from it.
+
+## Project Type
+
+The persistent production type selected for a project, such as Embroidery, Weaving, or Digital Printing. Project Type resolves the active production engine, tools, validators, simulation, exporters, profiles, and AI knowledge module.
+
+## Production Domain
+
+A textile manufacturing area with its own production semantics. Embroidery, weaving, and digital printing are production domains.
+
+## Production Engine
+
+A domain-owned engine that converts the Universal Design Document and production configuration into a derived production plan, diagnostics, simulation data, compiled IR, and export readiness.
+
+## Production Plan
+
+A derived domain-specific plan, such as a Stitch Plan, Weave Plan, or Print Plan. It is regenerated from editable design intent and production configuration.
+
 ---
 
 ## Renderer

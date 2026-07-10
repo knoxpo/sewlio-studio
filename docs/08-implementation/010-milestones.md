@@ -11,6 +11,8 @@ Ten milestones, foundation-first. Each has entry criteria, exit criteria (the ga
 Approx durations assume one senior engineer + agents (see `007-estimation-guidelines.md`); they are
 planning estimates, refined per rolling wave.
 
+Platform update: Phase 1 remains Flutter/Dart and embroidery-first. Phase 1.5 generalizes project types and production engine contracts. Additional weaving and printing engines are post-MVP. Rust migration remains deferred until after MVP validation and measured need.
+
 ---
 
 ## M1 — Foundation  ·  ~4 sprints

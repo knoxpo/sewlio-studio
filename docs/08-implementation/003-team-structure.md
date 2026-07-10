@@ -28,6 +28,8 @@ the engineer is integrator, reviewer, and final authority.
 | ai | es_ai | impl | eng | embroidery, machine-compiler | qa-review |
 | qa-review | tests, CI compliance, security review | reviews | eng | all | eng |
 
+Future domain agents are planned but not active for the embroidery MVP: weaving-domain, loom-compiler, digital-printing-domain, print-pipeline, and cross-domain-conversion. Phase 2/3 Rust migration agents remain deferred: rust-migration-architect, rust-geometry, rust-production-engine, flutter-rust-bridge, and performance-benchmark.
+
 R = Responsible, A = Accountable (the human engineer), C = Consulted, I = Informed.
 
 ---

@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:studio_design_system/studio_design_system.dart';
+import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart' as g;
 import 'package:studio_machine/studio_machine.dart';
@@ -19,14 +21,16 @@ class BottomPanel extends StatelessWidget {
   const BottomPanel({
     super.key,
     required this.sequence,
-    required this.machine,
-    required this.onMachineChanged,
+    required this.hoop,
+    required this.onEditHoop,
     required this.onExport,
   });
 
   final StitchSequence sequence;
-  final MachineModel machine;
-  final void Function(MachineModel machine) onMachineChanged;
+  final HoopSettings hoop;
+
+  /// Opens the Document Setup dialog (hoop size, shape, fabric).
+  final VoidCallback onEditHoop;
   final void Function(String suffix) onExport;
 
   @override
@@ -37,8 +41,8 @@ class BottomPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(child: SimulationSection(sequence: sequence)),
-          _HoopSection(machine: machine, onChanged: onMachineChanged),
-          _ExportSection(onExport: onExport),
+          _HoopSection(hoop: hoop, onEdit: onEditHoop),
+          // _ExportSection(onExport: onExport),
         ],
       ),
     );
@@ -116,36 +120,30 @@ class _SimulationSectionState extends State<SimulationSection> {
           Container(
             width: 110,
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppTokens.background,
               border: Border(right: BorderSide(color: AppTokens.border)),
             ),
             child: Column(
               children: [
-                FilledButton.icon(
+                StudioButton(
+                  label: playing ? 'Pause' : 'Play',
+                  icon: playing ? Icons.pause : Icons.play_arrow,
+                  variant: StudioButtonVariant.primary,
+                  expand: true,
                   onPressed: ops.isEmpty ? null : _togglePlay,
-                  icon:
-                      Icon(playing ? Icons.pause : Icons.play_arrow, size: 16),
-                  label: Text(playing ? 'Pause' : 'Play'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(30),
-                    padding: EdgeInsets.zero,
-                  ),
                 ),
                 const SizedBox(height: 6),
-                OutlinedButton.icon(
+                StudioButton(
+                  label: 'Rewind',
+                  icon: Icons.fast_rewind,
+                  expand: true,
                   onPressed: ops.isEmpty
                       ? null
                       : () => setState(() {
                             _stop();
                             playback.position = 0;
                           }),
-                  icon: const Icon(Icons.fast_rewind, size: 16),
-                  label: const Text('Rewind'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(28),
-                    padding: EdgeInsets.zero,
-                  ),
                 ),
               ],
             ),
@@ -175,14 +173,17 @@ class _SimulationSectionState extends State<SimulationSection> {
                       ),
                     ),
                   ),
-                  Slider(
-                    value: playback.fraction.clamp(0, 1),
-                    onChanged: ops.isEmpty
-                        ? null
-                        : (f) => setState(() {
-                              _stop();
-                              playback.seek(f);
-                            }),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: StudioSlider(
+                      value: playback.fraction.clamp(0, 1),
+                      onChanged: ops.isEmpty
+                          ? null
+                          : (f) => setState(() {
+                                _stop();
+                                playback.seek(f);
+                              }),
+                    ),
                   ),
                 ],
               ),
@@ -192,12 +193,12 @@ class _SimulationSectionState extends State<SimulationSection> {
           Container(
             width: 190,
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppTokens.background,
               border: Border(left: BorderSide(color: AppTokens.border)),
             ),
             child: DefaultTextStyle(
-              style: const TextStyle(fontSize: 11, color: AppTokens.textMuted),
+              style: TextStyle(fontSize: 11, color: AppTokens.textMuted),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -220,11 +221,11 @@ class _SimulationSectionState extends State<SimulationSection> {
 
   Widget _stat(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 1),
       child: Row(
         children: [
           Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
-          Text(value, style: const TextStyle(color: AppTokens.textPrimary)),
+          Text(value, style: TextStyle(color: AppTokens.textPrimary)),
         ],
       ),
     );
@@ -232,58 +233,103 @@ class _SimulationSectionState extends State<SimulationSection> {
 }
 
 class _HoopSection extends StatelessWidget {
-  const _HoopSection({required this.machine, required this.onChanged});
+  const _HoopSection({required this.hoop, required this.onEdit});
 
-  final MachineModel machine;
-  final void Function(MachineModel) onChanged;
+  final HoopSettings hoop;
+  final VoidCallback onEdit;
+
+  Color get _fabric => Color(
+      0xFF000000 | int.parse(hoop.fabricColorHex.substring(1), radix: 16));
+
+  // ignore: unused_element
+  static String _shapeLabel(HoopShape shape) => switch (shape) {
+        HoopShape.rectangle => 'Rectangle',
+        HoopShape.roundedRectangle => 'Rounded',
+        HoopShape.oval => 'Oval',
+      };
+
+  static String _textureLabel(FabricTexture texture) => switch (texture) {
+        FabricTexture.none => 'None',
+        FabricTexture.weave => 'Weave',
+        FabricTexture.aida => 'Aida',
+      };
+
+  Widget _row(String label, Widget value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(children: [
+          Expanded(
+            child: Text(label,
+                style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+          ),
+          value,
+        ]),
+      );
+
+  Widget _value(String text) =>
+      Text(text, style: TextStyle(color: AppTokens.textPrimary, fontSize: 11));
 
   @override
   Widget build(BuildContext context) {
     return StudioPanel(
       title: 'Hoop',
       width: 230,
+      // trailing: StudioIconButton(
+      //     icon: Icons.tune, tooltip: 'Edit hoop…', onPressed: onEdit),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text('Size:',
-                      style:
-                          TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+            // Read-only summary — edits go through Document Setup.
+            _row(
+                'Size',
+                _value(
+                    '${hoop.widthMm.round()} × ${hoop.heightMm.round()} mm')),
+            // _row('Shape', _value(_shapeLabel(hoop.shape))),
+            _row(
+              'Fabric',
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  margin: const EdgeInsets.only(right: 5),
+                  decoration: BoxDecoration(
+                    color: _fabric,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTokens.border),
+                  ),
                 ),
-                DropdownButton<MachineModel>(
-                  value: machine,
-                  isDense: true,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTokens.textPrimary),
-                  items: [
-                    for (final preset in hoopPresets)
-                      DropdownMenuItem(value: preset, child: Text(preset.name)),
-                  ],
-                  onChanged: (m) {
-                    if (m != null) onChanged(m);
-                  },
-                ),
-              ],
+                _value(_textureLabel(hoop.texture)),
+              ]),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Expanded(
               child: Center(
                 child: AspectRatio(
-                  aspectRatio: machine.hoopWidthMm / machine.hoopHeightMm,
+                  aspectRatio: hoop.widthMm / hoop.heightMm,
                   child: Container(
                     decoration: BoxDecoration(
+                      color: _fabric.withValues(alpha: 0.12),
                       border: Border.all(
                           color: AppTokens.accentGreen.withValues(alpha: 0.5),
                           width: 2),
-                      borderRadius: BorderRadius.circular(12),
+                      // Preview mirrors the hoop shape.
+                      borderRadius: switch (hoop.shape) {
+                        HoopShape.rectangle => BorderRadius.zero,
+                        HoopShape.roundedRectangle => BorderRadius.circular(12),
+                        HoopShape.oval => BorderRadius.circular(999),
+                      },
                     ),
                   ),
                 ),
               ),
+            ),
+            const SizedBox(height: 6),
+            StudioButton(
+              label: 'Edit Hoop…',
+              icon: Icons.tune,
+              expand: true,
+              onPressed: onEdit,
             ),
           ],
         ),
@@ -292,6 +338,7 @@ class _HoopSection extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _ExportSection extends StatelessWidget {
   const _ExportSection({required this.onExport});
 
@@ -299,10 +346,10 @@ class _ExportSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget format(String label, {String? suffix}) => OutlinedButton(
+    Widget format(String label, {String? suffix}) => StudioButton(
+          label: label,
+          expand: true,
           onPressed: suffix == null ? null : () => onExport(suffix),
-          style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
-          child: Text(label, style: const TextStyle(fontSize: 11)),
         );
     return StudioPanel(
       title: 'Export',
@@ -329,11 +376,18 @@ class _ExportSection extends StatelessWidget {
 /// Paints a stitch-sequence prefix fitted into the available size.
 class StitchPreviewPainter extends CustomPainter {
   StitchPreviewPainter(
-      {required this.ops, required this.all, required this.color});
+      {required this.ops,
+      required this.all,
+      required this.color,
+      this.threadColors});
 
   final List<StitchOp> ops;
   final List<StitchOp> all;
   final Color color;
+
+  /// When given, stitches are drawn in the active thread's color
+  /// (advanced on colorChange ops); otherwise everything uses [color].
+  final List<Color>? threadColors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -354,8 +408,13 @@ class StitchPreviewPainter extends CustomPainter {
           size.height / 2 + (p.y - center.y) * scale,
         );
 
+    final colors = threadColors;
+    var thread = 0;
+    Color active() => colors == null || colors.isEmpty
+        ? color
+        : colors[thread % colors.length];
     final paint = Paint()
-      ..color = color
+      ..color = active()
       ..strokeWidth = 1.2;
     Offset? pen;
     for (final op in ops) {
@@ -366,18 +425,22 @@ class StitchPreviewPainter extends CustomPainter {
           pen = next;
         case StitchKind.jump:
           pen = map(op.position); // move without drawing
-        case StitchKind.trim:
         case StitchKind.colorChange:
+          thread++;
+          paint.color = active();
+        case StitchKind.trim:
         case StitchKind.stop:
           break;
       }
     }
     if (pen != null) {
-      canvas.drawCircle(pen, 3, Paint()..color = color);
+      canvas.drawCircle(pen, 3, Paint()..color = paint.color);
     }
   }
 
   @override
   bool shouldRepaint(StitchPreviewPainter oldDelegate) =>
-      oldDelegate.ops.length != ops.length || oldDelegate.all != all;
+      oldDelegate.ops.length != ops.length ||
+      oldDelegate.all != all ||
+      !listEquals(oldDelegate.threadColors, threadColors);
 }

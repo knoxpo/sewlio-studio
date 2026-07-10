@@ -58,6 +58,8 @@ ARCH-021 Architecture Principles
 
 # Purpose
 
+These rules are embroidery-specific digitizing rules. Future weaving and printing AI modules must define their own canonical rules instead of reusing stitch terminology.
+
 This document defines the AI Digitizing Rules used by Sewlio Studio.
 
 The AI Digitizer transforms artwork into embroidery by applying explicit embroidery knowledge rather than relying solely on statistical prediction.

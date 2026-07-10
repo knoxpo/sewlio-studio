@@ -10,19 +10,19 @@
 
 # 1. Executive Summary
 
-Sewlio Studio is an open-source, offline-first, professional embroidery design application built for modern operating systems and tablets.
+Sewlio Studio is an open-source, offline-first, professional textile design and production platform built for modern operating systems and tablets.
 
-Unlike traditional embroidery software that evolved from decades-old desktop applications, Sewlio Studio is designed from the ground up around modern UI principles, cross-platform support, high-performance computation, and AI-assisted development.
+Unlike traditional textile-production software that evolved as separate domain tools, Sewlio Studio is designed from the ground up around modern UI principles, cross-platform support, production-domain engines, and AI-assisted development.
 
-The application combines a Flutter-based user interface with a Rust embroidery engine to create a professional embroidery experience that is fast, intuitive, extensible, and portable.
+The MVP combines a Flutter-based user interface with pure-Dart domain packages for an embroidery-first vertical slice. The long-term architecture preserves selective Rust migration for performance-critical production engines.
 
 ---
 
 # 2. Vision
 
-Enable designers to create complete embroidery projects—from sketch to machine-ready output—without proprietary software or mandatory cloud services.
+Enable designers and production teams to create textile projects from editable design intent to production-ready output without proprietary software or mandatory cloud services.
 
-Sewlio Studio should become the Blender or Krita of embroidery software.
+Sewlio Studio should become the Blender or Krita of textile production software.
 
 ---
 
@@ -36,7 +36,7 @@ Create a platform that allows anyone to:
 - Simulate
 - Export
 
-professional embroidery designs on every major platform.
+professional textile production projects on every major platform.
 
 ---
 
@@ -44,7 +44,9 @@ professional embroidery designs on every major platform.
 
 ## Primary Goals
 
-- Professional embroidery digitizing
+- Professional embroidery digitizing for the MVP
+- Shared Universal Design Document
+- Project Type architecture for production domains
 - Modern vector editing
 - Real-time stitch simulation
 - High-performance rendering
@@ -52,6 +54,8 @@ professional embroidery designs on every major platform.
 - Offline-first workflow
 - Local-first data ownership
 - Open-source ecosystem
+
+Future production goals include weaving and digital textile printing engines without requiring them before the embroidery MVP ships.
 
 ---
 
@@ -222,7 +226,7 @@ Application Layer
 
 ↓
 
-Rust Engine
+Pure Dart MVP Engine / Future Rust Engine
 
 ↓
 
@@ -236,7 +240,7 @@ Storage
 
 Flutter owns presentation.
 
-Rust owns business logic.
+Domain packages own business logic. Rust may replace performance-critical implementations in the deferred migration phase.
 
 ---
 

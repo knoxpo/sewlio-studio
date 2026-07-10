@@ -24,7 +24,9 @@ ARCH-012 Export Pipeline
 
 # Purpose
 
-The Machine Compiler transforms machine-independent embroidery instructions (**Stitch IR**) into a validated, optimized, machine-specific representation (**Machine IR**).
+The Machine Compiler is embroidery-specific. It transforms machine-independent embroidery instructions (**Stitch IR**) into a validated, optimized, machine-specific representation (**Machine IR**).
+
+Weaving uses Loom IR. Digital printing uses Print IR. Neither should be routed through embroidery Machine IR.
 
 The Machine Compiler is responsible for manufacturing intelligence.
 

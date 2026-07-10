@@ -27,6 +27,7 @@ the identical interface (ADR-026).
 apps/studio/                      Flutter application shell / composition root
 
 packages/
+  # Active MVP package names stay studio_*; do not rename them to sewlio_* in this docs pass.
   studio_diagnostics/   pure Dart   severity, diagnostics, logging  (no Flutter)
   studio_core/          pure Dart   ids, time, lifecycle, service registry  (no Flutter)
   studio_events/        pure Dart   immutable event model + bus  (no Flutter)
@@ -40,6 +41,10 @@ packages/
   studio_simulation/    pure Dart   playback/preview model  (no Flutter)
   studio_ai/            pure Dart   lightweight assistant hooks (emits Commands)
   studio_plugin_sdk/    pure Dart   plugin contribution interfaces (surface only for MVP)
+  studio_production/    pure Dart   future production engine contracts
+  studio_validation/    pure Dart   future shared production validation
+  studio_weaving/       pure Dart   future weaving engine
+  studio_printing/      pure Dart   future digital printing engine
   studio_testing/       Dart        shared fixtures + golden/determinism helpers
   studio_design_system/ Flutter     tokens, themes, shared widgets  (exists)
   studio_canvas/        Flutter     viewport, gestures, selection visuals

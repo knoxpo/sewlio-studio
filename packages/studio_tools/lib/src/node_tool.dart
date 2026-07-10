@@ -41,8 +41,9 @@ final class NodeTool extends Tool {
   void tap(Point world) {
     // Tap selects the topmost object whose bounds contain the point,
     // mirroring SelectTool, so the node tool works standalone.
-    for (final object in document.objects.reversed) {
-      final b = object.path.bounds();
+    for (final object in document.flattenVisibleObjects().reversed) {
+      if (document.isObjectLocked(object.id)) continue;
+      final b = object.bounds();
       if (world.x >= b.minX - hitToleranceMm &&
           world.x <= b.maxX + hitToleranceMm &&
           world.y >= b.minY - hitToleranceMm &&

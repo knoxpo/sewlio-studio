@@ -1,13 +1,13 @@
 # Architecture
-## ARCH-013 Plugin Architecture
+## ARCH-014 AI Runtime
 
-**Document ID:** ARCH-013  
-**Title:** Plugin Architecture  
+**Document ID:** ARCH-014  
+**Title:** AI Runtime  
 **Version:** 1.0.0  
 **Status:** Foundation / Future-Ready  
 **Priority:** High
 
-**Owner:** Platform Extensibility Team
+**Owner:** AI Platform Team
 
 **Related Documents**
 

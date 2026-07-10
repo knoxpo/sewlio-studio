@@ -23,6 +23,9 @@ docs/02-architecture/001-intermediate-representations.md
 docs/02-architecture/003-command-system.md
 docs/02-architecture/005-document-model.md
 docs/02-architecture/006-project-format.md
+docs/02-architecture/031-platform-domain-architecture.md
+docs/02-architecture/032-universal-design-document.md
+docs/02-architecture/033-production-engine-architecture.md
 ```
 
 ---
@@ -51,7 +54,9 @@ This document is the entry point for all architecture documentation.
 
 # 2. Product Architecture Summary
 
-Sewlio Studio is a cross-platform embroidery design application built with:
+Sewlio Studio is a cross-platform textile design and production platform.
+
+The MVP is embroidery-first and built with:
 
 ```text
 Flutter
@@ -60,10 +65,12 @@ for UI, interaction, canvas, gestures, and platform UX
 
 +
 
-Rust
+Pure Dart domain packages
 
-for geometry, document model, digitizing, simulation, export, storage, validation, and domain logic
+for geometry, document model, embroidery production, simulation, export, storage, validation, and domain logic
 ```
+
+Rust remains the Phase 2 migration target for performance-critical production systems after MVP validation.
 
 The application targets:
 
@@ -101,7 +108,7 @@ The product is:
 
 Sewlio Studio is not only an editor.
 
-It is a **compiler pipeline for embroidery designs**.
+It is a **compiler-style platform for textile production domains**.
 
 ```text
 External Input
@@ -131,7 +138,9 @@ Simulation
 Export
 ```
 
-The editor manipulates geometry.
+The Universal Design Document stores editable design intent.
+
+For embroidery, the editor manipulates geometry.
 
 The digitizer compiles geometry into stitches.
 
@@ -139,7 +148,27 @@ The simulator compiles stitches into playback.
 
 The exporter compiles stitches into machine instructions.
 
-This compiler-style architecture is the core technical identity of the project.
+This compiler-style architecture is the core technical identity of the project. Weaving and digital printing follow the same design-to-production shape with their own domain IRs instead of reusing Stitch IR or Machine IR.
+
+---
+
+# 3A. Platform and Production Domains
+
+Sewlio Studio separates shared platform systems from production-domain systems.
+
+```text
+Shared Platform
+  Universal Design Document
+  Geometry, layers, assets, colors, materials
+  Commands, events, storage, services, plugins, UI shell, AI framework
+
+Production Domains
+  Embroidery: Stitch Plan, Stitch IR, Machine IR, embroidery exporters
+  Weaving: Weave Plan, Loom IR, loom/controller exporters
+  Digital Printing: Print Plan, Print IR, RIP/file exporters
+```
+
+The selected Project Type resolves the active production engine, tools, panels, validators, simulation, exporters, profiles, and AI knowledge module.
 
 ---
 

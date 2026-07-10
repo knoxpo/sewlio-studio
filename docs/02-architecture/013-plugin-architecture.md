@@ -33,6 +33,8 @@ Plugins allow third parties, advanced users, organizations, and future AI-genera
 - Importers
 - Export generators
 - Stitch algorithms
+- Production engines
+- Project Type contributions
 - Compiler passes
 - Machine profiles
 - Thread libraries
@@ -43,6 +45,8 @@ Plugins allow third parties, advanced users, organizations, and future AI-genera
 - Automation commands
 
 Plugins must extend the platform through stable public APIs only.
+
+Production-domain plugins contribute capabilities for a Project Type. They do not make Project Type a temporary application mode.
 
 ---
 

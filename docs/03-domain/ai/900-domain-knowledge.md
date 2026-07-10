@@ -89,6 +89,8 @@ This document defines the AI Domain Knowledge architecture used by Sewlio Studio
 
 AI systems within Sewlio Studio are expected to reason about embroidery using the same canonical domain model as the rest of the platform.
 
+As Sewlio Studio expands, AI domain knowledge is split into shared platform knowledge and Project-Type-specific modules.
+
 The AI system never learns embroidery through hidden heuristics alone.
 
 Instead,
@@ -103,9 +105,15 @@ AI should understand
 
 embroidery,
 
+weaving,
+
+digital printing,
+
 not merely
 
 predict it.
+
+The active Project Type selects the active production knowledge module.
 
 ```text
 Domain Knowledge

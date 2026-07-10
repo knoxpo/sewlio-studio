@@ -26,6 +26,8 @@ ARCH-006 Project Format
 
 This document defines how information flows throughout Sewlio Studio.
 
+Platform note: this document primarily describes the embroidery MVP pipeline. The shared platform flow is Universal Design Document → Production Engine → Production Plan → Production IR → Exporter. Embroidery maps that to Geometry IR → Stitch IR → Machine IR → DST/PES/JEF/VP3/EXP. Weaving and printing will use Weave Plan/Loom IR and Print Plan/Print IR instead of Machine IR.
+
 Unlike traditional applications where UI directly modifies objects, Sewlio Studio follows a strict pipeline:
 
 - Commands mutate state.

@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
 import 'package:studio_canvas/studio_canvas.dart';
+import 'package:studio_design_system/studio_design_system.dart';
+import 'package:studio_core/studio_core.dart';
+import 'package:studio_document/studio_document.dart';
+import 'package:studio_embroidery/studio_embroidery.dart';
+import 'package:studio_geometry/studio_geometry.dart';
 
 void main() {
   testWidgets('workspace renders chrome: menus, panels, canvas, status bar',
@@ -15,6 +20,7 @@ void main() {
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Stitches'), findsWidgets); // tab + list header
     expect(find.text('Layers'), findsOneWidget);
+    expect(find.text('Properties'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
     expect(find.text('STITCH SIMULATION'), findsOneWidget);
@@ -49,9 +55,84 @@ void main() {
     // Stitch list shows the object with a real count.
     expect(find.text('Running Stitch'), findsOneWidget);
 
+    await tester.tap(find.text('Properties'));
+    await tester.pump();
     await tester.tap(find.byTooltip('Undo'));
     await tester.pump();
     expect(session.document.objects, isEmpty);
+  });
+
+  testWidgets('properties tab hosts object properties panel', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    final session = StudioSession();
+    await tester.pumpWidget(StudioApp(session: session));
+
+    await tester.tap(find.byTooltip('Pen (P)'));
+    await tester.pump();
+
+    final canvas = tester.getCenter(find.byType(CanvasView));
+    await tester.tapAt(canvas);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tapAt(canvas + const Offset(80, 0));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tapAt(canvas + const Offset(80, 60));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(canvas + const Offset(80, 60));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    await tester.tap(find.text('Running Stitch'));
+    await tester.pump();
+    await tester.tap(find.text('Properties'));
+    await tester.pump();
+
+    expect(find.text('Object Properties'), findsOneWidget);
+    expect(find.text('Transform'), findsOneWidget);
+    expect(find.text('Stitch'), findsOneWidget);
+  });
+
+  testWidgets('layers tab shows hierarchy and hidden groups drop from stitches',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    final session = StudioSession();
+    session.history.execute(const AddObject(RunningStitchObject(
+      id: Id('a'),
+      path: Path(start: Point(0, 0), segments: [LineSegment(Point(20, 0))]),
+    )));
+    session.history.execute(const AddObject(RunningStitchObject(
+      id: Id('b'),
+      path: Path(start: Point(30, 0), segments: [LineSegment(Point(50, 0))]),
+    )));
+    session.history.execute(GroupSelection(
+      GroupNode(id: const Id('g1'), name: 'Group 1'),
+      const [
+        DocumentNodeRef(DocumentNodeKind.object, Id('a')),
+        DocumentNodeRef(DocumentNodeKind.object, Id('b')),
+      ],
+    ));
+
+    await tester.pumpWidget(StudioApp(session: session));
+
+    await tester.tap(find.text('Layers'));
+    await tester.pump();
+    expect(find.text('Layer 1'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.chevron_right).first);
+    await tester.pump();
+    expect(find.text('Group 1'), findsOneWidget);
+
+    await tester.tap(find.text('Group 1'));
+    await tester.pump();
+    await tester.tap(find.text('Properties'));
+    await tester.pump();
+    expect(find.text('Group Properties'), findsOneWidget);
+
+    await tester.tap(find.byType(StudioSwitch).first);
+    await tester.pump();
+
+    await tester.tap(find.text('Stitches'));
+    await tester.pump();
+    expect(find.text('Running Stitch'), findsNothing);
   });
 
   testWidgets('rulers show by default and toggle via View menu',
@@ -82,7 +163,7 @@ void main() {
     expect(find.text('Add Guide'), findsOneWidget);
 
     await tester.enterText(
-        find.widgetWithText(TextField, 'Name').first, 'Center line');
+        find.widgetWithText(StudioTextField, 'Name').first, 'Center line');
     await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
 
@@ -109,6 +190,44 @@ void main() {
     expect(find.textContaining('Select:'), findsOneWidget);
   });
 
+  testWidgets('Text tool types in place on the canvas; Enter commits',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    final session = StudioSession();
+    await tester.pumpWidget(StudioApp(session: session));
+
+    await tester.tap(find.byTooltip('Text (T)'));
+    await tester.pump();
+    // Rich typography toolbar appears for the Text tool.
+    expect(find.text('Tracking '), findsOneWidget);
+    expect(find.byTooltip('Align Center'), findsOneWidget);
+
+    // Click canvas → insertion point, no dialog.
+    await tester.tapAt(tester.getCenter(find.byType(CanvasView)));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.textContaining('type on canvas'), findsOneWidget);
+
+    // Type "HI" — tool-shortcut keys must go into the buffer, not
+    // switch tools.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyI);
+    await tester.pump();
+    expect(session.document.objects, isEmpty); // still previewing
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    // ONE editable text object (ADR-028), not per-stroke paths.
+    expect(session.document.objects, hasLength(1));
+    final object = session.document.objects.values.single;
+    expect(object, isA<TextObject>());
+    expect((object as TextObject).text, 'hi'); // raw input retained
+    expect(object.renderPaths, hasLength(6)); // cached outline strokes
+    expect(find.textContaining('click for point text'), findsOneWidget);
+  });
+
   testWidgets('File > Rename dialog executes RenameDocument', (tester) async {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
@@ -121,7 +240,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.descendant(
-            of: find.byType(AlertDialog), matching: find.byType(TextField)),
+            of: find.byType(Dialog), matching: find.byType(StudioTextField)),
         'Tulip');
     await tester.tap(find.text('Rename'));
     await tester.pumpAndSettle();

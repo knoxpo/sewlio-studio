@@ -21,6 +21,7 @@ order. All Dart, no Rust.
 1. **Foundation** — workspace, `studio_diagnostics`, `studio_core` (MVP-S1) · P0
 2. **Core runtime** — `studio_events`, `studio_commands`, `studio_document` + undo/redo (MVP-S2) · P0
 3. **Geometry** — `studio_geometry` coords/paths/curves/transforms/bbox (MVP-S3) · P0
+3a. **Shared platform framing** — Universal Design Document terminology + Project Type metadata where needed · P0
 4. **Embroidery core** — `studio_embroidery` object model + running/satin/fill (MVP-S4) · P0
 5. **Machine core** — `studio_machine` model + **Machine IR (Dart)** + validation (MVP-S5) · P0
 6. **Export MVP** — `studio_export` DST/EXP + golden (MVP-S6) · P0
@@ -30,6 +31,14 @@ order. All Dart, no Rust.
 10. **MVP integration** — save/load, inspector, import/export UI, sim preview (MVP-S10) · P0
 11. **AI assistant hooks** — `studio_ai` (lightweight) · P1
 12. **Quality diagnostics + QA pass** — `studio_testing` · P1
+
+# 1.5. Platform Foundation (planned · P1)
+
+Shared Textile Platform · Universal Design Document · Project-Type Architecture · Production Engine Framework · Dynamic UI Contributions · Production Capability Framework.
+
+# 1.6. Additional Production Domains (post-MVP · P2)
+
+Weaving Engine · Loom Compiler · Digital Printing Engine · Print Pipeline · Cross-Domain Conversion. These are post-MVP unless a future roadmap explicitly pulls a slice forward.
 
 # 2. Post-MVP Rust Migration (deferred · P2)
 
@@ -68,8 +77,9 @@ Mirrors `tools/github/labels.json`. Colors are hints.
 
 **Phase** : `mvp` `#0e8a16` · `post-mvp` `#5a5a5a` · `phase-2` `#5a5a5a`
 
-**Domain / layer** `#1d76db`: `kernel` `runtime` `geometry` `embroidery` `thread` `machine`
-`import` `export` `generator` `simulation` `rendering` `ui` `ai` `plugin` `storage` `security` `ffi`
+**Domain / layer** `#1d76db`: `kernel` `runtime` `geometry` `platform` `production` `embroidery`
+`weaving` `printing` `thread` `machine` `loom` `rip` `import` `export` `generator` `simulation`
+`rendering` `ui` `ai` `plugin` `storage` `security` `ffi`
 
 **Stack** `#5319e7`: `rust` `flutter` `dart`
 

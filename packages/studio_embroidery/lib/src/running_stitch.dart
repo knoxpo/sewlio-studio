@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:studio_geometry/studio_geometry.dart';
 
 import 'objects.dart';
@@ -8,21 +10,70 @@ import 'stitch_ir.dart';
 List<StitchOp> generateStitches(EmbroideryObject object) => switch (object) {
       RunningStitchObject(:final path, :final stitchLength) =>
         generateRunningStitch(path, stitchLength: stitchLength),
+      TextObject(:final outlines, :final stitchLength) =>
+        _outlineRuns(outlines, stitchLength),
       SatinObject() =>
         throw UnimplementedError('Satin generator lands post-MVP-S4'),
       FillObject() =>
         throw UnimplementedError('Fill generator lands post-MVP-S4'),
     };
 
-/// Resamples [path] into evenly spaced stitches of ~[stitchLength] mm.
+/// Running stitch over each contour, joined by trim + jump — text
+/// glyph outlines stitch as outline lettering (ADR-028; satin
+/// lettering arrives with the satin generator).
+List<StitchOp> _outlineRuns(List<Path> outlines, double stitchLength) {
+  final ops = <StitchOp>[];
+  for (final outline in outlines) {
+    final run = generateRunningStitch(outline, stitchLength: stitchLength);
+    if (run.isEmpty) continue;
+    if (ops.isNotEmpty) {
+      ops
+        ..add(StitchOp(StitchKind.trim, ops.last.position))
+        ..add(StitchOp.jump(run.first.position));
+    }
+    ops.addAll(run);
+  }
+  return ops;
+}
+
+/// Single-vertex direction change (radians) that always gets a needle
+/// point: a sharp corner in the drawn geometry (DOM-212 cornering).
+const _cornerRad = math.pi / 6; // 30°
+
+/// Accumulated turning since the last stitch that forces a needle
+/// point on a curve — every ~10° of arc keeps letterform bowls
+/// ('o', 'p', 'n') visually round: chord error stays ≤ r·(1−cos 5°)
+/// ≈ 0.4 % of the curve radius, in line with the ~0.05–0.1 mm chord
+/// tolerance commercial digitizers use for curve tracing.
+const _curveRad = math.pi / 18; // 10°
+
+/// Curve pins closer than this to the previous stitch are dropped
+/// (machine-unfriendly micro stitches); sharp corners always pin.
+const _minPinMm = 0.3;
+
+/// Chord-sag trigger (mm): a stitch is pinned once its estimated sag
+/// (≈ turn·length/8) reaches this. Catches gentle large-radius curves
+/// whose turn stays under [_curveRad] between full-length stitches.
+/// Pins land on flattening vertices, so the realized sag can overshoot
+/// by one vertex step — with the 0.005 mm flattening tolerance the
+/// effective ceiling is ≈ 0.02 mm: at any on-screen zoom the stitch
+/// chords visually hug the drawn outline.
+const _maxSagMm = 0.015;
+
+/// Resamples [path] into stitches of ~[stitchLength] mm, pinning a
+/// stitch on every sharp corner and roughly every 15° of curve turn so
+/// the stitched shape follows the drawn geometry instead of chording
+/// across it.
 ///
-/// Deterministic: same path + params → same ops. The spacing is
-/// recomputed per polyline span so stitches divide the span evenly and
-/// the last stitch always lands exactly on the path end.
+/// Deterministic: same path + params → same ops. The last stitch
+/// always lands exactly on the path end.
 List<StitchOp> generateRunningStitch(
   Path path, {
   double stitchLength = 2.5,
-  double tolerance = 0.01,
+  // Finer than the renderer's 0.01: sag pins land on flattening
+  // vertices, so vertex spacing bounds how tightly chords can follow
+  // a curve.
+  double tolerance = 0.005,
 }) {
   if (stitchLength <= 0) {
     throw ArgumentError.value(stitchLength, 'stitchLength', 'must be > 0 mm');
@@ -31,6 +82,7 @@ List<StitchOp> generateRunningStitch(
   final ops = <StitchOp>[StitchOp.stitch(polyline.first)];
   var last = polyline.first;
   var carried = 0.0; // distance already walked toward the next stitch
+  var turned = 0.0; // |direction change| accumulated since last pin
   for (var i = 1; i < polyline.length; i++) {
     final target = polyline[i];
     var span = last.distanceTo(target);
@@ -41,10 +93,26 @@ List<StitchOp> generateRunningStitch(
       ops.add(StitchOp.stitch(p));
       span -= stitchLength - carried;
       carried = 0;
+      turned = 0; // pinning measures turn since the last needle point
       from = p;
     }
     carried += span;
     last = target;
+    // Corner/curvature pinning at this vertex.
+    if (i + 1 < polyline.length) {
+      final turn = _turnAt(polyline[i - 1], target, polyline[i + 1]);
+      turned += turn;
+      final sharp = turn >= _cornerRad;
+      final curved =
+          (turned >= _curveRad || turned * carried / 8 >= _maxSagMm) &&
+              ops.last.position.distanceTo(target) >= _minPinMm;
+      if ((sharp || curved) &&
+          !ops.last.position.almostEquals(target, tolerance: 1e-6)) {
+        ops.add(StitchOp.stitch(target));
+        carried = 0;
+        turned = 0;
+      }
+    }
   }
   // Close out on the exact path end (skip if it coincides with the
   // previous stitch).
@@ -52,4 +120,15 @@ List<StitchOp> generateRunningStitch(
     ops.add(StitchOp.stitch(last));
   }
   return ops;
+}
+
+/// Absolute direction change at vertex [v] between segments [a]→[v]
+/// and [v]→[b]; zero for degenerate (zero-length) segments.
+double _turnAt(Point a, Point v, Point b) {
+  final ix = v.x - a.x, iy = v.y - a.y;
+  final ox = b.x - v.x, oy = b.y - v.y;
+  final cross = ix * oy - iy * ox;
+  final dot = ix * ox + iy * oy;
+  if (cross == 0 && dot == 0) return 0;
+  return math.atan2(cross, dot).abs();
 }

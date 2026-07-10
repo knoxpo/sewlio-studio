@@ -23,7 +23,7 @@ ARCH-006 Project Format
 
 # Purpose
 
-The Document Model defines the authoritative in-memory representation of an embroidery project.
+The Document Model defines the authoritative in-memory representation of a Sewlio Studio project.
 
 It is the heart of the application.
 
@@ -151,10 +151,10 @@ Project
         │
  ┌──────┼────────────────────────────────────────────┐
  ▼      ▼        ▼        ▼        ▼        ▼         ▼
-Meta  Geometry Thread Machine Assets History Statistics
+Meta  Project Type  Universal Design  Assets History Statistics
         │
         ▼
- Embroidery Domain
+ Production Domain Data
         │
         ▼
 Recovery
@@ -169,10 +169,9 @@ Document
 │
 ├── Metadata
 ├── Workspace
-├── Geometry Domain
-├── Embroidery Domain
-├── Thread Domain
-├── Machine Domain
+├── Project Type
+├── Universal Design Domain
+├── Domain-Specific Production Data
 ├── Asset Domain
 ├── History Domain
 ├── Recovery Domain
@@ -182,6 +181,8 @@ Document
 ```
 
 Every subsystem owns exactly one domain.
+
+The embroidery MVP stores embroidery production data here. Future Weaving and Digital Printing Projects use their own domain-specific production data without renaming embroidery concepts into generic fields.
 
 ---
 
@@ -1185,3 +1186,26 @@ The Document Model is complete when
 ✓ AI interacts only through Commands and public APIs.
 
 ✓ The model scales to large projects while preserving determinism, portability, and testability.
+
+---
+
+## MVP status (Dart engine — ADR-026/027/028)
+
+The Dart MVP implements this model's essentials in `studio_document` /
+`studio_embroidery`:
+
+- **Editable objects are the single source of truth** (ADR-028). Layers own
+  design objects (running-stitch paths, shapes committed as paths, text);
+  groups nest inside layers (ADR-027). Stitches are never stored in the
+  document — the Stitch IR is regenerated on demand.
+- **Text is one editable object.** `TextObject` retains the string, font
+  family, size, tracking, leading, alignment, and optional frame width, plus
+  cached glyph outlines (`renderPaths`) so rendering and stitch generation
+  never depend on the font engine. Double-click re-enters in-place editing;
+  commit replaces the object in a single undo step.
+- **Multi-contour geometry**: `EmbroideryObject.renderPaths` / `bounds()` /
+  `transformedBy()` let composite objects (text, future images/symbols)
+  behave as one node in the hierarchy.
+- **Active layer**: creation commands insert into the layer derived from the
+  selection (selected layer, or the ancestor layer of the selected node);
+  the default layer is only a fallback.

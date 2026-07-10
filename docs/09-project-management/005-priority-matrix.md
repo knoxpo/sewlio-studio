@@ -18,11 +18,11 @@ How work is prioritized. Combines a **value/effort** view with **MoSCoW** and a 
 
 **P0 — MVP (must ship):** Flutter app shell · Dart core/domain packages (`studio_core`,
 `studio_geometry`, `studio_embroidery`) · document model · geometry · embroidery basics · Machine IR
-(Dart) · basic import/export (DST/EXP) · canvas · save/load.
+(Dart) · minimal Project Type architecture for Embroidery Projects · basic import/export (DST/EXP) · canvas · save/load.
 
 **P1 — MVP polish:** simulation preview · inspector · AI assistant hooks · quality diagnostics.
 
-**P2 — Post-MVP:** Rust migration · `flutter_rust_bridge` · GPU rendering backend · plugin runtime ·
+**P2 — Post-MVP:** Weaving engine · digital printing engine · Rust migration · `flutter_rust_bridge` · GPU rendering backend · plugin runtime ·
 advanced exporters (PES/JEF/VP3/HUS) · advanced AI.
 
 ---

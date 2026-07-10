@@ -26,6 +26,8 @@ ARCH-011 Export Pipeline
 
 The Simulation Pipeline is responsible for transforming **Stitch IR** into an interactive, real-time representation suitable for playback, visualization, analysis, and user feedback.
 
+Platform note: this document describes embroidery simulation unless a section explicitly says shared simulation framework. Future Weaving and Digital Printing Projects contribute their own simulation providers through the active Production Engine.
+
 Simulation is **not rendering**.
 
 Simulation is **not digitizing**.

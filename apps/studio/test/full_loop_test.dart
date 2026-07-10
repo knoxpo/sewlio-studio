@@ -25,14 +25,14 @@ void main() {
 
     // Edit: move it 10 mm right via the command path, then assistant
     // renames the document through the same path.
-    final id = session.document.objects.single.id;
+    final id = session.document.objects.values.single.id;
     session.history.execute(TransformObject(id, Transform2.translation(10, 0)));
     final proposals = session.assistant.propose('rename to Acceptance');
     proposals.forEach(session.history.execute);
     expect(session.document.name, 'Acceptance');
 
     // Digitize → compile → validate → export.
-    final sequence = digitizeObjects(session.document.objects);
+    final sequence = digitizeObjects(session.document.flattenVisibleObjects());
     expect(sequence.stitchCount, greaterThan(30)); // ~101.6 mm / 2.5 mm
     final program = compileToMachine(sequence);
     final sink = CollectingSink();
@@ -48,13 +48,14 @@ void main() {
     final saved = encodeProject(session.document);
     final reopened = StudioSession(document: decodeProject(saved));
     expect(encodeProject(reopened.document), saved);
-    final dst2 =
-        encodeDst(compileToMachine(digitizeObjects(reopened.document.objects)));
+    final dst2 = encodeDst(compileToMachine(
+        digitizeObjects(reopened.document.flattenVisibleObjects())));
     expect(dst2, dst);
 
     // Undo still works after the loop.
     session.history.undo(); // rename
     session.history.undo(); // transform
-    expect(session.document.objects.single.path.start, const Point(0, 0));
+    expect(
+        session.document.objects.values.single.path.start, const Point(0, 0));
   });
 }

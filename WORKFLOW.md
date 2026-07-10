@@ -1,9 +1,11 @@
-# Embroidery Studio — Development Workflow
+# Sewlio Studio — Development Workflow
 
 How work flows from a planned GitHub issue to a merged, tested change, across two runners.
 
 > **MVP note (ADR-026):** MVP tasks target **Dart packages** (`packages/studio_*`). Role agents
-> emit **Dart** for MVP work (labeled `mvp`) and **Rust** for Phase 2 work (labeled `post-mvp`).
+> emit **Dart** for MVP work (labeled `mvp`) and **Rust** for deferred migration work (labeled `post-mvp`).
+
+The active MVP remains Flutter/Pure Dart and embroidery-first. Weaving and digital printing are post-MVP production domains unless a future roadmap explicitly pulls a small platform slice forward.
 > The routing, gates, and escalation rules below apply to both; only the target language differs.
 
 ## Runner roles (hybrid)

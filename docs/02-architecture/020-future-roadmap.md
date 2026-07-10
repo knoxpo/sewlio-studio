@@ -27,7 +27,7 @@ The roadmap is organized into progressive maturity levels.
 
 Sewlio Studio is designed to become more than an embroidery editor.
 
-The long-term vision is to build a complete, local-first, AI-powered CAD/CAM platform for textile manufacturing.
+The long-term vision is to build a complete, local-first, AI-powered design and production platform for textile manufacturing.
 
 The architecture must remain:
 
@@ -110,7 +110,7 @@ Manufacturing Ecosystem
 
 ## Goals
 
-Deliver a professional-grade embroidery design application.
+Deliver a professional-grade textile design and production platform, starting with embroidery.
 
 ### Features
 

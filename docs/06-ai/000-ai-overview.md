@@ -25,7 +25,7 @@ docs/02-architecture/028-observability.md
 
 This document defines the ai overview architecture for Sewlio Studio's AI platform.
 
-It explains how the capability should operate within a knowledge-driven, explainable, and human-governed embroidery system.
+It explains how the capability should operate within a knowledge-driven, explainable, and human-governed textile production platform.
 
 The intent is to support practical AI assistance without violating deterministic platform rules or command-gated mutation boundaries.
 
@@ -47,6 +47,7 @@ AI must never directly modify persistent state outside the documented command sy
 - Provide knowledge-driven reasoning
 - Provide human-approved production workflows
 - Provide observable AI operations
+- Resolve domain knowledge from the active Project Type
 
 ---
 
@@ -64,6 +65,7 @@ Its outputs are explanations, recommendations, plans, diagnostics, or command pr
 
 - Manage ai overview behavior through versioned prompts, typed tool contracts, governed context, and observable execution.
 - Use domain knowledge, machine/material rules, and project context as first-class inputs to decision making.
+- Use embroidery, weaving, or printing knowledge modules according to Project Type.
 - Emit explanations, confidence signals, and source attribution sufficient for operator trust and audit review.
 - Integrate with commands, events, services, and scheduler tasks without bypassing runtime governance.
 
@@ -102,6 +104,7 @@ The ai overview implementation should explicitly expose each stage for testing, 
 # AI Rules
 
 - Persistent project changes must be emitted as command proposals and pass the same validation as user-authored commands.
+- Production advice must come from the active domain knowledge module; embroidery, weaving, and printing rules are not interchangeable.
 - Knowledge, rules, and source references take precedence over opaque model heuristics whenever a deterministic answer is possible.
 - Provider-specific behavior must be isolated behind abstractions so policies, tests, and audits remain stable across model vendors.
 - Sensitive project data must be minimized, redacted when needed, and routed according to privacy and deployment policy.

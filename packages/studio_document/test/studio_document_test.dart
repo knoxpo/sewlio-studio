@@ -2,8 +2,8 @@ import 'package:studio_commands/studio_commands.dart';
 import 'package:studio_core/studio_core.dart';
 import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
-import 'package:studio_geometry/studio_geometry.dart';
 import 'package:studio_events/studio_events.dart';
+import 'package:studio_geometry/studio_geometry.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -61,7 +61,7 @@ void main() {
     expect(doc.name, 'Untitled');
   });
 
-  group('object commands', () {
+  group('hierarchy object commands', () {
     const square = Path(
       start: Point(0, 0),
       segments: [LineSegment(Point(10, 0)), LineSegment(Point(10, 10))],
@@ -72,6 +72,7 @@ void main() {
     test('add/remove/transform round trip with undo', () {
       history.execute(const AddObject(object));
       expect(doc.objects, hasLength(1));
+      expect(doc.defaultLayer.children.single.id, const Id('obj-1'));
 
       history.execute(
           const TransformObject(Id('obj-1'), Transform2(1, 0, 0, 1, 5, 5)));
@@ -80,11 +81,139 @@ void main() {
       history.execute(const RemoveObject(Id('obj-1')));
       expect(doc.objects, isEmpty);
 
-      history.undo(); // un-remove
-      history.undo(); // un-transform
+      history.undo();
+      history.undo();
       expect(doc.objectById(const Id('obj-1'))!.path.start, const Point(0, 0));
-      history.undo(); // un-add
+      history.undo();
       expect(doc.objects, isEmpty);
+    });
+
+    test('group/ungroup with nested groups', () {
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('a'),
+        path: Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]),
+      )));
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('b'),
+        path: Path(start: Point(10, 0), segments: [LineSegment(Point(15, 0))]),
+      )));
+
+      history.execute(GroupSelection(
+        GroupNode(id: const Id('g1'), name: 'Group 1'),
+        const [
+          DocumentNodeRef(DocumentNodeKind.object, Id('a')),
+          DocumentNodeRef(DocumentNodeKind.object, Id('b')),
+        ],
+      ));
+      expect(doc.defaultLayer.children.single.id, const Id('g1'));
+      expect(doc.groupById(const Id('g1'))!.children, hasLength(2));
+
+      history.execute(GroupSelection(
+        GroupNode(id: const Id('g2'), name: 'Group 2'),
+        const [DocumentNodeRef(DocumentNodeKind.group, Id('g1'))],
+      ));
+      expect(doc.defaultLayer.children.single.id, const Id('g2'));
+      expect(doc.groupById(const Id('g2'))!.children.single.id, const Id('g1'));
+
+      history.execute(const UngroupGroup(Id('g2')));
+      expect(doc.defaultLayer.children.single.id, const Id('g1'));
+      expect(doc.groups.containsKey(const Id('g2')), isFalse);
+    });
+
+    test('duplicate subtree creates fresh ids', () {
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('a'),
+        path: Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]),
+      )));
+      history.execute(GroupSelection(
+        GroupNode(id: const Id('g1'), name: 'Group 1'),
+        const [DocumentNodeRef(DocumentNodeKind.object, Id('a'))],
+      ));
+
+      final subtree = doc.duplicateSubtree(
+        const DocumentNodeRef(DocumentNodeKind.group, Id('g1')),
+        () => Id('copy-${doc.objects.length + doc.groups.length}'),
+      );
+      history.execute(DuplicateNode(
+        subtree,
+        parent: HierarchyParentRef(DocumentNodeKind.layer, doc.defaultLayer.id),
+        index: 1,
+      ));
+
+      expect(doc.defaultLayer.children, hasLength(2));
+      expect(doc.defaultLayer.children.last.id, isNot(const Id('g1')));
+      expect(doc.groups, hasLength(2));
+      expect(doc.objects, hasLength(2));
+    });
+
+    test('effective visibility and locking inherit from ancestors', () {
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('a'),
+        path: Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]),
+      )));
+      history.execute(GroupSelection(
+        GroupNode(id: const Id('g1'), name: 'Group 1'),
+        const [DocumentNodeRef(DocumentNodeKind.object, Id('a'))],
+      ));
+
+      history.execute(const SetNodeVisible(
+          DocumentNodeRef(DocumentNodeKind.group, Id('g1')), false));
+      history.execute(const SetNodeLocked(
+          DocumentNodeRef(DocumentNodeKind.group, Id('g1')), true));
+
+      expect(doc.isObjectVisible(const Id('a')), isFalse);
+      expect(doc.isObjectLocked(const Id('a')), isTrue);
+      expect(doc.flattenVisibleObjects(), isEmpty);
+    });
+
+    test('batch transform over mixed selection applies once to descendants',
+        () {
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('a'),
+        path: Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]),
+      )));
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('b'),
+        path: Path(start: Point(10, 0), segments: [LineSegment(Point(15, 0))]),
+      )));
+      history.execute(GroupSelection(
+        GroupNode(id: const Id('g1'), name: 'Group 1'),
+        const [
+          DocumentNodeRef(DocumentNodeKind.object, Id('a')),
+          DocumentNodeRef(DocumentNodeKind.object, Id('b')),
+        ],
+      ));
+
+      history.execute(const TransformSelection(
+        [DocumentNodeRef(DocumentNodeKind.group, Id('g1'))],
+        Transform2(1, 0, 0, 1, 3, 2),
+      ));
+
+      expect(doc.objectById(const Id('a'))!.path.start, const Point(3, 2));
+      expect(doc.objectById(const Id('b'))!.path.start, const Point(13, 2));
+    });
+
+    test('move rejects cycles', () {
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('a'),
+        path: Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]),
+      )));
+      history.execute(GroupSelection(
+        GroupNode(id: const Id('g1'), name: 'Group 1'),
+        const [DocumentNodeRef(DocumentNodeKind.object, Id('a'))],
+      ));
+      history.execute(GroupSelection(
+        GroupNode(id: const Id('g2'), name: 'Group 2'),
+        const [DocumentNodeRef(DocumentNodeKind.group, Id('g1'))],
+      ));
+
+      expect(
+        () => history.execute(const MoveNode(
+          DocumentNodeRef(DocumentNodeKind.group, Id('g2')),
+          parent: HierarchyParentRef(DocumentNodeKind.group, Id('g1')),
+        )),
+        throwsStateError,
+      );
     });
 
     test('commands on missing ids throw', () {
@@ -117,10 +246,10 @@ void main() {
       history.execute(const RemoveGuide(Id('g1')));
       expect(doc.guides, isEmpty);
 
-      history.undo(); // un-remove
-      history.undo(); // un-update
+      history.undo();
+      history.undo();
       expect(doc.guideById(const Id('g1'))!.name, 'Center');
-      history.undo(); // un-add
+      history.undo();
       expect(doc.guides, isEmpty);
     });
 
@@ -134,21 +263,29 @@ void main() {
     });
   });
 
-  test('.embproj encode/decode round trips (golden shape)', () {
+  test('.embproj v2 encode/decode round trips and v1 is rejected', () {
     doc.name = 'Rose';
-    doc.objects.add(const RunningStitchObject(
+    history.execute(const AddObject(RunningStitchObject(
       id: Id('obj-1'),
       path: Path(start: Point(0, 0), segments: [LineSegment(Point(10, 0))]),
       stitchLength: 3,
+    )));
+    history.execute(GroupSelection(
+      GroupNode(id: const Id('g1'), name: 'Group 1'),
+      const [DocumentNodeRef(DocumentNodeKind.object, Id('obj-1'))],
     ));
     final encoded = encodeProject(doc);
     final decoded = decodeProject(encoded);
     expect(decoded.name, 'Rose');
     expect(decoded.id, doc.id);
     expect(decoded.objects, hasLength(1));
-    expect(encodeProject(decoded), encoded); // byte-stable
+    expect(decoded.groups, hasLength(1));
+    expect(decoded.layers, hasLength(1));
+    expect(encodeProject(decoded), encoded);
 
-    expect(() => decodeProject('{"version":"999","objects":[]}'),
+    expect(
+        () => decodeProject(
+            '{"version":"1","objects":[],"layers":[],"groups":{}}'),
         throwsFormatException);
   });
 }

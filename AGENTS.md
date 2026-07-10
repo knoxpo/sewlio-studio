@@ -1,4 +1,4 @@
-# Embroidery Studio — Agent Team
+# Sewlio Studio — Agent Team
 
 Shared instructions for every coding agent across all runners (Claude Code, Codex, opencode).
 
@@ -15,7 +15,7 @@ Shared instructions for every coding agent across all runners (Claude Code, Code
   `kernel → runtime → platform → domains → compilers → generators → services → bridges → flutter`.
 - Respect IR ownership (`docs/02-architecture/001`): one owner per IR; IRs are immutable + versioned.
 - Flutter never mutates state — all mutation flows through Commands; state changes emit Events.
-- Add or update tests with every change. The Rust core must stay headless-testable.
+- Add or update tests with every change. Core/domain packages must stay headless-testable; Rust remains the later performance migration path.
 - No unsafe install scripts or remote code. Keep changes small and reviewable.
 - Crossing a package boundary or changing an IR schema → **stop and require an ADR** (`docs/07-adr`).
 
@@ -66,6 +66,28 @@ Canonical role prompts live once in `agents/<role>.md`. Each runner loads them a
 | UI | `ui` | write | `agents/ui.md` |
 | AI | `ai` | write | `agents/ai.md` |
 | QA / Review | `qa-review` | read-only | `agents/qa-review.md` |
+
+Active MVP agents focus on the Flutter/Pure Dart embroidery-first vertical slice: platform architecture, universal design/document model, Flutter foundation, Dart core engine, Dart geometry, embroidery engine, machine/export, Flutter UI, and QA/documentation review.
+
+Future domain agents are planned but not active for MVP implementation:
+
+| Role | Slug | Sandbox | Status |
+|---|---|---|---|
+| Weaving Domain | `weaving-domain` | write | Future |
+| Loom Compiler | `loom-compiler` | write | Future |
+| Digital Printing Domain | `digital-printing-domain` | write | Future |
+| Print Pipeline | `print-pipeline` | write | Future |
+| Cross-Domain Conversion | `cross-domain-conversion` | write | Future |
+
+Phase 2 Rust migration agents are deferred until MVP acceptance and measured performance need:
+
+| Role | Slug | Sandbox | Status |
+|---|---|---|---|
+| Rust Migration Architect | `rust-migration-architect` | read-only | Deferred |
+| Rust Geometry | `rust-geometry` | write | Deferred |
+| Rust Production Engine | `rust-production-engine` | write | Deferred |
+| Flutter-Rust Bridge | `ffi-bridge` | write | Deferred |
+| Performance Benchmark | `performance-benchmark` | read-only | Deferred |
 
 Project-specific task agents (workflow + guardrails):
 

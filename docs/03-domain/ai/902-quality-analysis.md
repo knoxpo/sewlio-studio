@@ -62,6 +62,8 @@ ARCH-028 Observability
 
 # Purpose
 
+Quality analysis is Project-Type-aware. Embroidery quality analysis covers stitch, density, hoop, material, and machine readiness. Future weaving and printing modules cover weave/loom and print/RIP readiness.
+
 This document defines the AI Quality Analysis System used by Sewlio Studio.
 
 The AI Quality Analysis System evaluates embroidery designs before production by identifying manufacturing risks, estimating embroidery quality, and recommending improvements.

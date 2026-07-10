@@ -1,4 +1,8 @@
 # Architecture
+
+> **Platform note:** package ownership remains downward-only. The MVP package names stay `studio_*`.
+> Future production-domain packages such as `studio_production`, `studio_validation`,
+> `studio_weaving`, and `studio_printing` are planned only when implementation work needs them.
 ## ARCH-018 Package Ownership
 
 **Document ID:** ARCH-018  

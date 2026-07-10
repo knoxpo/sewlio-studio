@@ -21,6 +21,10 @@ docs/02-architecture/028-observability.md
 
 # Purpose
 
+The current MVP package names remain `studio_*`. Do not rename packages to `sewlio_*` as part of the documentation migration.
+
+Future shared/domain packages may include `studio_production`, `studio_validation`, `studio_weaving`, and `studio_printing` when implementation work requires them.
+
 This document defines how monorepo structure should be implemented in Sewlio Studio.
 
 It translates the platform architecture into engineering constraints, package boundaries, runtime responsibilities, and measurable quality gates.

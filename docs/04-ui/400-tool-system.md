@@ -25,6 +25,8 @@ This document defines the tool system architecture for Sewlio Studio.
 
 It describes how the UI surface supports a professional embroidery, CAD, and digitizing workflow without owning domain logic.
 
+The shared tool system supports selection, node editing, pen, Bezier, rectangle, ellipse, text, transform, boolean operations, align, distribute, snap, guides, rulers, zoom, pan, and measure tools. Production tools are contributed by the active Project Type.
+
 All behavior described here is presentation, interaction, or workflow orchestration layered on top of the command system and state projections exposed by the runtime.
 
 ---
@@ -64,6 +66,7 @@ Its outputs are visual feedback, validated intent capture, and command requests 
 - Collect user intent and translate it into command payloads, tool interactions, or task requests.
 - Surface validation, progress, diagnostics, and approval requirements before work reaches the domain engine.
 - Support plugin-contributed actions or overlays only through declared extension points and sandboxed UI contracts.
+- Resolve production-domain tools from the active Project Type instead of hardcoding every domain feature in the shell.
 
 ---
 
@@ -104,6 +107,8 @@ The tool system participates in this loop without bypassing command validation, 
 # UI Rules
 
 - UI must not own embroidery business rules, machine constraints, or file-format semantics.
+- UI must not own weaving or printing production rules.
+- Embroidery stitch tools appear for Embroidery Projects; future weaving and printing tools appear only for their Project Types.
 - All persistent mutations must be issued as commands and reflected back through runtime state.
 - Long-running operations must expose scheduler progress, cancellation, and observable failure states.
 - Preview state may be ephemeral, but committed state must always be reproducible from commands and document snapshots.

@@ -36,9 +36,9 @@ The project format is responsible for
 - Incremental saving
 - Asset management
 
-The project format is the canonical editable representation of an embroidery project.
+The project format is the canonical editable representation of a Sewlio Studio project.
 
-Machine files are generated artifacts.
+Machine, loom, RIP, and file exports are generated artifacts.
 
 ---
 
@@ -174,6 +174,7 @@ Always loaded first.
 ```json
 {
   "projectId": "...",
+  "projectType": "embroidery",
   "schemaVersion": "1.0.0",
   "applicationVersion": "1.0.0",
   "databaseVersion": "1.0.0",
@@ -191,6 +192,7 @@ Always loaded first.
 Contains
 
 - Project UUID
+- Project Type
 - Schema version
 - Package version
 - Database version
@@ -202,6 +204,8 @@ Never contains
 
 - Geometry
 - Stitches
+- Weave plans
+- Print rasters
 - Assets
 
 ---

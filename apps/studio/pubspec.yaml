@@ -11,8 +11,10 @@ environment:
 dependencies:
   barley:
     path: ../../packages/barley
+  file_selector: ^1.1.0
   flutter:
     sdk: flutter
+  flutter_tabler_icons: ^1.43.0
   studio_ai:
     path: ../../packages/studio_ai
   studio_canvas:

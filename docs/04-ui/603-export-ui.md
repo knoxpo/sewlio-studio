@@ -23,6 +23,8 @@ docs/02-architecture/008-rendering-architecture.md
 
 This document defines the export ui architecture for Sewlio Studio.
 
+The export UI is shared, but exporter choices are domain-specific. Embroidery Projects show embroidery exporters that consume Machine IR. Future Weaving Projects show loom/controller exporters that consume Loom IR. Future Digital Printing Projects show print/RIP/file exporters that consume Print IR or validated print output.
+
 It describes how the UI surface supports a professional embroidery, CAD, and digitizing workflow without owning domain logic.
 
 All behavior described here is presentation, interaction, or workflow orchestration layered on top of the command system and state projections exposed by the runtime.
@@ -61,6 +63,7 @@ Its outputs are visual feedback, validated intent capture, and command requests 
 # Responsibilities
 
 - Render export ui state using deterministic projections from the document model and runtime services.
+- Filter exporters by Project Type and production capability.
 - Collect user intent and translate it into command payloads, tool interactions, or task requests.
 - Surface validation, progress, diagnostics, and approval requirements before work reaches the domain engine.
 - Support plugin-contributed actions or overlays only through declared extension points and sandboxed UI contracts.
@@ -104,6 +107,7 @@ The export ui participates in this loop without bypassing command validation, ev
 # UI Rules
 
 - UI must not own embroidery business rules, machine constraints, or file-format semantics.
+- UI must not expose incompatible exporters for the active Project Type.
 - All persistent mutations must be issued as commands and reflected back through runtime state.
 - Long-running operations must expose scheduler progress, cancellation, and observable failure states.
 - Preview state may be ephemeral, but committed state must always be reproducible from commands and document snapshots.

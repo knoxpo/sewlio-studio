@@ -1,5 +1,9 @@
 # Project Management
 
+> **Platform update:** existing embroidery features remain MVP features. Shared Textile Platform,
+> Weaving, Digital Printing, and Cross-Domain Conversion features are post-MVP unless explicitly
+> marked as Project Type foundation work.
+
 ## PM-002 Features
 
 **Document ID:** PM-002

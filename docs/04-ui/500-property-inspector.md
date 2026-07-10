@@ -23,6 +23,8 @@ docs/02-architecture/008-rendering-architecture.md
 
 This document defines the property inspector architecture for Sewlio Studio.
 
+The inspector shows shared design properties for all projects and domain-specific sections contributed by the active Project Type.
+
 It describes how the UI surface supports a professional embroidery, CAD, and digitizing workflow without owning domain logic.
 
 All behavior described here is presentation, interaction, or workflow orchestration layered on top of the command system and state projections exposed by the runtime.
@@ -61,6 +63,7 @@ Its outputs are visual feedback, validated intent capture, and command requests 
 # Responsibilities
 
 - Render property inspector state using deterministic projections from the document model and runtime services.
+- Resolve domain inspector sections from Project Type.
 - Collect user intent and translate it into command payloads, tool interactions, or task requests.
 - Surface validation, progress, diagnostics, and approval requirements before work reaches the domain engine.
 - Support plugin-contributed actions or overlays only through declared extension points and sandboxed UI contracts.

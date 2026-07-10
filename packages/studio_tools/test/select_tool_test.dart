@@ -59,8 +59,10 @@ void main() {
         const Point(10, 10));
   });
 
-  test('drag off-selection is not claimed; empty drag dispatches nothing', () {
-    expect(tool.dragStart(const Point(50, 50)), isFalse);
+  test('empty drag becomes marquee; zero-size marquee dispatches nothing', () {
+    expect(tool.dragStart(const Point(50, 50)), isTrue);
+    tool.dragEnd();
+    expect(tool.selection.selected, isNull);
 
     tool.tap(const Point(15, 15));
     expect(tool.dragStart(const Point(15, 15)), isTrue);

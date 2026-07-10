@@ -29,10 +29,13 @@ the spec wins (`docs/02-architecture/000` §34).
 
 ```text
 Phase 1 — Flutter/Dart MVP        (active)   validate product: workflows, UI, document, embroidery
+Phase 1.5 — Platform Generalization (planned) project types, production engine contracts, dynamic UI
         ↓  (MVP accepted)
-Phase 2 — Rust Engine Migration   (deferred) move performance-critical stages behind stable APIs
+Phase 2 — Additional Domains       (planned) weaving and digital printing engines
         ↓
-Phase 3 — Production Hardening     (deferred) GPU rendering, plugins, advanced sim/AI, enterprise
+Phase 3 — Rust Engine Migration    (deferred) move performance-critical stages behind stable APIs
+        ↓
+Phase 4 — Production Hardening     (deferred) GPU rendering, plugins, advanced sim/AI, enterprise
 ```
 
 ## Phase 1 — Flutter/Dart MVP (active)
@@ -40,6 +43,8 @@ Phase 3 — Production Hardening     (deferred) GPU rendering, plugins, advanced
 Pure-Dart engine + Flutter shell. **No Rust required.**
 
 - Flutter desktop app shell
+- Shared platform foundation
+- Project Type architecture in place
 - Dart domain packages (core, diagnostics)
 - Dart command / event system
 - Dart document model (+ undo/redo)
@@ -51,10 +56,23 @@ Pure-Dart engine + Flutter shell. **No Rust required.**
 - UI: shell, canvas, tools, panels, inspector
 - AI assistant MVP hooks (only if lightweight)
 
+Weaving and printing are represented as future-capable modules only. They are not required before the embroidery MVP.
+
+## Phase 1.5 — Platform Generalization (planned)
+
+- Extract shared design and production concepts only where actual code needs them.
+- Add production engine contract, Project Type registry, dynamic UI registry, and shared validation framework.
+- Preserve cross-domain asset reuse without enabling normal Project Type switching.
+
+## Phase 2 — Additional Production Domains (planned)
+
+- Weaving Engine, Weave Plan, Loom IR, weaving UI, loom/controller export adapters.
+- Digital Printing Engine, Print Plan, Print IR, printing UI, RIP/file export adapters.
+
 Discipline that keeps Phase 2 cheap: domain packages have **no Flutter dependency**; every engine
 capability sits behind a **Dart interface** a Rust module can later implement (ADR-026).
 
-## Phase 2 — Rust Engine Migration (deferred, preserved)
+## Phase 3 — Rust Engine Migration (deferred, preserved)
 
 Introduce Rust crates behind the stable interfaces defined in Phase 1.
 
@@ -67,7 +85,7 @@ The full Rust milestone/sprint/package plan is preserved below and in
 [`000-implementation-roadmap.md`](000-implementation-roadmap.md) — unchanged, just resequenced
 after MVP.
 
-## Phase 3 — Production Hardening (deferred)
+## Phase 4 — Production Hardening (deferred)
 
 GPU-first rendering · plugin runtime · advanced simulation · advanced AI · full format
 compatibility · large-document performance · enterprise-grade testing.

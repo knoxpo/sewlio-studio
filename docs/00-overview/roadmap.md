@@ -24,7 +24,17 @@ Foundation
 
 Monorepo
 
-Rust Engine
+Shared Textile Platform
+
+Universal Design Document
+
+Embroidery Engine
+
+Future Weaving Engine
+
+Future Printing Engine
+
+Rust Engine (Phase 2 / Post-MVP)
 
 Flutter Shell
 

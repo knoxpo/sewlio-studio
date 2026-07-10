@@ -66,11 +66,11 @@ Cloud services provide enhancement, never dependency.
 
 ---
 
-# Principle 3 — Rust Owns the Business Logic
+# Principle 3 — Domain Packages Own Business Logic
 
 Flutter owns presentation.
 
-Rust owns everything else.
+In the MVP, pure-Dart domain packages own business logic and remain headless-testable. In Phase 2, Rust may replace performance-critical implementations behind the same interfaces.
 
 Business rules must never migrate into Flutter.
 
@@ -633,7 +633,7 @@ An ADR must document
 
 The following rules may not be violated without replacing this document.
 
-✓ Rust owns business logic.
+✓ Domain packages own business logic; Flutter owns presentation.
 
 ✓ Commands are the only mutation mechanism.
 
