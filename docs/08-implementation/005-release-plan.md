@@ -16,7 +16,7 @@ Flutter + Rust. Releases track milestones (`010-milestones.md`).
 
 - **SemVer** for the app and every published crate/package; `0.x` until GA (M10 → `1.0.0`).
 - **IRs are independently schema-versioned** (`docs/02-architecture/001`); breaking IR changes need
-  an ADR + migration. Project format `.embproj` carries its own version.
+  an ADR + migration. Project format `.swl` carries its own version.
 - Git tags `vMAJOR.MINOR.PATCH`; release notes generated from merged PRs / closed issues.
 
 ---
@@ -38,7 +38,7 @@ Flutter + Rust. Releases track milestones (`010-milestones.md`).
 |---|---|---|
 | M1 Foundation | nightly/alpha | headless engine: bus dispatch demo, CI |
 | M2 Geometry | alpha | Geometry IR + golden fixtures; CLI/lib demo |
-| M3 Document + Storage | alpha | create/edit/save/load `.embproj` headlessly |
+| M3 Document + Storage | alpha | create/edit/save/load `.swl` headlessly |
 | M4 Import | alpha | import SVG → editable Geometry IR |
 | M5 Embroidery Core | alpha | running-stitch digitize from geometry |
 | M6 Machine + Export | **beta-candidate** | **SVG → DST** end-to-end (CLI); openable on a machine |
@@ -62,4 +62,4 @@ so rollout is a shell/packaging effort, not a core rewrite.
 - `main` is always releasable; feature work on branches, merged behind green CI + DoD.
 - No release with an open P0/P1 or a failing golden/compat gate.
 - Every stable release: signed binaries, changelog, migration notes if any schema changed,
-  recovery-tested `.embproj` compatibility with the prior stable.
+  recovery-tested `.swl` compatibility with the prior stable.

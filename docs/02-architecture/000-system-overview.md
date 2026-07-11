@@ -200,7 +200,7 @@ The selected Project Type resolves the active production engine, tools, panels, 
 +------------------------------------------------------------------+
 |                         Local Persistence                        |
 |                                                                  |
-|       .embproj package  libSQL/Turso DB  Assets  Recovery        |
+|       .swl package  libSQL/Turso DB  Assets  Recovery        |
 +------------------------------------------------------------------+
 ```
 
@@ -613,12 +613,12 @@ The document model must remain deterministic.
 
 # 14. Project Format
 
-Projects are stored as `.embproj`.
+Projects are stored as `.swl`.
 
-Internally, `.embproj` is a self-contained project package.
+Internally, `.swl` is a self-contained project package.
 
 ```text
-project.embproj/
+project.swl/
 
 manifest.json
 metadata.json
@@ -1229,7 +1229,7 @@ No major architectural change should occur without an ADR.
 3. Commands are the only mutation path.
 4. Events are immutable.
 5. Machine files are generated artifacts.
-6. `.embproj` is the editable project format.
+6. `.swl` is the editable project format.
 7. Digitizer outputs Stitch IR, not machine files.
 8. Export consumes Machine IR, not Geometry IR.
 9. Simulation consumes Playback IR.
@@ -1268,7 +1268,7 @@ This architecture is valid when:
 - All mutations occur through Commands.
 - Flutter contains no embroidery business logic.
 - Rust core can run headlessly.
-- `.embproj` is portable.
+- `.swl` is portable.
 - Import, digitizer, simulation, and export are independent.
 - Plugins and AI cannot bypass validation.
 - Recovery works independently from normal save.
@@ -1309,6 +1309,6 @@ Events provide system updates.
 
 IRs provide stable contracts.
 
-`.embproj` provides portable ownership.
+`.swl` provides portable ownership.
 
 This architecture is intentionally designed to support long-term scalability, AI-assisted development, plugin extensibility, and professional embroidery workflows.

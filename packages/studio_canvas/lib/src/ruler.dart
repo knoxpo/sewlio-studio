@@ -51,21 +51,27 @@ class Ruler extends StatelessWidget {
     return SizedBox(
       width: axis == Axis.vertical ? rulerThickness : null,
       height: axis == Axis.horizontal ? rulerThickness : null,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapUp: onTapMm == null
-            ? null
-            : (details) => onTapMm!(_toMm(details.localPosition)),
-        child: ListenableBuilder(
-          listenable: Listenable.merge([viewport, if (cursor != null) cursor!]),
-          builder: (context, _) => CustomPaint(
-            size: Size.infinite,
-            painter: _RulerPainter(
-              viewport: viewport,
-              axis: axis,
-              cursor: cursor?.value,
-              markers: markers,
-              colorScheme: scheme,
+      child: MouseRegion(
+        // Clicking a ruler places/edits a guide — precise crosshair.
+        cursor:
+            onTapMm == null ? MouseCursor.defer : SystemMouseCursors.precise,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapUp: onTapMm == null
+              ? null
+              : (details) => onTapMm!(_toMm(details.localPosition)),
+          child: ListenableBuilder(
+            listenable:
+                Listenable.merge([viewport, if (cursor != null) cursor!]),
+            builder: (context, _) => CustomPaint(
+              size: Size.infinite,
+              painter: _RulerPainter(
+                viewport: viewport,
+                axis: axis,
+                cursor: cursor?.value,
+                markers: markers,
+                colorScheme: scheme,
+              ),
             ),
           ),
         ),
@@ -93,6 +99,10 @@ class _RulerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Everything stays inside the ruler strip: off-scale guide markers,
+    // the cursor line, and labels must never bleed over neighbouring
+    // toolbars/panels.
+    canvas.clipRect(Offset.zero & size);
     final horizontal = axis == Axis.horizontal;
     final length = horizontal ? size.width : size.height;
 
@@ -151,7 +161,10 @@ class _RulerPainter extends CustomPainter {
           painter.paint(canvas, Offset(px + 3, 1));
         } else {
           canvas.save();
-          canvas.translate(2, px + 3);
+          // Rotated 90°, the glyph height extends toward -x — offset by
+          // the text height so the label sits INSIDE the ruler instead
+          // of bleeding over whatever is left of it.
+          canvas.translate(painter.height + 1, px + 3);
           canvas.rotate(1.5707963267948966); // 90°
           painter.paint(canvas, Offset.zero);
           canvas.restore();

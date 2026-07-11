@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  lucide_icons_flutter: ^3.1.15
+  remix_icons_flutter: ^4.9.3
   studio_core:
     path: ../studio_core
   studio_document:

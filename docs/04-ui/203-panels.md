@@ -134,3 +134,15 @@ The panels participates in this loop without bypassing command validation, event
 - All described states and interactions can be derived from documented runtime services, commands, events, and document projections.
 - Cross-references align with existing architecture and domain specifications.
 - The document is specific enough to guide implementation, testing, and plugin-safe extension design.
+
+---
+
+# Implementation Status (MVP)
+
+Panels are registered declaratively in
+`apps/studio/lib/src/panels/panel_def.dart` (`panelRegistry`) and hosted
+by the dock — see UI-202 "Implementation Status" for the framework and
+persistence details. Built-in panels: Stitches (UI-509), Layers
+(UI-502), Properties (UI-500/501). Panel content widgets are
+stateless-props and headless-testable; only their registry builders
+touch the workspace view model.

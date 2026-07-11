@@ -80,7 +80,7 @@ class ToolOptionsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = switch (tool) {
-      ShapeTool shape => _shapeOptions(shape),
+      ShapeTool shape => _shapeOptions(context, shape),
       TextTool text => _textOptions(text),
       PenTool pen => _penOptions(context, pen),
       PencilTool pencil => [
@@ -154,32 +154,7 @@ class ToolOptionsBar extends StatelessWidget {
             },
           ),
       ]),
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (model != null) ...[
-          _numberField('Width', model!.strokeStyle.widthMm,
-              suffix: 'mm', min: 0.05, (v) {
-            model!.strokeStyle.widthMm = v;
-            onChanged();
-          }),
-          const SizedBox(width: 8),
-          StudioButton(
-            label: 'Stroke…',
-            onPressed: () => showStrokeDialog(context, model!),
-          ),
-        ],
-      ]),
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (model != null)
-          StudioIconButton(
-            icon: TablerIcons.bucket_droplet,
-            tooltip: 'Use fill — fill closed shapes with the fill chip color',
-            active: model!.strokeStyle.useFill,
-            onPressed: () {
-              model!.setUseFill(!model!.strokeStyle.useFill);
-              onChanged();
-            },
-          ),
-      ]),
+      ..._fillStrokeOptions(context),
     ];
   }
 
@@ -278,22 +253,114 @@ class ToolOptionsBar extends StatelessWidget {
     ];
   }
 
-  List<Widget> _shapeOptions(ShapeTool shape) {
+  /// Fill/stroke controls shared by drawing-tool bars (Affinity-style):
+  /// fill + stroke color chips, stroke width, stroke settings dialog,
+  /// and the use-fill toggle.
+  List<Widget> _fillStrokeOptions(BuildContext context) {
+    final m = model;
+    if (m == null) return const [];
     return [
-      // Shape kind picker: one icon per kind, Illustrator control-bar
-      // style.
-      Row(children: [
-        for (final kind in ShapeKind.values)
-          StudioIconButton(
-            icon: shapeIcon(kind),
-            tooltip: shapeLabel(kind),
-            active: shape.kind == kind,
-            onPressed: () {
-              shape.kind = kind;
-              onChanged();
-            },
-          ),
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        _colorChip(
+          context,
+          tooltip: 'Fill color',
+          hex: m.fillColorHex,
+          filled: true,
+          onPicked: m.setFillColor,
+        ),
+        const SizedBox(width: 6),
+        _colorChip(
+          context,
+          tooltip: 'Stroke color',
+          hex: m.strokeColorHex,
+          filled: false,
+          onPicked: m.setStrokeColor,
+        ),
       ]),
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        _numberField('Width', m.strokeStyle.widthMm, suffix: 'mm', min: 0.05,
+            (v) {
+          m.strokeStyle.widthMm = v;
+          onChanged();
+        }),
+        const SizedBox(width: 8),
+        StudioButton(
+          label: 'Stroke…',
+          onPressed: () => showStrokeDialog(context, m),
+        ),
+        const SizedBox(width: 8),
+        StudioIconButton(
+          icon: TablerIcons.bucket_droplet,
+          tooltip: 'Use fill — fill closed shapes with the fill chip color',
+          active: m.strokeStyle.useFill,
+          onPressed: () {
+            m.setUseFill(!m.strokeStyle.useFill);
+            onChanged();
+          },
+        ),
+      ]),
+    ];
+  }
+
+  Widget _colorChip(
+    BuildContext context, {
+    required String tooltip,
+    required String hex,
+    required bool filled,
+    required void Function(String hex) onPicked,
+  }) {
+    final color = Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
+    return Tooltip(
+      message: tooltip,
+      waitDuration: const Duration(milliseconds: 400),
+      child: InkWell(
+        onTap: () async {
+          final picked =
+              await showStudioColorPicker(context: context, initialHex: hex);
+          if (picked != null) {
+            onPicked(picked);
+            onChanged();
+          }
+        },
+        child: Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            color: filled ? color : null,
+            border: Border.all(color: AppTokens.border),
+            borderRadius: BorderRadius.circular(3),
+          ),
+          child: filled
+              ? null
+              : Center(
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: color, width: 3),
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _shapeOptions(BuildContext context, ShapeTool shape) {
+    return [
+      // Affinity-style: the bar names the current shape, carries the
+      // fill/stroke controls, then the shape's own settings; picking a
+      // different shape happens in the floating shape palette.
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(shapeIcon(shape.kind), size: 15, color: AppTokens.primary),
+        const SizedBox(width: 6),
+        Text(shapeLabel(shape.kind),
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTokens.textPrimary)),
+      ]),
+      ..._fillStrokeOptions(context),
       if (shape.kind == ShapeKind.polygon)
         _numberField('Sides', shape.sides.toDouble(), min: 3, integer: true,
             (v) {

@@ -142,7 +142,7 @@ Storage is completely independent from UI.
 Projects use the
 
 ```
-.embproj
+.swl
 ```
 
 extension.
@@ -150,7 +150,7 @@ extension.
 Internally a project is a package.
 
 ```text
-logo.embproj/
+logo.swl/
 
 manifest.json
 

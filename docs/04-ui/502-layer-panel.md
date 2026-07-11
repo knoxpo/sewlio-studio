@@ -134,3 +134,53 @@ The layer panel participates in this loop without bypassing command validation, 
 - All described states and interactions can be derived from documented runtime services, commands, events, and document projections.
 - Cross-references align with existing architecture and domain specifications.
 - The document is specific enough to guide implementation, testing, and plugin-safe extension design.
+
+---
+
+# Implementation Status (MVP)
+
+Implemented as `LayersPanelContent` in
+`apps/studio/lib/src/panels/layers_panel.dart`, hosted by the dock
+(UI-202). The panel represents the editable document model only —
+stitch-kind vocabulary lives in the Stitches panel (UI-509, ADR-036).
+
+## As built
+
+- **Naming** — nodes show design-origin names: user name, else
+  `<Rectangle>`/`<Ellipse>`/… (stamped by the Shape tool), `<Text>`,
+  `<Path>`; layers/groups keep their stored names (ADR-036).
+- **Rename** — layers, groups, AND objects: click the selected label
+  (Finder-style), F2, or context menu. Layer/group rename dispatches
+  `RenameLayer`/`RenameGroup`; object rename dispatches
+  `ReplaceObject(object.withName(...))` — all undoable.
+- **Search** — real-time, case-insensitive partial filter; a match
+  keeps its ancestor path, a matched container reveals its subtree;
+  match paths force-expand while filtering; matches highlight.
+- **Thumbnails** — every row previews geometry (`object_visuals.dart`):
+  objects draw their render contours in thread colour; layers/groups
+  show a composite of all descendants; empty containers fall back to a
+  kind icon in the same frame.
+- **Selection feedback** — selected rows: fill + 2 px accent bar;
+  ancestors of the selection: dimmed accent bar + tinted icon + medium
+  label; Illustrator-style target dot (filled = selected, ring =
+  contains selection, faint on hover; click to select).
+- **Auto-expand** — selecting elsewhere (canvas, Stitches) expands
+  collapsed ancestors; manual collapse is respected until the selection
+  changes.
+- **Drag-drop** — pointer-anchored drags with positional zones: top
+  quarter inserts before, bottom quarter after, middle nests into
+  containers; layers reorder only against layers. All drops issue
+  `MoveNode`.
+- **Context menu** — custom fast popover (`context_menu.dart`): Rename,
+  Duplicate, Delete, Group Selection, Ungroup, Move to Layer… (second-
+  level layer picker), Expand/Collapse, Select Parent, Lock/Unlock,
+  Hide/Show — state-aware labels, disabled when irrelevant.
+- **Bottom toolbar** — context-aware: Add Layer / Group / Ungroup ·
+  Expand All / Collapse All / Select Parent · Duplicate / Delete.
+- **Shortcut safety** — single-key tool shortcuts are inert while any
+  text field (rename, search) has focus; modifier chords pass through.
+
+## Not yet built
+
+Solo layer, isolation mode, masks, per-layer colours, multi-select
+drag, virtualized rows for very large documents.

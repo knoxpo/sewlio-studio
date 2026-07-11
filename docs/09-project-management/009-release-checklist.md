@@ -32,7 +32,7 @@ Run before tagging any `stable`/`beta` release. Complements Release DoD
 
 # Compatibility & data safety
 
-- [ ] `.embproj` opens files from the prior stable; migrations tested both ways where relevant.
+- [ ] `.swl` opens files from the prior stable; migrations tested both ways where relevant.
 - [ ] Recovery tested (crash-mid-save → clean recover, original never auto-overwritten).
 - [ ] Exported files verified against a reference simulator/machine for the shipped formats.
 

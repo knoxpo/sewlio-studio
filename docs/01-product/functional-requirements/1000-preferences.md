@@ -39,7 +39,7 @@ validation/
 
 The Preferences System provides centralized management of all user-configurable application settings.
 
-Unlike project settings, which are stored inside `.embproj` files, preferences belong to the user and apply across projects.
+Unlike project settings, which are stored inside `.swl` files, preferences belong to the user and apply across projects.
 
 Preferences should synchronize seamlessly across devices through external storage providers (future) while remaining fully functional offline.
 

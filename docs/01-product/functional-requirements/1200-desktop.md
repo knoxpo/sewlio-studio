@@ -605,7 +605,7 @@ Critical
 
 Associate
 
-`.embproj`
+`.swl`
 
 Double-click
 

@@ -29,7 +29,7 @@ Platform update: Phase 1 remains Flutter/Dart and embroidery-first. Phase 1.5 ge
 
 ## M3 — Document Model + Storage  ·  ~4 sprints
 - **Entry:** M2.
-- **Exit:** document (project/layers/objects) mutates only via Command→Event; `.embproj` atomic
+- **Exit:** document (project/layers/objects) mutates only via Command→Event; `.swl` atomic
   save/load round-trips; recovery + crash-mid-write fault tests pass.
 - **Demo:** create/edit/save/reopen a project headlessly.
 

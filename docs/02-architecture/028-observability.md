@@ -177,7 +177,7 @@ Example
   "service": "Storage",
   "event": "ProjectSaved",
   "duration_ms": 42,
-  "project": "example.embproj",
+  "project": "example.swl",
   "correlation_id": "..."
 }
 ```

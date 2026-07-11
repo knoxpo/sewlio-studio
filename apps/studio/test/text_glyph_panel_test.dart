@@ -20,7 +20,7 @@ void main() {
     await tester.pumpWidget(StudioApp(session: session));
 
     // Commit "hi" as one text object.
-    await tester.tap(find.byTooltip('Text (T)'));
+    await tester.tap(find.byKey(const Key('tool-Text')));
     await tester.pump();
     await tester.tapAt(tester.getCenter(find.byType(CanvasView)));
     await tester.pump(const Duration(milliseconds: 400));

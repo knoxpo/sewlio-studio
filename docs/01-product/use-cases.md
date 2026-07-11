@@ -77,7 +77,7 @@ Every major feature should map to at least one use case.
 1. User selects **New Project**.
 2. App asks for project name.
 3. User selects hoop size or default machine profile.
-4. App creates `.embproj`.
+4. App creates `.swl`.
 5. App opens editor workspace.
 
 ### Acceptance Criteria
@@ -94,12 +94,12 @@ Every major feature should map to at least one use case.
 
 **Priority:** P0  
 **Primary Actor:** All users  
-**Goal:** Continue editing an existing `.embproj`.
+**Goal:** Continue editing an existing `.swl`.
 
 ### Flow
 
 1. User selects **Open Project**.
-2. User chooses `.embproj`.
+2. User chooses `.swl`.
 3. App validates project package.
 4. App loads project database, assets, layers, and viewport.
 5. Editor displays restored project.
@@ -307,13 +307,13 @@ Every major feature should map to at least one use case.
 
 **Priority:** P0  
 **Primary Actor:** All users  
-**Goal:** Ensure `.embproj` remains editable source of truth.
+**Goal:** Ensure `.swl` remains editable source of truth.
 
 ### Flow
 
 1. User exports DST.
 2. User closes project.
-3. User reopens `.embproj`.
+3. User reopens `.swl`.
 4. User modifies vectors/stitches.
 5. User exports again.
 
@@ -542,7 +542,7 @@ Every major feature should map to at least one use case.
 
 1. User opens project.
 2. User selects **Save As**.
-3. App creates duplicate `.embproj`.
+3. App creates duplicate `.swl`.
 4. User edits duplicate.
 
 ### Acceptance Criteria
@@ -752,7 +752,7 @@ Every major feature should map to at least one use case.
 
 ### Flow
 
-1. User saves `.embproj` in iCloud Drive / Google Drive.
+1. User saves `.swl` in iCloud Drive / Google Drive.
 2. Sync provider syncs file.
 3. User opens same project on another device.
 4. App validates and opens project.
@@ -958,7 +958,7 @@ Phones are not the primary production environment.
 
 **Priority:** P1  
 **Primary Actor:** Returning User  
-**Goal:** Open older `.embproj` version.
+**Goal:** Open older `.swl` version.
 
 ### Acceptance Criteria
 

@@ -21,7 +21,7 @@ void main() {
 
   /// Draws one pen path in the active editor (dirties the document).
   Future<void> drawPath(WidgetTester tester) async {
-    await tester.tap(find.byTooltip('Pen (P)'));
+    await tester.tap(find.byKey(const Key('tool-Pen')));
     await tester.pump();
     final canvas = tester.getCenter(find.byType(CanvasView));
     await tester.tapAt(canvas);
@@ -50,21 +50,21 @@ void main() {
 
     // Home tab + two document tabs; Beta is active.
     expect(find.byKey(const Key('home-tab')), findsOneWidget);
-    expect(find.text('Alpha.embproj'), findsOneWidget);
-    expect(find.text('Beta.embproj'), findsOneWidget);
+    expect(find.text('Alpha.swl'), findsOneWidget);
+    expect(find.text('Beta.swl'), findsOneWidget);
 
     // Dirty Alpha only: its tab shows the star, Beta's stays clean.
-    await tester.tap(find.text('Alpha.embproj'));
+    await tester.tap(find.text('Alpha.swl'));
     await tester.pumpAndSettle();
     await drawPath(tester);
-    expect(find.text('Alpha.embproj*'), findsOneWidget);
-    expect(find.text('Beta.embproj'), findsOneWidget);
+    expect(find.text('Alpha.swl*'), findsOneWidget);
+    expect(find.text('Beta.swl'), findsOneWidget);
 
     // Switching tabs switches the active document title.
-    await tester.tap(find.text('Beta.embproj'));
+    await tester.tap(find.text('Beta.swl'));
     await tester.pumpAndSettle();
     final title = tester.widget<Text>(find.byKey(const Key('doc-title')));
-    expect(title.data, 'Beta.embproj');
+    expect(title.data, 'Beta.swl');
   });
 
   testWidgets('closing a clean tab removes it; last close returns Home',
@@ -73,13 +73,13 @@ void main() {
     await tester.tap(find.byKey(const Key('home-new-project')));
     await tester.pump();
     await createProject(tester, 'Solo');
-    expect(find.text('Solo.embproj'), findsOneWidget);
+    expect(find.text('Solo.swl'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('close-tab-0')));
     await tester.pumpAndSettle();
 
     // Back on Home; the app keeps running and shows no empty editor.
-    expect(find.text('Solo.embproj'), findsNothing);
+    expect(find.text('Solo.swl'), findsNothing);
     expect(find.byKey(const Key('home-new-project')), findsOneWidget);
     expect(find.byType(CanvasView), findsNothing);
   });
@@ -91,7 +91,7 @@ void main() {
     await tester.pump();
     await createProject(tester, 'Dirty');
     await drawPath(tester);
-    expect(find.text('Dirty.embproj*'), findsOneWidget);
+    expect(find.text('Dirty.swl*'), findsOneWidget);
 
     // Cancel keeps the tab open.
     await tester.tap(find.byKey(const Key('close-tab-0')));
@@ -99,14 +99,14 @@ void main() {
     expect(find.text('Unsaved Changes'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(find.text('Dirty.embproj*'), findsOneWidget);
+    expect(find.text('Dirty.swl*'), findsOneWidget);
 
     // Discard closes without saving and lands on Home.
     await tester.tap(find.byKey(const Key('close-tab-0')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Discard'));
     await tester.pumpAndSettle();
-    expect(find.text('Dirty.embproj*'), findsNothing);
+    expect(find.text('Dirty.swl*'), findsNothing);
     expect(find.byKey(const Key('home-new-project')), findsOneWidget);
   });
 }

@@ -61,7 +61,7 @@ real gaps made the model *feel* stitch-first:
 
 ## Schema impact
 
-`.embproj` stays at version 2. `type: 'text'` is an additive object kind:
+`.swl` stays at version 2. `type: 'text'` is an additive object kind:
 older files load unchanged; files containing text objects are unreadable by
 pre-ADR builds (acceptable pre-release, consistent with ADR-027's no-migration
 stance).

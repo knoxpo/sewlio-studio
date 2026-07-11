@@ -68,10 +68,17 @@ class StudioIconButton extends StatelessWidget {
     this.onPressed,
     this.active = false,
     this.flyoutIndicator = false,
+    this.size = 18,
   });
 
   final IconData icon;
-  final String tooltip;
+
+  /// Icon size; padding scales down with it (compact panel toolbars).
+  final double size;
+
+  /// Hover tooltip; null suppresses it (e.g. when a richer hover card
+  /// wraps the button).
+  final String? tooltip;
   final VoidCallback? onPressed;
   final bool active;
   final bool flyoutIndicator;
@@ -85,36 +92,38 @@ class StudioIconButton extends StatelessWidget {
         : active
             ? AppTokens.onPrimary
             : AppTokens.textMuted;
+    final button = InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(4),
+      hoverColor: AppTokens.surfaceHigh,
+      child: Container(
+        padding: EdgeInsets.all(size < 18 ? 4 : 6),
+        decoration: BoxDecoration(
+          color: active ? AppTokens.primary : null,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(icon, size: size, color: color),
+            if (flyoutIndicator)
+              Positioned(
+                right: -4,
+                bottom: -4,
+                child: CustomPaint(
+                  size: const Size(5, 5),
+                  painter: _FlyoutTrianglePainter(color),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (tooltip == null) return button;
     return Tooltip(
       message: tooltip,
       waitDuration: const Duration(milliseconds: 400),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(4),
-        hoverColor: AppTokens.surfaceHigh,
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: active ? AppTokens.primary : null,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(icon, size: 18, color: color),
-              if (flyoutIndicator)
-                Positioned(
-                  right: -4,
-                  bottom: -4,
-                  child: CustomPaint(
-                    size: const Size(5, 5),
-                    painter: _FlyoutTrianglePainter(color),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
+      child: button,
     );
   }
 }

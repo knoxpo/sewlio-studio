@@ -172,13 +172,13 @@ Project IDs never change.
 Editable projects are always stored as
 
 ```
-project.embproj
+project.swl
 ```
 
 Machine formats are never editable.
 
 ```
-.embproj
+.swl
 
 ↓
 
@@ -196,7 +196,7 @@ VP3
 # Project Package
 
 ```
-project.embproj/
+project.swl/
 
 project.db
 

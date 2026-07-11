@@ -56,7 +56,7 @@ far-milestone tasks (M9–M10) are planning estimates refined on approach.
 # E5 Storage & Recovery
 | ID | Feature | Depends | Acceptance | Testing |
 |---|---|---|---|---|
-| E5-F1 | `.embproj` format | E4 | package layout; manifest; versioned | round-trip |
+| E5-F1 | `.swl` format | E4 | package layout; manifest; versioned | round-trip |
 | E5-F2 | Atomic save/load | E5-F1 | crash-safe write; checksum; load validation | round-trip + fault |
 | E5-F3 | Recovery | E5-F2 | journal/checkpoint; never auto-overwrite original | fault |
 | E5-F4 | Migration | E5-F1 | project schema migration path | migration |

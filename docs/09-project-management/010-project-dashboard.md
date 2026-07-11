@@ -25,8 +25,8 @@ Single-glance status. Update at every sprint boundary. Values below are the **cu
 (`studio_diagnostics/core/events/commands/document/geometry/embroidery/machine/export/import/`
 `simulation/ai`), Flutter `studio_canvas`/`studio_tools`, and the desktop shell. Full loop proven
 headless by `apps/studio/test/full_loop_test.dart`: import SVG → command-driven edit → digitize →
-Machine IR → validated DST/EXP bytes → `.embproj` save/reopen → identical output. Project Type architecture remains in place for Embroidery Projects; weaving and printing are post-MVP. `make check`
-green. Deliberate MVP shortcuts tracked via `ponytail:` comments (JSON `.embproj` pending libSQL,
+Machine IR → validated DST/EXP bytes → `.swl` save/reopen → identical output. Project Type architecture remains in place for Embroidery Projects; weaving and printing are post-MVP. `make check`
+green. Deliberate MVP shortcuts tracked via `ponytail:` comments (JSON `.swl` pending libSQL,
 regex SVG extraction, bbox hit-testing, satin/fill generators stubbed).
 
 ---

@@ -12,7 +12,7 @@ void main() {
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
-    await tester.tap(find.byTooltip('Pen (P)'));
+    await tester.tap(find.byKey(const Key('tool-Pen')));
     await tester.pump();
     final c = tester.getCenter(find.byType(CanvasView));
     // Realistic drawing pace (~150ms/click) — the old

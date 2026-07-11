@@ -62,7 +62,7 @@ void main() {
     await tester.tap(find.byKey(const Key('new-project-create')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tulip.embproj'), findsOneWidget);
+    expect(find.text('Tulip.swl'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget); // the editor canvas
   });
 
@@ -94,7 +94,7 @@ void main() {
       (tester) async {
     final temp = Directory.systemTemp.createTempSync('home');
     addTearDown(() => temp.deleteSync(recursive: true));
-    final projectPath = '${temp.path}/rose.embproj';
+    final projectPath = '${temp.path}/rose.swl';
     File(projectPath).writeAsStringSync(
         encodeProject(Document(id: const Id('rose'), name: 'Rose')));
 
@@ -108,7 +108,7 @@ void main() {
       ))
       ..record(RecentProject(
         name: 'Ghost',
-        path: '${temp.path}/gone.embproj',
+        path: '${temp.path}/gone.swl',
         hoopWidthMm: 100,
         hoopHeightMm: 100,
         lastOpened: DateTime(2026, 7, 10),
@@ -131,7 +131,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
     });
     await tester.pumpAndSettle();
-    expect(find.text('Rose.embproj'), findsOneWidget);
+    expect(find.text('Rose.swl'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
   });
 }

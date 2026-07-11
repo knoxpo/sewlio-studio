@@ -102,7 +102,7 @@ intact per ADR-026. MVP delivers Dart equivalents of M1–M8 first (see
 |---|---|---|---|
 | M1 | Foundation | Command/event bus dispatch round-trips; CI green | E1, E2, E15, E16 |
 | M2 | Geometry | Geometry IR serializes deterministically; golden fixtures pass | E3 |
-| M3 | Document Model + Storage | Object CRUD via Command→Event; `.embproj` round-trips | E4, E5 |
+| M3 | Document Model + Storage | Object CRUD via Command→Event; `.swl` round-trips | E4, E5 |
 | M4 | Import | SVG → Import IR → Geometry IR; golden import test | E6 |
 | M5 | Embroidery Core | Geometry IR → Stitch IR (running stitch); golden stitch test | E7 |
 | M6 | Machine + Export | Headless SVG→DST integration test passes | E8, E9 |

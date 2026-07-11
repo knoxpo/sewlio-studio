@@ -278,4 +278,8 @@ final class TextTool extends Tool {
   String? get status => editing
       ? 'Text: type on canvas — Enter commits, Shift+Enter breaks the line'
       : 'Text: click for point text, drag for a text frame';
+
+  @override
+  ToolCursor cursorAt(Point world) =>
+      _dragFrom != null ? ToolCursor.crosshair : ToolCursor.text;
 }

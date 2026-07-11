@@ -5,7 +5,7 @@ Shared fixtures for headless engine tests and golden comparisons (see
 
 Planned contents (added with the tasks that need them):
 - `svg/` — sample vector inputs for the import pipeline
-- `embproj/` — small project packages for storage round-trip tests
+- `swl/` — small project packages for storage round-trip tests
 - `dst/`, `exp/` — golden machine files for exporter byte comparisons
 
 Empty for now — Task 1 is skeleton only.

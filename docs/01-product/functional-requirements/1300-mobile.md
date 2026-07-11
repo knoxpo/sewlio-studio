@@ -572,7 +572,7 @@ PNG
 
 JPEG
 
-.embproj
+.swl
 
 ---
 

@@ -41,7 +41,7 @@ Done means shippable. Four scopes, each stricter than the last.
 - [ ] Milestone exit criteria met (`010-milestones.md`).
 - [ ] Full gate green: unit + golden + integration + compat + perf + cross-platform CI.
 - [ ] No open P0/P1; risk register reviewed.
-- [ ] `.embproj` back-compat with prior stable verified; recovery tested.
+- [ ] `.swl` back-compat with prior stable verified; recovery tested.
 - [ ] Release checklist (`09-PM/009-release-checklist.md`) complete; changelog + signed builds.
 
 ---

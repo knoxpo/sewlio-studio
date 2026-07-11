@@ -73,7 +73,7 @@ The application never requires cloud storage.
 
 ## Portable
 
-Projects remain standard `.embproj` packages.
+Projects remain standard `.swl` packages.
 
 They can be copied using:
 
@@ -711,7 +711,7 @@ Batch Tagging
 
 Supports opening
 
-`.embproj`
+`.swl`
 
 Validates
 

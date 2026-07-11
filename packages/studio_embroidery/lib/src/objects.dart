@@ -83,6 +83,7 @@ sealed class EmbroideryObject {
     required this.id,
     required this.path,
     this.stroke = StrokeProps.defaults,
+    this.name,
   });
 
   final Id id;
@@ -91,10 +92,21 @@ sealed class EmbroideryObject {
   /// Canvas stroke rendering properties (ADR-028 fill/stroke v1).
   final StrokeProps stroke;
 
+  /// User-facing display name (ADR-036); null = derived default
+  /// (`<Text>` for text, `<Path>` otherwise).
+  final String? name;
+
   /// A copy with [stroke] replaced (same type, id, geometry, params) —
   /// cloned through serialization so every kind supports it.
   EmbroideryObject withStroke(StrokeProps stroke) {
     final json = toJson()..['stroke'] = stroke.toJson();
+    return EmbroideryObject.fromJson(json);
+  }
+
+  /// A copy with [name] replaced (ADR-036). Renaming in the UI is
+  /// `ReplaceObject(object.withName(...))` — undoable for free.
+  EmbroideryObject withName(String name) {
+    final json = toJson()..['name'] = name;
     return EmbroideryObject.fromJson(json);
   }
 
@@ -122,6 +134,7 @@ sealed class EmbroideryObject {
         },
         'id': id.value,
         'path': path.toJson(),
+        if (name != null) 'name': name,
         if (!stroke.isDefault) 'stroke': stroke.toJson(),
         ...switch (this) {
           RunningStitchObject(:final stitchLength) => {
@@ -157,6 +170,7 @@ sealed class EmbroideryObject {
   static EmbroideryObject fromJson(Map<String, dynamic> json) {
     final id = Id(json['id'] as String);
     final path = Path.fromJson(json['path'] as Map<String, dynamic>);
+    final name = json['name'] as String?;
     final stroke = json['stroke'] == null
         ? StrokeProps.defaults
         : StrokeProps.fromJson(json['stroke'] as Map<String, dynamic>);
@@ -165,22 +179,26 @@ sealed class EmbroideryObject {
           id: id,
           path: path,
           stroke: stroke,
+          name: name,
           stitchLength: (json['stitchLength'] as num).toDouble(),
         ),
       'satin' => SatinObject(
           id: id,
           path: path,
           stroke: stroke,
+          name: name,
           width: (json['width'] as num).toDouble()),
       'fill' => FillObject(
           id: id,
           path: path,
           stroke: stroke,
+          name: name,
           spacing: (json['spacing'] as num).toDouble()),
       'text' => TextObject(
           id: id,
           path: path,
           stroke: stroke,
+          name: name,
           text: json['text'] as String,
           fontFamily: json['fontFamily'] as String,
           sizeMm: (json['sizeMm'] as num).toDouble(),
@@ -205,6 +223,7 @@ final class RunningStitchObject extends EmbroideryObject {
     required super.id,
     required super.path,
     super.stroke,
+    super.name,
     this.stitchLength = 2.5,
   });
 
@@ -213,7 +232,11 @@ final class RunningStitchObject extends EmbroideryObject {
 
   @override
   RunningStitchObject withPath(Path path) => RunningStitchObject(
-      id: id, path: path, stroke: stroke, stitchLength: stitchLength);
+      id: id,
+      path: path,
+      stroke: stroke,
+      name: name,
+      stitchLength: stitchLength);
 }
 
 // ponytail: satin/fill are declared so the object model is complete,
@@ -222,14 +245,18 @@ final class RunningStitchObject extends EmbroideryObject {
 /// A satin column along the path. Generator not implemented yet.
 final class SatinObject extends EmbroideryObject {
   const SatinObject(
-      {required super.id, required super.path, super.stroke, this.width = 3.0});
+      {required super.id,
+      required super.path,
+      super.stroke,
+      super.name,
+      this.width = 3.0});
 
   /// Column width in mm.
   final double width;
 
   @override
   SatinObject withPath(Path path) =>
-      SatinObject(id: id, path: path, stroke: stroke, width: width);
+      SatinObject(id: id, path: path, stroke: stroke, name: name, width: width);
 }
 
 /// A region fill bounded by the (closed) path. Generator not
@@ -239,14 +266,15 @@ final class FillObject extends EmbroideryObject {
       {required super.id,
       required super.path,
       super.stroke,
+      super.name,
       this.spacing = 0.4});
 
   /// Fill line spacing in mm.
   final double spacing;
 
   @override
-  FillObject withPath(Path path) =>
-      FillObject(id: id, path: path, stroke: stroke, spacing: spacing);
+  FillObject withPath(Path path) => FillObject(
+      id: id, path: path, stroke: stroke, name: name, spacing: spacing);
 }
 
 /// A single editable text element (ADR-028): the design intent (string,
@@ -258,6 +286,7 @@ final class TextObject extends EmbroideryObject {
     required super.id,
     required super.path,
     super.stroke,
+    super.name,
     required this.text,
     required this.fontFamily,
     this.sizeMm = 10,
@@ -322,6 +351,7 @@ final class TextObject extends EmbroideryObject {
         id: id,
         path: path ?? this.path,
         stroke: stroke,
+        name: name,
         text: text,
         fontFamily: fontFamily,
         sizeMm: sizeMm,

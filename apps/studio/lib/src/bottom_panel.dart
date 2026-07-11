@@ -413,26 +413,46 @@ class StitchPreviewPainter extends CustomPainter {
     Color active() => colors == null || colors.isEmpty
         ? color
         : colors[thread % colors.length];
+    // Stroked runs with round joins so corners/curves read smooth.
     final paint = Paint()
-      ..color = active()
-      ..strokeWidth = 1.2;
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = active();
+    var run = Path();
+    var penDown = false;
     Offset? pen;
+    void flush() {
+      if (penDown) canvas.drawPath(run, paint);
+      run = Path();
+      penDown = false;
+    }
+
     for (final op in ops) {
       switch (op.kind) {
         case StitchKind.stitch:
           final next = map(op.position);
-          if (pen != null) canvas.drawLine(pen, next, paint);
+          penDown ? run.lineTo(next.dx, next.dy) : run.moveTo(next.dx, next.dy);
+          penDown = true;
           pen = next;
         case StitchKind.jump:
+          flush();
           pen = map(op.position); // move without drawing
+          run.moveTo(pen.dx, pen.dy);
+          penDown = true;
         case StitchKind.colorChange:
+          flush();
           thread++;
           paint.color = active();
+          if (pen != null) run.moveTo(pen.dx, pen.dy);
+          penDown = pen != null;
         case StitchKind.trim:
         case StitchKind.stop:
           break;
       }
     }
+    flush();
     if (pen != null) {
       canvas.drawCircle(pen, 3, Paint()..color = paint.color);
     }

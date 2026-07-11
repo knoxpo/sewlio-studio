@@ -35,7 +35,7 @@ void main() {
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
-    await tester.tap(find.byTooltip('Pen (P)'));
+    await tester.tap(find.byKey(const Key('tool-Pen')));
     await tester.pump();
 
     final canvas = tester.getCenter(find.byType(CanvasView));
@@ -51,14 +51,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(session.document.objects, hasLength(1));
-    expect(find.text('Untitled.embproj*'), findsOneWidget);
+    expect(find.text('Untitled.swl*'), findsOneWidget);
     // Stitch list shows the object with a real count.
     expect(find.text('Running Stitch'), findsOneWidget);
 
-    await tester.tap(find.text('Properties'));
-    await tester.pump();
-    await tester.tap(find.byTooltip('Undo'));
-    await tester.pump();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Undo'));
+    await tester.pumpAndSettle();
     expect(session.document.objects, isEmpty);
   });
 
@@ -68,7 +68,7 @@ void main() {
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
-    await tester.tap(find.byTooltip('Pen (P)'));
+    await tester.tap(find.byKey(const Key('tool-Pen')));
     await tester.pump();
 
     final canvas = tester.getCenter(find.byType(CanvasView));
@@ -197,7 +197,7 @@ void main() {
     final session = StudioSession();
     await tester.pumpWidget(StudioApp(session: session));
 
-    await tester.tap(find.byTooltip('Text (T)'));
+    await tester.tap(find.byKey(const Key('tool-Text')));
     await tester.pump();
     // Rich typography toolbar appears for the Text tool.
     expect(find.text('Tracking '), findsOneWidget);

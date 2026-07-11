@@ -100,7 +100,7 @@ crates/
 | `es_diagnostics` → `engine/kernel/diagnostics` | Kernel | Severity, diagnostics, logging, tracing | core-engine | `Severity`, diagnostic sink | — | unit |
 | `es_core` → `engine/kernel` + `engine/runtime` | Kernel/Runtime | Lifecycle, ids, time, command bus, event bus, service registry, scheduler | core-engine | `Command`, `Event`, `CommandBus`, `EventBus`, `ServiceRegistry` | es_diagnostics | unit + integration |
 | `es_geometry` → `engine/domains/geometry` | Domain | **Geometry IR** owner: points, paths, curves, transforms, bbox | geometry | `Point`, `Path`, `Transform`, `GeometryIr` | es_core | unit + golden + property |
-| _(planned)_ `es_document` → `engine/platform` | Platform | Document model, layers, project, `.embproj` orchestration | core-engine | `Document`, `Project`, doc commands | es_geometry, es_core | integration |
+| _(planned)_ `es_document` → `engine/platform` | Platform | Document model, layers, project, `.swl` orchestration | core-engine | `Document`, `Project`, doc commands | es_geometry, es_core | integration |
 | _(planned)_ `es_storage` → `engine/services/storage` | Service | Persistence, serialization, migration, atomic saves, recovery | import-export | `ProjectStore`, `save/load` | es_document | round-trip + fault |
 | _(planned)_ `es_import` → `engine/compilers/import` | Compiler | **Import IR** owner: parse SVG/raster/emb, normalize | import-export | `import()`, `ImportIr` | es_geometry | golden + compat |
 | _(planned)_ `es_embroidery` → `engine/domains/embroidery` | Domain | Embroidery objects, stitch settings, density, underlay, compensation | embroidery | embroidery types | es_geometry | unit |
@@ -127,6 +127,12 @@ crates/
 | `packages/studio_design_system` | Design tokens, themes, shared widgets | ui | `AppTokens`, theme, components | flutter | widget golden |
 | _(planned)_ `packages/studio_canvas` | Canvas widget, gestures, selection visuals | ui | canvas widgets | bindings, design_system | widget + interaction |
 | _(planned)_ `packages/studio_panels` | Inspector, layers, timeline, resources | ui | panel widgets | bindings, design_system | widget |
+
+> MVP note: the dockable panel framework and the Layers / Stitches /
+> Properties panels currently live in `apps/studio/lib/src/dock/` and
+> `apps/studio/lib/src/panels/` (single consumer — see UI-202
+> Implementation Status). Lift into `packages/studio_panels` (with an
+> ADR) when a second consumer or the plugin panel API arrives.
 
 ---
 

@@ -13,10 +13,12 @@ void main() {
   testWidgets('toolbox renders grouped slots incl. hoop, zoom, chips',
       (tester) async {
     await pumpEditor(tester);
-    expect(find.byTooltip('Move (V)'), findsOneWidget);
-    expect(find.byTooltip('Hoop (D)'), findsOneWidget);
-    expect(find.byTooltip('Pen (P)'), findsOneWidget); // draw group slot
-    expect(find.byTooltip('View (Pan) (H)'), findsOneWidget); // nav slot
+    expect(find.byKey(const Key('tool-Move')), findsOneWidget);
+    expect(find.byKey(const Key('tool-Hoop')), findsOneWidget);
+    expect(
+        find.byKey(const Key('tool-Pen')), findsOneWidget); // draw group slot
+    expect(
+        find.byKey(const Key('tool-View (Pan)')), findsOneWidget); // nav slot
     expect(find.byKey(const Key('fill-chip')), findsOneWidget);
     expect(find.byKey(const Key('stroke-chip')), findsOneWidget);
     expect(find.byKey(const Key('swap-fill-stroke')), findsOneWidget);

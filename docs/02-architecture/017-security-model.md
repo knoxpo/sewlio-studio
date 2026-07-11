@@ -492,7 +492,7 @@ Storage validates:
 
 # Secure Store
 
-Secrets are never stored in `.embproj`.
+Secrets are never stored in `.swl`.
 
 Secrets include:
 

@@ -23,7 +23,7 @@ Dependencies reference `docs/08-implementation/002-dependency-map.md`.
 | E1 | Foundation (kernel+runtime) | Lifecycle, ids, time, diagnostics, command bus, event bus, service registry, scheduler, dependency graph. The only mutation path. | — | L | ~4 | P0 | M1 |
 | E2 | IR Framework | Shared IR traits: versioned, serializable, immutable, deterministic + golden-fixture harness. | E1 | M | ~2 | P0 | M1 |
 | E3 | Geometry Engine | Geometry IR: points, paths, curves, transforms, bounding boxes, algorithms. mm-internal, deterministic. | E2 | L | ~4 | P0 | M2 |
-| E4 | Document Model & Project | Project/layers/objects; command-driven mutation; event emission; `.embproj` structure. | E3 | L | ~3 | P0 | M3 |
+| E4 | Document Model & Project | Project/layers/objects; command-driven mutation; event emission; `.swl` structure. | E3 | L | ~3 | P0 | M3 |
 | E5 | Storage & Recovery | Persistence, serialization, migration, atomic saves, backups, recovery. | E4 | M | ~2 | P0 | M3 |
 | E6 | Import Pipeline | Import IR; SVG → raster → embroidery parsers; normalization. | E3, E5 | L | ~4 | P1 | M4 |
 | E7 | Embroidery Engine | Stitch IR; running/satin/fill/underlay; density, compensation, sequencing, trims, jumps, optimization. | E3 | XL | ~8 | P0 | M5 / M6-widen |

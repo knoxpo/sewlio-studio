@@ -139,3 +139,39 @@ The tool system participates in this loop without bypassing command validation, 
 - All described states and interactions can be derived from documented runtime services, commands, events, and document projections.
 - Cross-references align with existing architecture and domain specifications.
 - The document is specific enough to guide implementation, testing, and plugin-safe extension design.
+
+---
+
+# Implementation Status (MVP)
+
+The tool contribution contract is ADR-037; the registry lives in
+`apps/studio/lib/src/tools/tool_contributions.dart`.
+
+## As built
+
+- **`ToolContribution`** — one record per tool: namespaced id
+  (`core.pen`, …), `ToolKind`, label, icon, shortcut key + label +
+  optional cycle, optional `QuickOptions` palette, contributed
+  `PanelDef` list. Built-ins register in `toolContributions`.
+- **Derived surfaces** — the toolbox layout (`toolbox.dart`) resolves
+  every real entry from the registry; the view model's shortcut map is
+  `buildToolShortcuts()`; the shell's floating palette host reads the
+  active tool's `QuickOptions`; tool panels join `panelRegistry` at
+  startup. Registry invariants are test-enforced
+  (`test/tool_contributions_test.dart`).
+- **Context toolbar** — `ToolOptionsBar` renders contextual controls
+  per active tool above the canvas (mode/parameter controls; commands
+  only, no direct mutation).
+- **Behavior** — interaction cores live in `packages/studio_tools`
+  (`Tool`): pointer streams, previews, cursors; object creation flows
+  through the workspace view model (`addPath` stamps design-origin
+  names per ADR-036) and the command bus.
+- **Properties by selection** — `object_panel.dart` inspects the
+  selected node's type (object kind / group / layer) independent of the
+  active tool.
+
+## Not yet built
+
+Plugin runtime registration, permission/error isolation, property-
+editor contribution API, unsupported-object placeholder state — see
+ADR-037 "Deferred".

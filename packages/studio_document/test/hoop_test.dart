@@ -30,7 +30,7 @@ void main() {
     expect(doc.hoop.texture, FabricTexture.weave);
   });
 
-  test('hoop persists through .embproj', () {
+  test('hoop persists through .swl', () {
     final doc = Document(id: const Id('doc'))
       ..hoop = const HoopSettings(
           widthMm: 200,

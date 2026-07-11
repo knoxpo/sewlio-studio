@@ -9,14 +9,14 @@ import 'hoop.dart';
 import 'hierarchy.dart';
 import 'units.dart';
 
-/// `.embproj` schema version. Bump + migrate on breaking change (ADR).
+/// `.swl` schema version. Bump + migrate on breaking change (ADR).
 const String projectVersion = '2';
 
-// ponytail: .embproj is a JSON text file for the MVP — self-contained
+// ponytail: .swl is a JSON text file for the MVP — self-contained
 // and diffable. Move to the libSQL container (ARCH-006/007) when
 // assets/history need to live inside the project file.
 
-/// Serializes [document] as `.embproj` JSON.
+/// Serializes [document] as `.swl` JSON.
 String encodeProject(Document document) =>
     const JsonEncoder.withIndent('  ').convert({
       'version': projectVersion,
@@ -43,13 +43,13 @@ String encodeProject(Document document) =>
       'colorProfile': document.colorProfile.toJson(),
     });
 
-/// Parses `.embproj` JSON into a fresh [Document].
+/// Parses `.swl` JSON into a fresh [Document].
 /// Throws [FormatException] on unknown versions or malformed content.
 Document decodeProject(String source) {
   final json = jsonDecode(source) as Map<String, dynamic>;
   final version = json['version'] as String?;
   if (version != projectVersion) {
-    throw FormatException('Unsupported .embproj version: $version');
+    throw FormatException('Unsupported .swl version: $version');
   }
   final document = Document(
     id: Id(json['id'] as String),

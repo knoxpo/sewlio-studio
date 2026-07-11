@@ -690,7 +690,7 @@ The personas lead to the following product decisions:
 
 5. Tablet workflows are first-class experiences, not simplified companion interfaces.
 
-6. The editable source of truth is always `.embproj`; machine formats are generated outputs.
+6. The editable source of truth is always `.swl`; machine formats are generated outputs.
 
 7. Performance must scale from simple hobby projects to commercial, high-stitch-count designs.
 

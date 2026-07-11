@@ -83,7 +83,7 @@ proceed) when a task would:
 
 - cross a package boundary or add a cross-layer dependency,
 - change an **IR schema** (Import/Geometry/Stitch/Playback/Machine),
-- change a public API contract or the `.embproj` format,
+- change a public API contract or the `.swl` format,
 - introduce a new dependency or a new package.
 
 These require an **ADR** (`docs/07-adr`) authored/approved via Claude Code (architect) before code.

@@ -18,7 +18,7 @@ That shape is no longer enough for:
 - hierarchy-based selection
 - hierarchy-aware rendering and stitch generation
 
-The current `.embproj` MVP file is also versioned JSON, so a hierarchy change is a schema change.
+The current `.swl` MVP file is also versioned JSON, so a hierarchy change is a schema change.
 
 ---
 
@@ -43,7 +43,7 @@ They are not geometry objects and do not own independent transform state.
 
 Moving a group or multi-selection applies transforms directly to descendant objects.
 
-The `.embproj` schema is bumped from `1` to `2`.
+The `.swl` schema is bumped from `1` to `2`.
 
 Version `1` projects are intentionally unsupported after this change.
 

@@ -14,10 +14,6 @@ class ObjectPropertiesPanel extends StatelessWidget {
     required this.selectedRefs,
     required this.primarySelection,
     required this.onCommand,
-    required this.canUndo,
-    required this.canRedo,
-    required this.onUndo,
-    required this.onRedo,
     this.framed = true,
   });
 
@@ -25,52 +21,20 @@ class ObjectPropertiesPanel extends StatelessWidget {
   final List<DocumentNodeRef> selectedRefs;
   final DocumentNodeRef? primarySelection;
   final void Function(Command command) onCommand;
-  final bool canUndo;
-  final bool canRedo;
-  final VoidCallback onUndo;
-  final VoidCallback onRedo;
   final bool framed;
 
   @override
   Widget build(BuildContext context) {
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppTokens.background,
-            border: Border(bottom: BorderSide(color: AppTokens.border)),
-          ),
-          child: Row(
-            children: [
-              StudioIconButton(
-                  icon: Icons.undo,
-                  tooltip: 'Undo',
-                  onPressed: canUndo ? onUndo : null),
-              StudioIconButton(
-                  icon: Icons.redo,
-                  tooltip: 'Redo',
-                  onPressed: canRedo ? onRedo : null),
-              const SizedBox(width: 8),
-              const StudioIconButton(
-                  icon: Icons.content_copy, tooltip: 'Copy (soon)'),
-              const StudioIconButton(
-                  icon: Icons.content_paste, tooltip: 'Paste (soon)'),
-            ],
-          ),
-        ),
-        Expanded(
-          child: primarySelection == null
-              ? Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text('No selection',
-                      style: TextStyle(color: AppTokens.textMuted)),
-                )
-              : _bodyFor(primarySelection!),
-        ),
-      ],
-    );
+    final content = primarySelection == null
+        ? Padding(
+            padding: const EdgeInsets.all(12),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text('No selection',
+                  style: TextStyle(color: AppTokens.textMuted)),
+            ),
+          )
+        : _bodyFor(primarySelection!);
     return framed ? StudioPanel(width: 240, child: content) : content;
   }
 

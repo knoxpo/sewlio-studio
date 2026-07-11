@@ -33,7 +33,7 @@ void main() {
       document: document,
       history: history,
       selection: SelectionController(),
-    );
+    )..pxPerMm = 10; // realistic zoom: handle hit radius = 0.6 mm
   });
 
   test('tap selects topmost hit, tap on empty clears', () {
@@ -57,6 +57,97 @@ void main() {
     history.undo();
     expect(document.objectById(const Id('obj-1'))!.path.start,
         const Point(10, 10));
+  });
+
+  test('corner handle resizes the selection about the opposite corner', () {
+    tool.tap(const Point(15, 15)); // square bounds (10,10)-(20,20)
+
+    // Drag the SE handle from (20,20) to (30,30): 2× about NW (10,10).
+    expect(tool.dragStart(const Point(20, 20)), isTrue);
+    tool.dragUpdate(const Point(30, 30));
+    tool.dragEnd();
+
+    final b = document.objectById(const Id('obj-1'))!.bounds();
+    expect(b.minX, closeTo(10, 1e-9));
+    expect(b.minY, closeTo(10, 1e-9));
+    expect(b.maxX, closeTo(30, 1e-9));
+    expect(b.maxY, closeTo(30, 1e-9));
+
+    history.undo();
+    expect(document.objectById(const Id('obj-1'))!.bounds().maxX,
+        closeTo(20, 1e-9));
+  });
+
+  test('edge handle scales one axis; Shift makes corner scaling uniform', () {
+    tool.tap(const Point(15, 15));
+
+    // East edge handle (20,15) → (25,15): only width doubles... 1.5×.
+    expect(tool.dragStart(const Point(20, 15)), isTrue);
+    tool.dragUpdate(const Point(25, 15));
+    tool.dragEnd();
+    var b = document.objectById(const Id('obj-1'))!.bounds();
+    expect(b.maxX, closeTo(25, 1e-9));
+    expect(b.maxY, closeTo(20, 1e-9)); // height untouched
+    history.undo();
+
+    // SE corner with Shift: x drags to 2×, y only 1.2× → uniform 2×.
+    tool.uniformModifier = true;
+    expect(tool.dragStart(const Point(20, 20)), isTrue);
+    tool.dragUpdate(const Point(30, 22));
+    tool.dragEnd();
+    b = document.objectById(const Id('obj-1'))!.bounds();
+    expect(b.maxX, closeTo(30, 1e-9));
+    expect(b.maxY, closeTo(30, 1e-9));
+  });
+
+  test('Alt scales from the selection center', () {
+    tool.tap(const Point(15, 15));
+    tool.centerModifier = true;
+
+    // SE (20,20) → (25,25): 2× about the center (15,15).
+    expect(tool.dragStart(const Point(20, 20)), isTrue);
+    tool.dragUpdate(const Point(25, 25));
+    tool.dragEnd();
+    final b = document.objectById(const Id('obj-1'))!.bounds();
+    expect(b.minX, closeTo(5, 1e-9));
+    expect(b.maxX, closeTo(25, 1e-9));
+  });
+
+  test('rotation grip rotates about the center; Shift snaps to 15°', () {
+    tool.tap(const Point(15, 15));
+
+    // Grip sits above top-center: (15, 10 - 22/pxPerMm) = (15, 7.8).
+    expect(tool.dragStart(const Point(15, 7.8)), isTrue);
+    // Drag to the right of the center → 90° clockwise-ish; with Shift
+    // and a slightly-off angle it snaps to exactly 90°.
+    tool.uniformModifier = true;
+    tool.dragUpdate(const Point(43, 16)); // ~92° from the grip vector
+    tool.dragEnd();
+
+    final b = document.objectById(const Id('obj-1'))!.bounds();
+    // 90° rotation of a square about its center: bounds unchanged.
+    expect(b.minX, closeTo(10, 1e-6));
+    expect(b.minY, closeTo(10, 1e-6));
+    expect(b.maxX, closeTo(20, 1e-6));
+    expect(b.maxY, closeTo(20, 1e-6));
+    // But the path's start corner moved to a different corner.
+    final start = document.objectById(const Id('obj-1'))!.path.start;
+    expect(start.distanceTo(const Point(10, 10)), greaterThan(1));
+  });
+
+  test('cursorAt reflects handles, selected objects, and empty canvas', () {
+    expect(tool.cursorAt(const Point(50, 50)), ToolCursor.basic);
+    tool.tap(const Point(15, 15));
+    // Inside the selection: open hand; closed hand while dragging.
+    expect(tool.cursorAt(const Point(15, 15)), ToolCursor.grab);
+    tool.dragStart(const Point(15, 15));
+    expect(tool.cursorAt(const Point(16, 16)), ToolCursor.grabbing);
+    tool.dragEnd();
+    expect(tool.cursorAt(const Point(20, 20)), ToolCursor.resizeNWSE);
+    expect(tool.cursorAt(const Point(20, 10)), ToolCursor.resizeNESW);
+    expect(tool.cursorAt(const Point(15, 20)), ToolCursor.resizeNS);
+    expect(tool.cursorAt(const Point(10, 15)), ToolCursor.resizeEW);
+    expect(tool.cursorAt(const Point(15, 7.8)), ToolCursor.rotate);
   });
 
   test('empty drag becomes marquee; zero-size marquee dispatches nothing', () {

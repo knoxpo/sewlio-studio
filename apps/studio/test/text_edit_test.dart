@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
@@ -13,7 +14,7 @@ void main() {
     await tester.pumpWidget(StudioApp(session: session));
 
     // Commit "hi" at the canvas center.
-    await tester.tap(find.byTooltip('Text (T)'));
+    await tester.tap(find.byKey(const Key('tool-Text')));
     await tester.pump();
     final center = tester.getCenter(find.byType(CanvasView));
     await tester.tapAt(center);

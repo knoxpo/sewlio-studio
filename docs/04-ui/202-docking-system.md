@@ -134,3 +134,46 @@ The docking system participates in this loop without bypassing command validatio
 - All described states and interactions can be derived from documented runtime services, commands, events, and document projections.
 - Cross-references align with existing architecture and domain specifications.
 - The document is specific enough to guide implementation, testing, and plugin-safe extension design.
+
+---
+
+# Implementation Status (MVP)
+
+Implemented in `apps/studio/lib/src/dock/` and `apps/studio/lib/src/panels/`
+(in-app for now — see the package-map MVP note; lift into
+`packages/studio_panels` with an ADR when a second consumer appears).
+
+## As built
+
+- **Panel registry** — `panels/panel_def.dart`: `PanelDef { id, title,
+  icon, minHeight, builder }` in a plain `panelRegistry` list. Adding a
+  panel is one list entry; builders wire content widgets to the
+  `WorkspaceViewModel` (content stays stateless-props and headless-testable).
+- **Layout model** — `dock/dock_layout.dart`: `DockLayout { width,
+  groups, hidden }`, `DockGroup { panelIds, activeId, flex, collapsed }`.
+  `normalize()` self-repairs against the registry (unknown ids dropped,
+  new panels appended, empty groups removed, bounds clamped).
+- **Controller** — `dock/dock_controller.dart`: `selectTab / movePanel /
+  splitOut / togglePanel / toggleCollapsed / resizePair / resizeWidth /
+  resetToDefault`; persists to `~/.sewlio_studio/workspace_layout.json`
+  (FR-1003) on every mutation, tolerant load, `.memory()` for tests.
+- **Host widget** — `dock/dock_host.dart`: right dock as a vertical
+  stack of tabbed groups. Tabs drag to reorder / join groups (insertion
+  caret) or tear out via gap zones (mounted only while a tab drag is in
+  flight); splitters resize adjacent groups; left-edge handle resizes
+  dock width (220–480 px); groups collapse to their tab bar.
+- **Window menu** — Show/Hide per registered panel + Reset Workspace, in
+  both the native macOS menu bar and the in-app fallback.
+
+## Persistence schema (v1)
+
+```json
+{ "version": 1, "width": 300, "hidden": [],
+  "groups": [ { "panels": ["stitches", "layers", "properties"],
+                "active": "stitches", "flex": 1.0, "collapsed": false } ] }
+```
+
+## Not yet built
+
+Floating/tear-off windows, left/bottom dock zones, plugin panel API
+(the registry list is the extension point), named workspace presets.

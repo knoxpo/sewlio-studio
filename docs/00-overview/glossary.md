@@ -8,7 +8,7 @@ An editable embroidery document.
 
 Stored as:
 
-.embproj
+.swl
 
 ---
 
@@ -142,7 +142,7 @@ Stitch limits
 
 ## Project Engine
 
-Rust subsystem responsible for loading and saving .embproj projects.
+Rust subsystem responsible for loading and saving .swl projects.
 
 ---
 

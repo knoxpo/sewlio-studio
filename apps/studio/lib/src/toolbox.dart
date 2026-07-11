@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 
-import 'flyout.dart';
+import 'tool_card.dart';
+import 'tool_docs.dart';
+import 'tool_options.dart';
+import 'tools/tool_contributions.dart';
 import 'workspace_view_model.dart';
 
 /// One tool in the toolbox: a real [ToolKind] or a future slot
@@ -30,63 +33,58 @@ final class ToolboxGroup {
 /// A separator between logical sections.
 const _divider = ToolboxGroup('divider', []);
 
+/// A registered tool's toolbox entry — identity, icon, label, and
+/// shortcut come from its [ToolContribution] (ADR-037), so the toolbox
+/// and the shortcut map can never drift apart.
+ToolboxTool _tool(String id) {
+  final c = toolContributionById(id);
+  return ToolboxTool(c.kind, c.icon, c.label, shortcut: c.shortcutLabel);
+}
+
 /// The toolbox, Affinity/Illustrator-style. Groups with several tools
-/// render as flyout slots that remember the last-used tool.
-const toolboxGroups = <ToolboxGroup>[
+/// render as flyout slots that remember the last-used tool. This list
+/// is layout only — real tools resolve from [toolContributions];
+/// null-kind entries are dimmed "coming soon" placeholders.
+final toolboxGroups = <ToolboxGroup>[
   // Selection
-  ToolboxGroup('move', [
-    ToolboxTool(ToolKind.select, TablerIcons.pointer, 'Move', shortcut: 'V'),
-  ]),
+  ToolboxGroup('move', [_tool('core.select')]),
   ToolboxGroup('node', [
-    ToolboxTool(ToolKind.node, TablerIcons.vector, 'Node', shortcut: 'A'),
-    ToolboxTool(null, TablerIcons.vector_bezier_2, 'Corner'),
+    _tool('core.node'),
+    const ToolboxTool(null, TablerIcons.vector_bezier_2, 'Corner'),
   ]),
   _divider,
   // Document / hoop
-  ToolboxGroup('hoop', [
-    ToolboxTool(ToolKind.hoop, TablerIcons.frame, 'Hoop', shortcut: 'D'),
-  ]),
+  ToolboxGroup('hoop', [_tool('core.hoop')]),
   _divider,
   // Drawing — one slot per tool (no flyout grouping).
-  ToolboxGroup('pen', [
-    ToolboxTool(ToolKind.pen, TablerIcons.ballpen, 'Pen', shortcut: 'P'),
-  ]),
-  ToolboxGroup('pencil', [
-    ToolboxTool(ToolKind.pencil, TablerIcons.pencil, 'Pencil', shortcut: 'B'),
-  ]),
-  ToolboxGroup('contour', [
+  ToolboxGroup('pen', [_tool('core.pen')]),
+  ToolboxGroup('pencil', [_tool('core.pencil')]),
+  const ToolboxGroup('contour', [
     ToolboxTool(null, TablerIcons.circle_dashed, 'Contour'),
   ]),
-  ToolboxGroup('path-brush', [
+  const ToolboxGroup('path-brush', [
     ToolboxTool(null, TablerIcons.brush, 'Path Brush'),
   ]),
-  ToolboxGroup('blob-brush', [
+  const ToolboxGroup('blob-brush', [
     ToolboxTool(null, TablerIcons.paint, 'Vector Blob Brush'),
   ]),
-  // Shapes (special-cased: flyout over ShapeKind), Text
-  ToolboxGroup('shapes', []),
-  ToolboxGroup('text', [
-    ToolboxTool(ToolKind.text, TablerIcons.typography, 'Text', shortcut: 'T'),
-  ]),
+  // Shapes (flyout over ShapeKind via its quick-options palette), Text
+  const ToolboxGroup('shapes', []),
+  ToolboxGroup('text', [_tool('core.text')]),
   _divider,
   // Fill & color (arrive with the fill/stroke system)
-  ToolboxGroup('color', [
+  const ToolboxGroup('color', [
     ToolboxTool(null, TablerIcons.bucket_droplet, 'Fill'),
     ToolboxTool(null, TablerIcons.color_picker, 'Color Picker'),
   ]),
   // Utility
   ToolboxGroup('utility', [
-    ToolboxTool(ToolKind.measure, TablerIcons.ruler_2, 'Measure',
-        shortcut: 'R'),
-    ToolboxTool(null, TablerIcons.crop, 'Vector Crop'),
+    _tool('core.measure'),
+    const ToolboxTool(null, TablerIcons.crop, 'Vector Crop'),
   ]),
   _divider,
   // Navigation
-  ToolboxGroup('navigate', [
-    ToolboxTool(ToolKind.pan, TablerIcons.hand_stop, 'View (Pan)',
-        shortcut: 'H'),
-    ToolboxTool(ToolKind.zoom, TablerIcons.zoom_in, 'Zoom', shortcut: 'Z'),
-  ]),
+  ToolboxGroup('navigate', [_tool('core.pan'), _tool('core.zoom')]),
 ];
 
 /// The tool rail: renders [toolboxGroups] plus the persistent
@@ -124,10 +122,18 @@ class ToolboxRail extends StatelessWidget {
   Widget _slot(ToolboxGroup group) {
     if (group.id == 'divider') return const RailSeparator();
     if (group.id == 'shapes') {
-      return ShapeFlyoutButton(
-        shapeTool: model.shapeTool,
-        active: model.activeKind == ToolKind.shape,
-        onActivate: model.activateShape,
+      // Activates the Shape tool; shape picking happens in the
+      // floating palette that appears while the tool is active.
+      return ToolCardHover(
+        doc: toolDocFor('Shapes'),
+        child: StudioIconButton(
+          key: const Key('tool-Shapes'),
+          icon: shapeIcon(model.shapeTool.kind),
+          tooltip: null,
+          active: model.activeKind == ToolKind.shape,
+          flyoutIndicator: true,
+          onPressed: () => model.activateShape(null),
+        ),
       );
     }
     final real = [
@@ -137,13 +143,22 @@ class ToolboxRail extends StatelessWidget {
     // Single tool: plain button; a future tool renders dimmed.
     if (group.tools.length == 1) {
       final tool = group.tools.single;
-      return StudioIconButton(
-        icon: tool.icon,
-        tooltip:
-            tool.kind == null ? '${tool.tooltip} — coming soon' : tool.tooltip,
-        active: model.activeKind == tool.kind,
-        onPressed:
-            tool.kind == null ? null : () => model.selectTool(tool.kind!),
+      final doc = tool.kind == null ? null : toolDocFor(tool.label);
+      return ToolCardHover(
+        doc: doc,
+        child: StudioIconButton(
+          key: Key('tool-${tool.label}'),
+          icon: tool.icon,
+          // The learning card replaces the tooltip when a doc exists.
+          tooltip: doc != null
+              ? null
+              : (tool.kind == null
+                  ? '${tool.tooltip} — coming soon'
+                  : tool.tooltip),
+          active: model.activeKind == tool.kind,
+          onPressed:
+              tool.kind == null ? null : () => model.selectTool(tool.kind!),
+        ),
       );
     }
     // Group slot: shows the group's current tool (active or last used).
@@ -156,29 +171,43 @@ class ToolboxRail extends StatelessWidget {
       ),
     );
     final groupActive = real.any((tool) => tool.kind == model.activeKind);
-    return ToolFlyoutSlot(
-      icon: current.icon,
-      tooltip: current.tooltip,
-      active: groupActive,
-      onActivate: real.isEmpty
-          ? () {}
-          : () =>
-              _pick(group, model.toolGroupMemory[group.id] ?? real.first.kind!),
-      entries: [
-        for (final tool in group.tools)
-          FlyoutEntry(
-            icon: tool.icon,
-            label: tool.tooltip,
-            selected: tool.kind != null && tool.kind == model.activeKind,
-            onPick: tool.kind == null ? null : () => _pick(group, tool.kind!),
-          ),
-      ],
+    final doc = current.kind == null ? null : toolDocFor(current.label);
+    // Activates the group's remembered tool; picking within the group
+    // happens in the floating palette shown while the group is active.
+    return ToolCardHover(
+      doc: doc,
+      child: StudioIconButton(
+        key: Key('tool-${current.label}'),
+        icon: current.icon,
+        tooltip: doc != null ? null : current.tooltip,
+        active: groupActive,
+        flyoutIndicator: true,
+        onPressed: real.isEmpty
+            ? null
+            : () => _pick(
+                group, model.toolGroupMemory[group.id] ?? real.first.kind!),
+      ),
     );
   }
 
   void _pick(ToolboxGroup group, ToolKind kind) {
     model.toolGroupMemory[group.id] = kind;
     model.selectTool(kind);
+  }
+}
+
+/// Short inset separator between rail tool groups (Affinity-style).
+class RailSeparator extends StatelessWidget {
+  const RailSeparator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 18,
+      height: 1,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      color: AppTokens.surfaceHigh,
+    );
   }
 }
 

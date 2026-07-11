@@ -17,4 +17,7 @@ final class HoopTool extends Tool {
 
   @override
   String? get status => 'Hoop: click to edit hoop size, shape, and fabric';
+
+  @override
+  ToolCursor cursorAt(Point world) => ToolCursor.basic;
 }

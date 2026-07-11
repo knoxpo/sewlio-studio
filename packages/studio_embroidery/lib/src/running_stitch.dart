@@ -51,6 +51,17 @@ const _curveRad = math.pi / 18; // 10°
 /// (machine-unfriendly micro stitches); sharp corners always pin.
 const _minPinMm = 0.3;
 
+/// Tight-feature tier (small-lettering counter ends, stem fillets,
+/// ~0.2–1 mm radii): once the path has turned this much since the last
+/// stitch, pins are allowed down to [_tightPinMm] instead of
+/// [_minPinMm], so tiny caps and elbows render round instead of as a
+/// couple of long chords.
+const _tightTurnRad = math.pi / 12; // 15°
+
+// ponytail: 0.12 mm stitches are at the machine's lower limit — the
+// machine compiler can merge/filter micro stitches per profile later.
+const _tightPinMm = 0.12;
+
 /// Chord-sag trigger (mm): a stitch is pinned once its estimated sag
 /// (≈ turn·length/8) reaches this. Catches gentle large-radius curves
 /// whose turn stays under [_curveRad] between full-length stitches.
@@ -102,11 +113,19 @@ List<StitchOp> generateRunningStitch(
     if (i + 1 < polyline.length) {
       final turn = _turnAt(polyline[i - 1], target, polyline[i + 1]);
       turned += turn;
+      final dist = ops.last.position.distanceTo(target);
       final sharp = turn >= _cornerRad;
+      // Worst-case chord sag for the accumulated turn: θ·L/4 (turn
+      // concentrated mid-chord); a uniform arc is θ·L/8. Using the
+      // worst case keeps sub-corner bends (stem→fillet transitions)
+      // from cutting visibly inside the outline.
       final curved =
-          (turned >= _curveRad || turned * carried / 8 >= _maxSagMm) &&
-              ops.last.position.distanceTo(target) >= _minPinMm;
-      if ((sharp || curved) &&
+          (turned >= _curveRad || turned * carried / 4 >= _maxSagMm) &&
+              dist >= _minPinMm;
+      // Tight feature: fast accumulated turn on a tiny radius — allow
+      // short pins so caps and fillets stay round.
+      final tightCap = turned >= _tightTurnRad && dist >= _tightPinMm;
+      if ((sharp || curved || tightCap) &&
           !ops.last.position.almostEquals(target, tolerance: 1e-6)) {
         ops.add(StitchOp.stitch(target));
         carried = 0;

@@ -846,7 +846,7 @@ A platform is considered production-ready when:
    - Every platform must work without an internet connection.
 
 5. **No Platform Lock-In**
-   - Users can move `.embproj` files freely between devices using any supported storage provider.
+   - Users can move `.swl` files freely between devices using any supported storage provider.
 
 6. **Consistency Over Uniformity**
    - The product should behave consistently while allowing platform-appropriate interaction patterns.

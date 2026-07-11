@@ -64,11 +64,28 @@ final class PenTool extends Tool {
         last.x + length * math.cos(angle), last.y + length * math.sin(angle));
   }
 
+  /// Index of the in-progress anchor under [world], if any.
+  int? _anchorAt(Point world) {
+    for (var i = 0; i < _points.length; i++) {
+      if (world.distanceTo(_points[i]) <= closeToleranceMm) return i;
+    }
+    return null;
+  }
+
   @override
   void tap(Point world) {
     if (_points.length >= 2 &&
         world.distanceTo(_points.first) <= closeToleranceMm) {
       _commit(closed: true);
+      return;
+    }
+    // Clicking an anchor of the path being drawn removes it
+    // (Affinity pen-minus behavior; the cursor badge announces it).
+    final existing = _anchorAt(world);
+    if (existing != null) {
+      _points.removeAt(existing);
+      if (_points.isEmpty) _hover = null;
+      notifyListeners();
       return;
     }
     _points.add(_constrained(world));
@@ -97,6 +114,26 @@ final class PenTool extends Tool {
   void hover(Point world) {
     _hover = _constrained(world);
     if (_points.isNotEmpty) notifyListeners();
+  }
+
+  @override
+  void hoverExit() {
+    if (_hover == null) return;
+    _hover = null;
+    notifyListeners();
+  }
+
+  /// Escape/Enter: finish the in-progress path as an OPEN path — the
+  /// anchors placed so far are kept (Illustrator behavior), not
+  /// discarded. A single stray anchor can't form a path and is
+  /// dropped. Returns whether a path was committed.
+  bool finish() {
+    if (_points.length >= 2) {
+      _commit(closed: false);
+      return true;
+    }
+    cancel();
+    return false;
   }
 
   void _commit({required bool closed}) {
@@ -163,6 +200,16 @@ final class PenTool extends Tool {
 
   @override
   List<Point> get markers => List.unmodifiable(_points);
+
+  @override
+  ToolCursor cursorAt(Point world) {
+    if (_points.isEmpty) return ToolCursor.pen;
+    if (_points.length >= 2 &&
+        world.distanceTo(_points.first) <= closeToleranceMm) {
+      return ToolCursor.penClose;
+    }
+    return _anchorAt(world) != null ? ToolCursor.penMinus : ToolCursor.penAdd;
+  }
 
   @override
   String? get status => _points.isEmpty

@@ -111,6 +111,15 @@ final class NodeTool extends Tool {
   String? get status => _selected == null
       ? 'Node: tap an object to edit its points'
       : 'Node: drag an anchor to move it';
+
+  @override
+  ToolCursor cursorAt(Point world) {
+    if (_dragIndex != null) return ToolCursor.move;
+    for (final anchor in markers) {
+      if (anchor.distanceTo(world) <= hitToleranceMm) return ToolCursor.move;
+    }
+    return ToolCursor.crosshair;
+  }
 }
 
 /// Anchor-level view over an object's path.

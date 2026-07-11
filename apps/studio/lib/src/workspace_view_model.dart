@@ -20,6 +20,7 @@ import '../main.dart';
 import 'file_io.dart';
 import 'font_library.dart';
 import 'stroke_style.dart';
+import 'tools/tool_contributions.dart';
 
 enum ToolKind {
   select,
@@ -44,6 +45,16 @@ final class ExportResult {
 
 /// Primary editor workspaces, switched from the app header.
 enum WorkspaceMode { design, stitchPreview, simulation }
+
+/// A floating palette's placement: docked on a canvas-edge hotspot, or
+/// free at an absolute canvas offset.
+final class PalettePlacement {
+  const PalettePlacement.snapped(Alignment this.snap) : offset = Offset.zero;
+  const PalettePlacement.free(this.offset) : snap = null;
+
+  final Alignment? snap;
+  final Offset offset;
+}
 
 /// All workspace state and logic (barley MVVM). The view renders this
 /// model and forwards gestures/dialog results; every document mutation
@@ -189,6 +200,34 @@ final class WorkspaceViewModel extends BarleyViewModel {
   g.Bounds? get selectionBounds =>
       session.document.selectionBounds(selection.selectedRefs);
 
+  /// Selection visuals are tool-appropriate: the transform box (frame,
+  /// resize handles, rotation grip) belongs to the Select tool only.
+  bool get showsTransformBox => activeKind == ToolKind.select;
+
+  /// In-progress drag transform: the canvas draws the transform box
+  /// through it so the box moves/scales/rotates with the object.
+  g.Transform2? get liveBoxTransform => showsTransformBox
+      ? (tools[ToolKind.select] as SelectTool).liveTransform
+      : null;
+
+  /// Pointer tooltip while transforming (rotation angle, scale %).
+  String? get liveTransformLabel => showsTransformBox
+      ? (tools[ToolKind.select] as SelectTool).liveTransformLabel
+      : null;
+
+  /// Canvas anchor markers: the active tool's own (pen points, node
+  /// anchors), else — for Pen/Node — the selected object's anchors, so
+  /// a just-committed or layer-selected element shows its points.
+  List<g.Point> get canvasMarkers {
+    final own = tool.markers;
+    if (own.isNotEmpty) return own;
+    if (activeKind == ToolKind.pen || activeKind == ToolKind.node) {
+      final object = primarySelectedObject;
+      if (object != null) return EmbroideryObjectView(object).anchors;
+    }
+    return const [];
+  }
+
   /// The digitized Stitch IR for the current document.
   // ponytail: re-digitized on every read — cache per document revision
   // when designs get big enough to notice.
@@ -257,8 +296,12 @@ final class WorkspaceViewModel extends BarleyViewModel {
       ToolKind.shape: ShapeTool(onCreate: addPath),
       ToolKind.text: TextTool(
         nextId: nextId,
-        onCreateObject: (object) => execute(
-            AddObject(object.withStroke(strokeDefaults), parent: activeParent)),
+        onCreateObject: (object) {
+          execute(AddObject(object.withStroke(strokeDefaults),
+              parent: activeParent));
+          selection
+              .replaceWith(DocumentNodeRef(DocumentNodeKind.object, object.id));
+        },
         onReplaceObject: (object) => execute(ReplaceObject(object)),
       ),
       ToolKind.pan: PanTool(),
@@ -274,8 +317,28 @@ final class WorkspaceViewModel extends BarleyViewModel {
     }
     activeKind = ToolKind.select;
     selection.addListener(notify);
-    _eventSub = session.events.events.listen((_) => notify());
+    _eventSub = session.events.events.listen((_) {
+      _pruneSelection();
+      notify();
+    });
     notify();
+  }
+
+  /// Drops selection refs whose nodes no longer exist (undo of an add,
+  /// deletes) so panels never resolve a dead reference.
+  void _pruneSelection() {
+    final refs = selection.selectedRefs;
+    final live = [
+      for (final ref in refs)
+        if (switch (ref.kind) {
+          DocumentNodeKind.object =>
+            session.document.objectById(ref.id) != null,
+          DocumentNodeKind.group => session.document.groupById(ref.id) != null,
+          DocumentNodeKind.layer => session.document.layerById(ref.id) != null,
+        })
+          ref,
+    ];
+    if (live.length != refs.length) selection.setAll(live);
   }
 
   @override
@@ -297,6 +360,9 @@ final class WorkspaceViewModel extends BarleyViewModel {
     // selected loads it for continuation — anchors editable, commit
     // replaces the object.
     if (kind == ToolKind.pen) _loadPenContinuation();
+    // Cursor reflects the new tool immediately, not on the next move.
+    _syncPointerContext();
+    _refreshCursor(cursor.value ?? g.Point.zero);
     notify();
   }
 
@@ -338,7 +404,40 @@ final class WorkspaceViewModel extends BarleyViewModel {
   void setStrokeColor(String hex) =>
       setStroke((p) => p.copyWith(colorHex: hex));
 
-  /// Shape flyout pick: optionally switch the shape kind, activate.
+  /// Floating tool-palette placements per toolbox group (view state):
+  /// snapped to one of the canvas-edge hotspots, or free within the
+  /// canvas. Default: docked at the canvas' left center.
+  final palettePlacements = <String, PalettePlacement>{};
+
+  PalettePlacement palettePlacementFor(String id) =>
+      palettePlacements[id] ??
+      const PalettePlacement.snapped(Alignment.centerLeft);
+
+  /// Hotspot the dragged palette would snap to on release (indicator).
+  Alignment? paletteSnapCandidate;
+
+  /// True while a palette is being dragged — the dock shows the
+  /// hotspot drop zones.
+  bool paletteDragging = false;
+
+  void updatePaletteDrag(String id, Offset position, Alignment? candidate) {
+    palettePlacements[id] = PalettePlacement.free(position);
+    paletteSnapCandidate = candidate;
+    paletteDragging = true;
+    notify();
+  }
+
+  void endPaletteDrag(String id) {
+    final candidate = paletteSnapCandidate;
+    if (candidate != null) {
+      palettePlacements[id] = PalettePlacement.snapped(candidate);
+    }
+    paletteSnapCandidate = null;
+    paletteDragging = false;
+    notify();
+  }
+
+  /// Shape palette pick: optionally switch the shape kind, activate.
   void activateShape(ShapeKind? kind) {
     if (kind != null) shapeTool.kind = kind;
     if (activeKind != ToolKind.shape) {
@@ -362,11 +461,29 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   /// Creation tools commit here: new running-stitch object per path,
   /// inserted into the active layer with the current stroke defaults.
+  /// The new object becomes the selection (canvas ↔ layers stay in
+  /// step; with the pen active its anchors show as points).
   void addPath(g.Path path) {
-    execute(AddObject(
-      RunningStitchObject(id: nextId(), path: path, stroke: strokeDefaults),
-      parent: activeParent,
-    ));
+    final object = RunningStitchObject(
+        id: nextId(),
+        path: path,
+        stroke: strokeDefaults,
+        name: _defaultObjectName());
+    execute(AddObject(object, parent: activeParent));
+    selection.replaceWith(DocumentNodeRef(DocumentNodeKind.object, object.id));
+  }
+
+  /// Design-origin default name (ADR-036): the Shape tool stamps its
+  /// shape kind (`<Rectangle>`, `<Ellipse>`, …); everything else stays
+  /// null and falls back to the derived `<Path>` label.
+  String? _defaultObjectName() {
+    final active = tool;
+    if (active is! ShapeTool) return null;
+    // camelCase enum name → spaced Title Case: roundedRectangle →
+    // "Rounded Rectangle".
+    final spaced =
+        active.kind.name.replaceAllMapped(RegExp('[A-Z]'), (m) => ' ${m[0]}');
+    return '<${spaced[0].toUpperCase()}${spaced.substring(1)}>';
   }
 
   /// Double-click: with the Select tool, a hit on a text object
@@ -427,9 +544,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
       selectTool.tapWithModifiers(world, toggle: toggle, extend: extend);
       return;
     }
-    if (tool case final ZoomTool zoom) {
-      zoom.outModifier = HardwareKeyboard.instance.isAltPressed;
-    }
+    _syncPointerContext();
     // Text tool on an existing text object: re-enter editing instead
     // of opening a new insertion point on top of it.
     if (tool case final TextTool text) {
@@ -472,6 +587,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
     required bool toggle,
     required bool extend,
   }) {
+    _syncPointerContext();
     if (tool case final SelectTool selectTool) {
       return selectTool.dragStartWithModifiers(
         world,
@@ -547,6 +663,18 @@ final class WorkspaceViewModel extends BarleyViewModel {
     selectRef(null);
   }
 
+  /// Deletes everything selected (Delete/Backspace, panel button).
+  // ponytail: one undo step per node — batch into a compound command
+  // when multi-delete undo becomes annoying.
+  void deleteSelection() {
+    final refs = [...selection.selectedRefs];
+    if (refs.isEmpty) return;
+    for (final ref in refs) {
+      execute(DeleteNode(ref));
+    }
+    selectRef(null);
+  }
+
   void duplicatePrimary() {
     final ref = primarySelection;
     if (ref == null) return;
@@ -577,25 +705,21 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   // -------------------------------------------------------------- shortcuts
 
-  /// Shortcut → tool group. A repeated press cycles through the
-  /// group's tools (Affinity-style).
-  static final _shortcuts = {
-    LogicalKeyboardKey.keyV: [ToolKind.select],
-    LogicalKeyboardKey.keyA: [ToolKind.node],
-    LogicalKeyboardKey.keyD: [ToolKind.hoop],
-    LogicalKeyboardKey.keyP: [ToolKind.pen, ToolKind.pencil],
-    LogicalKeyboardKey.keyB: [ToolKind.pencil],
-    LogicalKeyboardKey.keyM: [ToolKind.shape],
-    LogicalKeyboardKey.keyT: [ToolKind.text],
-    LogicalKeyboardKey.keyH: [ToolKind.pan],
-    LogicalKeyboardKey.keyZ: [ToolKind.zoom],
-    LogicalKeyboardKey.keyR: [ToolKind.measure],
-  };
+  /// Shortcut → tool cycle, derived from the tool registry (ADR-037) —
+  /// a repeated press cycles the contribution's shortcutCycle
+  /// (Affinity-style). Single-sourced with the toolbox labels.
+  static final _shortcuts = buildToolShortcuts();
 
   /// True while a text field owns focus — tool shortcuts must not
-  /// steal typed characters.
-  bool get _typing =>
-      FocusManager.instance.primaryFocus?.context?.widget is EditableText;
+  /// steal typed characters. EditableText attaches its focus node to an
+  /// internal Focus widget, so checking `context.widget` alone misses
+  /// it — look for an EditableText ancestor of the focused node.
+  bool get _typing {
+    final context = FocusManager.instance.primaryFocus?.context;
+    if (context == null) return false;
+    return context.widget is EditableText ||
+        context.findAncestorStateOfType<EditableTextState>() != null;
+  }
 
   KeyEventResult onKey(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent || _typing) return KeyEventResult.ignored;
@@ -613,11 +737,25 @@ final class WorkspaceViewModel extends BarleyViewModel {
       return KeyEventResult.ignored;
     }
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      tool.cancel();
+      // Pen: Escape FINISHES the in-progress path as an open path
+      // (anchors placed so far are kept); other tools abort.
+      if (tool case final PenTool pen) {
+        pen.finish();
+      } else {
+        tool.cancel();
+      }
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.keyX) {
       swapFillStroke();
+      return KeyEventResult.handled;
+    }
+    // Delete/Backspace removes the selection (unless typing on canvas
+    // — the text branch above already consumed the event then).
+    if (event.logicalKey == LogicalKeyboardKey.delete ||
+        event.logicalKey == LogicalKeyboardKey.backspace) {
+      if (selection.selectedRefs.isEmpty) return KeyEventResult.ignored;
+      deleteSelection();
       return KeyEventResult.handled;
     }
     // View toggles (canvas toolbar).
@@ -722,10 +860,96 @@ final class WorkspaceViewModel extends BarleyViewModel {
   void setMachine(MachineModel value) => updateHoop(
       hoop.copyWith(widthMm: value.hoopWidthMm, heightMm: value.hoopHeightMm));
 
+  /// Pointer cursor for the canvas (tool + hover context). Its own
+  /// notifier so hover moves don't trigger full workspace rebuilds.
+  final canvasCursor = ValueNotifier<MouseCursor>(SystemMouseCursors.basic);
+
+  static const _cursorMap = <ToolCursor, MouseCursor>{
+    ToolCursor.basic: SystemMouseCursors.basic,
+    ToolCursor.crosshair: SystemMouseCursors.precise,
+    ToolCursor.text: SystemMouseCursors.text,
+    ToolCursor.move: SystemMouseCursors.move,
+    ToolCursor.grab: SystemMouseCursors.grab,
+    ToolCursor.grabbing: SystemMouseCursors.grabbing,
+    ToolCursor.zoomIn: SystemMouseCursors.zoomIn,
+    ToolCursor.zoomOut: SystemMouseCursors.zoomOut,
+    ToolCursor.resizeNS: SystemMouseCursors.resizeUpDown,
+    ToolCursor.resizeEW: SystemMouseCursors.resizeLeftRight,
+    // Painted by the canvas (system cursor hidden): pen family, plus
+    // rotation and diagonal resize — macOS ships no public cursors for
+    // those, so native mapping renders a plain arrow there.
+    ToolCursor.rotate: SystemMouseCursors.none,
+    ToolCursor.resizeNWSE: SystemMouseCursors.none,
+    ToolCursor.resizeNESW: SystemMouseCursors.none,
+    ToolCursor.pen: SystemMouseCursors.none,
+    ToolCursor.penAdd: SystemMouseCursors.none,
+    ToolCursor.penMinus: SystemMouseCursors.none,
+    ToolCursor.penClose: SystemMouseCursors.none,
+  };
+
+  static const _paintedCursors = <ToolCursor, PaintedCursor>{
+    ToolCursor.pen: PaintedCursor.penStart,
+    ToolCursor.penAdd: PaintedCursor.penAdd,
+    ToolCursor.penMinus: PaintedCursor.penRemove,
+    ToolCursor.penClose: PaintedCursor.penClose,
+    ToolCursor.rotate: PaintedCursor.rotate,
+    ToolCursor.resizeNWSE: PaintedCursor.resizeNWSE,
+    ToolCursor.resizeNESW: PaintedCursor.resizeNESW,
+  };
+
+  /// Painted pen-cursor badge (null unless the pen family is active).
+  final paintedCursor = ValueNotifier<PaintedCursor?>(null);
+
+  /// Feeds zoom + modifier state to the tools that need them before a
+  /// pointer event is interpreted (handle hit areas are screen-sized;
+  /// Shift/Alt change scale/rotate behavior mid-drag).
+  void _syncPointerContext() {
+    // Headless tests construct the model without a Flutter binding;
+    // treat modifiers as released there.
+    bool shift = false, alt = false;
+    try {
+      shift = HardwareKeyboard.instance.isShiftPressed;
+      alt = HardwareKeyboard.instance.isAltPressed;
+    } catch (_) {}
+    if (tools[ToolKind.select] case final SelectTool select) {
+      select.pxPerMm = viewport.zoom;
+      select.uniformModifier = shift;
+      select.centerModifier = alt;
+    }
+    if (tools[ToolKind.zoom] case final ZoomTool zoom) {
+      zoom.outModifier = alt;
+    }
+  }
+
+  void _refreshCursor(g.Point world) {
+    final kind = tool.cursorAt(world);
+    canvasCursor.value = _cursorMap[kind]!;
+    paintedCursor.value = _paintedCursors[kind];
+  }
+
   void hover(g.Point world) {
     cursor.value = world;
+    _syncPointerContext();
     _feedPenModifiers();
     tool.hover(world);
+    _refreshCursor(world);
+  }
+
+  /// Pointer left the canvas: clear the tracked position so painted
+  /// cursors (pen nib) disappear instead of freezing at the last hover
+  /// point, and let the tool drop its rubber-band preview.
+  void pointerExited() {
+    cursor.value = null;
+    tool.hoverExit();
+  }
+
+  /// Drag updates route through here so modifier changes mid-drag
+  /// (Shift for uniform/snap, Alt for center) take effect live.
+  void onCanvasDragUpdate(g.Point world) {
+    cursor.value = world;
+    _syncPointerContext();
+    tool.dragUpdate(world);
+    _refreshCursor(world);
   }
 
   // ----------------------------------------------------------------- guides

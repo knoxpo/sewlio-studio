@@ -97,7 +97,7 @@ The Import Pipeline supports multiple import categories.
 ## Project Import
 
 ```text
-.embproj
+.swl
 ```
 
 Produces

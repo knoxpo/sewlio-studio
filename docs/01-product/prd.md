@@ -205,7 +205,7 @@ libSQL (Turso-compatible)
 
 Project Format
 
-.embproj
+.swl
 
 Communication
 
@@ -375,7 +375,7 @@ HUS
 
 Native format:
 
-.embproj
+.swl
 
 ---
 
@@ -384,7 +384,7 @@ Native format:
 Every project is stored as
 
 ```
-project.embproj
+project.swl
 ```
 
 Internally
@@ -852,7 +852,7 @@ The MVP is considered complete when a user can:
 - Edit vector geometry
 - Convert vectors to running and fill stitches
 - Preview stitch output
-- Save the project as `.embproj`
+- Save the project as `.swl`
 - Reopen the project
 - Export a DST file
 - Open the exported file in a compatible embroidery viewer or machine without errors

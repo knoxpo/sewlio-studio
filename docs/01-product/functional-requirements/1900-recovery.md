@@ -825,7 +825,7 @@ AI-assisted repair
 # Recovery Storage
 
 ```text
-.embproj/
+.swl/
 
 recovery/
 

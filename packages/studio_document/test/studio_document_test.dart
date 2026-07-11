@@ -253,7 +253,7 @@ void main() {
       expect(doc.guides, isEmpty);
     });
 
-    test('guides persist through .embproj', () {
+    test('guides persist through .swl', () {
       doc.guides.add(guide);
       final decoded = decodeProject(encodeProject(doc));
       expect(decoded.guides, hasLength(1));
@@ -263,7 +263,7 @@ void main() {
     });
   });
 
-  test('.embproj v2 encode/decode round trips and v1 is rejected', () {
+  test('.swl v2 encode/decode round trips and v1 is rejected', () {
     doc.name = 'Rose';
     history.execute(const AddObject(RunningStitchObject(
       id: Id('obj-1'),

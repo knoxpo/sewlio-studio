@@ -137,7 +137,7 @@ Editor Opens
 
 System Actions
 
-- Create `.embproj`
+- Create `.swl`
 - Initialize project database
 - Create default layer
 - Initialize undo history
@@ -157,7 +157,7 @@ Open Project
 
 ↓
 
-Choose .embproj
+Choose .swl
 
 ↓
 

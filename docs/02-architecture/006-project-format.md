@@ -2,7 +2,7 @@
 ## ARCH-006 Project Format
 
 **Document ID:** ARCH-006  
-**Title:** Project Format (.embproj)  
+**Title:** Project Format (.swl)  
 **Version:** 1.0.0  
 **Status:** Foundation (Critical)  
 **Priority:** Critical
@@ -83,7 +83,7 @@ The project format shall
 Official extension
 
 ```text
-.embproj
+.swl
 ```
 
 ---
@@ -91,7 +91,7 @@ Official extension
 # Package Layout
 
 ```text
-project.embproj/
+project.swl/
 │
 ├── manifest.json
 ├── metadata.json
@@ -940,7 +940,7 @@ without an ADR.
 
 # Architectural Constraints
 
-1. `.embproj` is the only editable project format.
+1. `.swl` is the only editable project format.
 2. Machine files are generated outputs.
 3. The project database is authoritative.
 4. Commands are stored separately from business data.

@@ -64,7 +64,7 @@ first, benchmarked before/after each migration.
 | 2 | IR framework | (shared traits in es_core) | versioned/serializable/immutable base + golden harness | 1 |
 | 3 | Geometry | es_geometry | **Geometry IR** | 2 |
 | 4 | Document model | es_document | project/layers/objects, command-driven mutation | 3 |
-| 5 | Storage | es_storage | `.embproj`, atomic save, recovery | 4 |
+| 5 | Storage | es_storage | `.swl`, atomic save, recovery | 4 |
 | 6 | Import (SVG) | es_import | **Import IR** → Geometry IR | 3 (fixtures), 5 |
 | 7 | Embroidery + running stitch | es_embroidery, es_digitizer | **Stitch IR** | 3 |
 | 8 | Machine compiler | es_machine, es_thread, es_machine_compiler | **Machine IR** | 7 |

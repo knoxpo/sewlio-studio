@@ -126,7 +126,7 @@ class HomeWorkspace extends StatelessWidget {
       '${time.day.toString().padLeft(2, '0')}';
 
   Future<void> _open(BuildContext context) async {
-    final path = await pickOpenPath(suffix: '.embproj');
+    final path = await pickOpenPath(suffix: '.swl');
     if (path == null || !context.mounted) return;
     await _openPath(context, path);
   }

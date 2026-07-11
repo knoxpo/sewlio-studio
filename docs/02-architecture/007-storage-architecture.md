@@ -328,7 +328,7 @@ Filesystem
 
 ↓
 
-.embproj
+.swl
 ```
 
 ---

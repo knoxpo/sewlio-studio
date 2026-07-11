@@ -8,14 +8,24 @@ import 'package:studio_events/studio_events.dart';
 
 import 'src/app_shell.dart';
 import 'src/app_view_model.dart';
+import 'src/dock/dock_controller.dart';
 import 'src/file_io.dart';
+import 'src/panels/panel_def.dart';
 import 'src/recents.dart';
+import 'src/tools/tool_contributions.dart';
 
 void main() {
+  // Tool-contributed dockable panels join the registry before the dock
+  // builds its layout (ADR-037); plugin panels will append here too.
+  panelRegistry.addAll(toolContributedPanels());
   final recentsPath = appStatePath('recents.json');
+  final dockPath = appStatePath('workspace_layout.json');
   runApp(StudioApp(
     recents:
         recentsPath == null ? RecentsStore.memory() : RecentsStore(recentsPath),
+    dock: dockPath == null
+        ? null
+        : DockController(dockPath, panelIds: defaultPanelIds),
   ));
 }
 
@@ -50,12 +60,13 @@ final class StudioSession {
 }
 
 class StudioApp extends StatefulWidget {
-  const StudioApp({super.key, this.session, this.recents});
+  const StudioApp({super.key, this.session, this.recents, this.dock});
 
   /// When given, opens as an already-active document tab (test hook —
   /// production startup always lands on the Home Workspace).
   final StudioSession? session;
   final RecentsStore? recents;
+  final DockController? dock;
 
   @override
   State<StudioApp> createState() => _StudioAppState();
@@ -98,8 +109,9 @@ class _StudioAppState extends State<StudioApp> with WidgetsBindingObserver {
       theme: studioTheme(),
       debugShowCheckedModeBanner: false,
       home: AppShell(create: () {
-        final app =
-            AppViewModel(recents: widget.recents ?? RecentsStore.memory());
+        final app = AppViewModel(
+            recents: widget.recents ?? RecentsStore.memory(),
+            dock: widget.dock);
         if (widget.session != null) app.adoptSession(widget.session!);
         return app;
       }),

@@ -3,7 +3,9 @@ import 'package:studio_core/studio_core.dart';
 import 'package:studio_document/studio_document.dart';
 
 import '../main.dart';
+import 'dock/dock_controller.dart';
 import 'file_io.dart';
+import 'panels/panel_def.dart';
 import 'recents.dart';
 import 'workspace_view_model.dart';
 
@@ -32,9 +34,18 @@ final class DocumentTab {
 /// active workspace (Home vs Editor), and the recent-projects index.
 /// No document is ever auto-created; the app boots to Home.
 final class AppViewModel extends BarleyViewModel {
-  AppViewModel({required this.recents});
+  AppViewModel({required this.recents, DockController? dock})
+      : dock = dock ?? DockController.memory(panelIds: defaultPanelIds) {
+    // Menus (Window > Show/Hide panel) reflect dock changes.
+    this.dock.addListener(notify);
+  }
 
   final RecentsStore recents;
+
+  /// Workspace dock layout — application chrome shared across document
+  /// tabs (FR-1003), never document state.
+  final DockController dock;
+
   final tabs = <DocumentTab>[];
 
   /// Active tab index; -1 = the pinned Home tab.
@@ -48,6 +59,7 @@ final class AppViewModel extends BarleyViewModel {
   @override
   void onReady() {
     recents.load().then((_) => notify());
+    dock.load();
   }
 
   void goHome() {

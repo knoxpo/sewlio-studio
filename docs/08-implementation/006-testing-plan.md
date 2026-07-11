@@ -38,7 +38,7 @@ platform layer.
 |---|---|
 | M1 Foundation | unit (bus, ids); fault-injection on lifecycle/cancellation |
 | M2 Geometry | Geometry IR unit+serialization+migration+validation+**golden**; property tests; Import-IR perf budget reserved (<200 ms) |
-| M3 Document+Storage | command/event integration; `.embproj` round-trip; atomic-write + recovery fault tests |
+| M3 Document+Storage | command/event integration; `.swl` round-trip; atomic-write + recovery fault tests |
 | M4 Import | golden import fixtures; SVG compatibility set |
 | M5 Embroidery | Stitch IR golden; **determinism test** (same input ⇒ identical Stitch IR) |
 | M6 Machine+Export | Machine IR validation (limits/needle/hoop); **DST binary golden**; **headless SVG→DST integration gate**; Machine-compile perf budget (<500 ms) |

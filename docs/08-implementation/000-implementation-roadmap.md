@@ -56,7 +56,7 @@ Bridge layer  (FFI on native, WASM on web)
     │
 Rust Core Engine  (ALL business logic, headless-capable)
     │
-Local Persistence  (.embproj package, libSQL/Turso DB, assets, recovery)
+Local Persistence  (.swl package, libSQL/Turso DB, assets, recovery)
 ```
 
 The app's identity is a **compiler pipeline for embroidery** (`02-architecture/000` §3):
@@ -150,7 +150,7 @@ prove the whole compiler pipeline before widening any single stage.
 |---|---|---|---|---|
 | **1. Foundation** | Workspace, kernel, runtime primitives, error/diagnostics, test harness | `engine/kernel`, `engine/runtime` | — | Cargo workspace builds; command + event bus dispatch round-trips in a unit test; CI green |
 | **2. Geometry + Domain Core** | Coordinate system, paths, curves, transforms, bboxes, geometry algorithms | `engine/domains/geometry` | **Geometry IR** | Geometry IR serializes deterministically; validation + golden fixtures pass |
-| **3. Document + Project** | Immutable document model over Geometry IR, command-driven mutation, `.embproj`, storage | `engine/platform`, `engine/services/storage` | — | Create/move/delete object via Command emits Events; project round-trips through `.embproj` |
+| **3. Document + Project** | Immutable document model over Geometry IR, command-driven mutation, `.swl`, storage | `engine/platform`, `engine/services/storage` | — | Create/move/delete object via Command emits Events; project round-trips through `.swl` |
 | **4. Embroidery Core (slice)** | Running stitch first (satin/fill/underlay/compensation/optimization follow) | `engine/domains/embroidery`, `engine/compilers/digitizer` | **Stitch IR** | Geometry IR → Stitch IR for running stitch; golden stitch test passes |
 | **5. Machine + Export (slice)** | Machine model, machine compiler, DST first (EXP second, PES/JEF/VP3 later) | `engine/domains/machine`, `engine/compilers/machine`, `engine/generators/dst` | **Machine IR** | **Headless `SVG → … → DST` integration test passes** (the architecture proof) |
 | **6. Import (widen)** | Vector (SVG) → raster → embroidery import; normalization pipeline | `engine/compilers/import` | **Import IR** | SVG round-trips to Geometry IR via Import IR + normalizer; golden import test |
@@ -174,7 +174,7 @@ golden, and API-compat tests; integration tests belong to the Platform layer.
 |---|---|
 | 1 | Unit (kernel primitives, bus dispatch); fault-injection on lifecycle/cancellation |
 | 2 | Geometry IR: unit + serialization + migration + validation + **golden fixtures**; perf bench Import IR target <200 ms reserved |
-| 3 | Document command/event integration; `.embproj` round-trip; atomic-write + recovery fault tests |
+| 3 | Document command/event integration; `.swl` round-trip; atomic-write + recovery fault tests |
 | 4 | Stitch IR golden fixtures; determinism test (same Geometry IR ⇒ identical Stitch IR) |
 | 5 | Machine IR validation (limits/needle/hoop); **DST binary golden**; **headless `SVG→DST` integration test (gate)**; perf bench Machine compile <500 ms |
 | 6 | Import golden fixtures per format; compatibility tests for real-world SVGs |
@@ -203,7 +203,7 @@ Each task names its package and its test deliverable. Order is a strict refineme
    *Test:* serialization + validation (open paths, dup IDs, broken refs) + golden fixtures.
 5. **Document model over Geometry IR.** `engine/platform`: project/layers/objects, mutation
    only via Commands → Events. *Test:* create/move/delete object integration test.
-6. **`.embproj` format + storage abstraction.** `engine/services/storage`: package layout,
+6. **`.swl` format + storage abstraction.** `engine/services/storage`: package layout,
    atomic write, libSQL/Turso-backed project DB *(confirm storage engine before starting —
    see Risks)*. *Test:* project save→load round-trip + crash-mid-write recovery.
 7. **SVG importer → Import IR → normalizer → Geometry IR.** `engine/compilers/import`.
@@ -229,7 +229,7 @@ stage (satin/fill/underlay, more formats, more importers) against a green integr
 | R2 | **WASM parity for web.** Same Rust core must run under WASM (`02-arch/000` §8). | Keep kernel/runtime/domains `no_std`-friendly and free of native-only deps; add a WASM build target to CI in Phase 1. |
 | R3 | **Golden fixtures need real machine files.** DST/PES goldens require authentic `.dst`/`.pes`. | Source a small licensed/open fixture set early; commit alongside Task 10. |
 | R4 | **Float determinism across platforms.** Geometry uses floats; IRs must be deterministic. | Define rounding/epsilon policy in Task 4; assert byte-identical golden output in CI on all targets. |
-| R5 | **Storage engine assumption.** `02-arch/000` §14 says `.embproj` holds `project.turso`/`commands.turso` (libSQL/Turso). | Confirm libSQL/Turso vs. plain SQLite before Task 6; record decision (already implied by docs — verify, don't re-decide). |
+| R5 | **Storage engine assumption.** `02-arch/000` §14 says `.swl` holds `project.turso`/`commands.turso` (libSQL/Turso). | Confirm libSQL/Turso vs. plain SQLite before Task 6; record decision (already implied by docs — verify, don't re-decide). |
 | R6 | **IR schema churn.** Early IRs will change as later stages land. | Versioned schemas + migration tests from Task 3; any breaking schema change requires an ADR (`02-arch/001` constraint 10). |
 | R7 | **Package-boundary drift** as packages multiply. | Add dependency-direction lint / architecture test in CI (Phase 1 stretch); ownership change requires an ADR. |
 

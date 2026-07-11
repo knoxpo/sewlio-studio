@@ -12,7 +12,7 @@ void main() {
     expect(ProjectUnits.mm.toMm(42), 42);
   });
 
-  test('units and color profile persist through .embproj', () {
+  test('units and color profile persist through .swl', () {
     final doc = Document(
       id: const Id('u1'),
       units: ProjectUnits.inch,

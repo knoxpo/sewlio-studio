@@ -63,7 +63,7 @@
         "post-mvp"
       ],
       "milestone": "M3 Document + Storage",
-      "body": ".embproj, atomic save, migration, recovery. Features E5-F1..F4. Depends: E4.",
+      "body": ".swl, atomic save, migration, recovery. Features E5-F1..F4. Depends: E4.",
       "phase": "post-mvp"
     },
     {
@@ -592,7 +592,7 @@
       "phase": "post-mvp"
     },
     {
-      "title": "E5-F1-T1 .embproj layout + manifest",
+      "title": "E5-F1-T1 .swl layout + manifest",
       "labels": [
         "task",
         "storage",

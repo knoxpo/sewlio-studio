@@ -10,11 +10,14 @@ import 'package:studio_geometry/studio_geometry.dart' as g;
 import 'app_shell.dart';
 import 'app_view_model.dart';
 import 'bottom_panel.dart';
+import 'dock/dock_host.dart';
 import 'new_project_page.dart';
+import 'panels/panel_def.dart';
 import 'prompts.dart';
-import 'right_panel.dart';
+import 'shape_palette.dart';
 import 'tool_options.dart';
 import 'toolbox.dart';
+import 'tools/tool_contributions.dart';
 import 'workspace_view_model.dart';
 
 /// CAD editor workspace (barley MVVM view): renders [WorkspaceViewModel]
@@ -51,32 +54,16 @@ class EditorWorkspace extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ToolboxRail(model: model),
-                  Expanded(child: _canvasColumn(context)),
-                  StitchListPanel(
-                    document: model.session.document,
-                    selectedRefs: model.selection.selectedRefs,
-                    primarySelection: model.primarySelection,
-                    onSelect: model.selectRef,
-                    onCommand: model.execute,
-                    onCreateLayer: model.createLayer,
-                    onCreateGroup: model.createGroupFromSelection,
-                    onUngroup: model.ungroupPrimary,
-                    onDelete: model.deletePrimary,
-                    onDuplicate: model.duplicatePrimary,
-                    onMoveNode: model.moveNode,
-                    canUndo: model.canUndo,
-                    canRedo: model.canRedo,
-                    onUndo: model.undo,
-                    onRedo: model.redo,
-                    stitchHighlight: model.stitchHighlight,
-                    onHighlightGlyph: model.setStitchHighlight,
-                  ),
-                ],
-              ),
+              child: Stack(children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ToolboxRail(model: model),
+                    Expanded(child: _canvasColumn(context)),
+                    DockHost(controller: app.dock, model: model),
+                  ],
+                ),
+              ]),
             ),
             BottomPanel(
               sequence: sequence,
@@ -87,6 +74,44 @@ class EditorWorkspace extends StatelessWidget {
             _statusBar(),
           ],
         ));
+  }
+
+  /// The multi-tool toolbox group containing the active tool, if any —
+  /// its floating palette shows while one of its tools is active.
+  ToolboxGroup? _activeToolGroup() {
+    for (final group in toolboxGroups) {
+      if (group.tools.length > 1 &&
+          group.tools.any((tool) => tool.kind == model.activeKind)) {
+        return group;
+      }
+    }
+    return null;
+  }
+
+  /// The floating palette for the active tool/group, if any: the
+  /// tool's registered quick options (ADR-037), else the flyout grid
+  /// for multi-tool toolbox groups.
+  Widget? _paletteDock() {
+    final quick = toolContributionFor(model.activeKind)?.quickOptions;
+    if (quick != null) {
+      return PaletteDock(
+        model: model,
+        id: quick.paletteId,
+        paletteKey: quick.paletteKey,
+        gripKey: quick.gripKey,
+        child: Builder(builder: (context) => quick.builder(context, model)),
+      );
+    }
+    if (_activeToolGroup() case final group?) {
+      return PaletteDock(
+        model: model,
+        id: group.id,
+        paletteKey: Key('palette-${group.id}'),
+        gripKey: Key('palette-grip-${group.id}'),
+        child: ToolGroupPaletteGrid(model: model, group: group),
+      );
+    }
+    return null;
   }
 
   // -------------------------------------------------------- stitch preview
@@ -193,7 +218,17 @@ class EditorWorkspace extends StatelessWidget {
         ),
         // Contextual tool options (Illustrator control bar).
         ToolOptionsBar(tool: model.tool, onChanged: model.notify, model: model),
-        Expanded(child: _rulerFrame(context, _buildCanvas())),
+        Expanded(
+          child: _rulerFrame(
+            context,
+            Stack(children: [
+              _buildCanvas(),
+              // Floating tool palette: docked inside the canvas cell so
+              // it can never cover rulers, toolbars, or panels.
+              if (_paletteDock() case final dock?) Positioned.fill(child: dock),
+            ]),
+          ),
+        ),
         // Thread palette bar
         Container(
           height: 34,
@@ -235,21 +270,51 @@ class EditorWorkspace extends StatelessWidget {
   }
 
   Widget _buildCanvas() {
+    return ValueListenableBuilder<MouseCursor>(
+      valueListenable: model.canvasCursor,
+      builder: (context, cursor, _) => ValueListenableBuilder<PaintedCursor?>(
+        valueListenable: model.paintedCursor,
+        builder: (context, penBadge, _) => penBadge == null
+            ? _canvasView(cursor, null, null)
+            // Pen active: track the pointer so the painted pen cursor
+            // follows every move (only then — other tools don't pay
+            // the per-move rebuild).
+            : ValueListenableBuilder<g.Point?>(
+                valueListenable: model.cursor,
+                builder: (context, world, _) =>
+                    _canvasView(cursor, penBadge, world),
+              ),
+      ),
+    );
+  }
+
+  Widget _canvasView(
+      MouseCursor cursor, PaintedCursor? penBadge, g.Point? penWorld) {
     return CanvasView(
       document: model.session.document,
       viewport: model.viewport,
-      selectedIds: model.selectedObjectIds,
-      selectionBounds: model.selectionBounds,
+      // Transform box + per-object frames: Select tool only. Pen/Node
+      // show the selected object's anchor points instead.
+      selectedIds: model.showsTransformBox ? model.selectedObjectIds : const {},
+      selectionBounds: model.showsTransformBox ? model.selectionBounds : null,
       previewPaths: model.tool.preview,
-      markers: model.tool.markers,
+      markers: model.canvasMarkers,
       stitches: model.showStitches ? model.sequence : null,
       highlightStitches: model.highlightedStitchOps,
       showOutlines: model.showOutlines,
       showNeedleHoles: model.showNeedleHoles,
+      cursor: cursor,
+      paintedCursor: penBadge,
+      paintedCursorWorld: penWorld,
+      boxTransform: model.liveBoxTransform,
+      cursorLabel: model.liveTransformLabel,
+      cursorLabelWorld:
+          model.liveTransformLabel == null ? null : model.cursor.value,
       onTapWorld: model.onCanvasTap,
       onHoverWorld: model.hover,
+      onHoverExit: model.pointerExited,
       onDragStartWorld: model.onCanvasDragStart,
-      onDragUpdateWorld: model.tool.dragUpdate,
+      onDragUpdateWorld: model.onCanvasDragUpdate,
       onDragEndWorld: model.tool.dragEnd,
     );
   }
@@ -604,8 +669,8 @@ Future<void> saveActiveProject(BuildContext context, AppViewModel app,
   if (tab == null) return;
   final path = (saveAs ? null : tab.path) ??
       await pickSavePath(
-        suffix: '.embproj',
-        suggestedName: '${tab.title}.embproj',
+        suffix: '.swl',
+        suggestedName: '${tab.title}.swl',
       );
   if (path == null || !context.mounted) return;
   try {
@@ -618,7 +683,7 @@ Future<void> saveActiveProject(BuildContext context, AppViewModel app,
 
 Future<void> openProjectWithPicker(
     BuildContext context, AppViewModel app) async {
-  final path = await pickOpenPath(suffix: '.embproj');
+  final path = await pickOpenPath(suffix: '.swl');
   if (path == null || !context.mounted) return;
   try {
     final tab = await app.openProject(path);
@@ -1092,15 +1157,30 @@ List<PlatformMenu> buildPlatformMenus(BuildContext context, AppViewModel app) {
         // the corresponding render options; not faked here.
       ]),
     ]),
-    const PlatformMenu(label: 'Window', menus: [
-      PlatformMenuItemGroup(members: [
+    PlatformMenu(label: 'Window', menus: [
+      const PlatformMenuItemGroup(members: [
         PlatformProvidedMenuItem(
             type: PlatformProvidedMenuItemType.minimizeWindow),
         PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.zoomWindow),
         PlatformProvidedMenuItem(
             type: PlatformProvidedMenuItemType.toggleFullScreen),
       ]),
-      PlatformProvidedMenuItem(
+      // Dockable panels (FR-1204): PlatformMenuItem has no checked
+      // state, so labels flip Show/Hide like the rulers item above.
+      PlatformMenuItemGroup(members: [
+        for (final def in panelRegistry)
+          PlatformMenuItem(
+            label: app.dock.isVisible(def.id)
+                ? 'Hide ${def.title}'
+                : 'Show ${def.title}',
+            onSelected: () => app.dock.togglePanel(def.id),
+          ),
+        PlatformMenuItem(
+          label: 'Reset Workspace',
+          onSelected: app.dock.resetToDefault,
+        ),
+      ]),
+      const PlatformProvidedMenuItem(
           type: PlatformProvidedMenuItemType.arrangeWindowsInFront),
     ]),
     PlatformMenu(label: 'Help', menus: [

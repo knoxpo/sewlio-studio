@@ -121,9 +121,9 @@ ids are the Phase 2 sequence, not MVP sprints).
   (M); command→event integration (M); undo scaffold (S).
 - **Demo:** mutate document via Commands, observe Events.
 
-## Sprint 6 — Document + Storage I  ·  Goal: history + `.embproj`
+## Sprint 6 — Document + Storage I  ·  Goal: history + `.swl`
 - Features: E4-F3, E4-F4, E5-F1. Tasks: event-sourced undo/redo (M); project metadata (S);
-  `.embproj` layout + manifest (M); load validation (S).
+  `.swl` layout + manifest (M); load validation (S).
 - **Demo:** edit → undo/redo → save.
 
 ## Sprint 7 — Storage II  ·  Goal: atomic save + recovery  → M3 exit

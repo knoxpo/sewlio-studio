@@ -15,6 +15,29 @@ void main() {
     expect(created.single.closed, isFalse);
   });
 
+  test('cursorAt: start ×, add +, minus over anchors, close over first', () {
+    final pen = PenTool(onCreate: (_) {});
+    expect(pen.cursorAt(const Point(5, 5)), ToolCursor.pen);
+    pen.tap(const Point(0, 0));
+    pen.tap(const Point(10, 0));
+    pen.tap(const Point(10, 10));
+    expect(pen.cursorAt(const Point(5, 5)), ToolCursor.penAdd);
+    expect(pen.cursorAt(const Point(10, 0)), ToolCursor.penMinus);
+    expect(pen.cursorAt(const Point(0, 0)), ToolCursor.penClose);
+  });
+
+  test('clicking an in-progress anchor removes it (pen-minus)', () {
+    final created = <Path>[];
+    final pen = PenTool(onCreate: created.add);
+    pen.tap(const Point(0, 0));
+    pen.tap(const Point(10, 0));
+    pen.tap(const Point(10, 10));
+    pen.tap(const Point(10, 0)); // remove the middle anchor
+    pen.doubleTap(const Point(10, 10));
+    expect(created.single.segments, hasLength(1)); // (0,0) → (10,10)
+    expect(created.single.segments.single.end, const Point(10, 10));
+  });
+
   test('Shift/Ctrl constrain snaps the next point to 45° rays', () {
     final created = <Path>[];
     final pen = PenTool(onCreate: created.add);

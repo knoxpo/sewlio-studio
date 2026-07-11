@@ -18,4 +18,8 @@ final class ZoomTool extends Tool {
 
   @override
   String? get status => 'Zoom: click to zoom in, ⌥-click to zoom out';
+
+  @override
+  ToolCursor cursorAt(Point world) =>
+      outModifier ? ToolCursor.zoomOut : ToolCursor.zoomIn;
 }

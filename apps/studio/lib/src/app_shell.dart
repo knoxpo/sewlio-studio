@@ -5,6 +5,7 @@ import 'package:studio_design_system/studio_design_system.dart';
 import 'app_view_model.dart';
 import 'home_workspace.dart';
 import 'new_project_page.dart';
+import 'panels/panel_def.dart';
 import 'prompts.dart';
 import 'shell.dart';
 import 'workspace_view_model.dart';
@@ -205,6 +206,24 @@ class _AppView extends StatelessWidget {
                 ),
                 SubmenuButton(
                   menuChildren: [
+                    for (final def in panelRegistry)
+                      MenuItemButton(
+                        leadingIcon: Icon(
+                          app.dock.isVisible(def.id) ? Icons.check : null,
+                          size: 14,
+                        ),
+                        onPressed: () => app.dock.togglePanel(def.id),
+                        child: Text(def.title),
+                      ),
+                    MenuItemButton(
+                      onPressed: app.dock.resetToDefault,
+                      child: const Text('Reset Workspace'),
+                    ),
+                  ],
+                  child: const Text('Window'),
+                ),
+                SubmenuButton(
+                  menuChildren: [
                     MenuItemButton(
                       onPressed: () => showShortcutsDialog(context),
                       child: const Text('Keyboard Shortcuts'),
@@ -283,7 +302,7 @@ class _AppView extends StatelessWidget {
             onTap: () => app.activate(index),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Text(
-                '${tab.title}.embproj${tab.dirty ? '*' : ''}',
+                '${tab.title}.swl${tab.dirty ? '*' : ''}',
                 key: app.active == index ? const Key('doc-title') : null,
                 style: const TextStyle(fontSize: 12),
               ),
@@ -484,8 +503,8 @@ Future<void> requestCloseTab(
     case 'save':
       final path = tab.path ??
           await pickSavePath(
-            suffix: '.embproj',
-            suggestedName: '${tab.title}.embproj',
+            suffix: '.swl',
+            suggestedName: '${tab.title}.swl',
           );
       if (path == null) return;
       await app.saveTab(tab, path);

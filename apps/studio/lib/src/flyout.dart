@@ -2,9 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:studio_design_system/studio_design_system.dart';
-import 'package:studio_tools/studio_tools.dart';
-
-import 'tool_options.dart';
 
 /// One row in a tool-group flyout.
 final class FlyoutEntry {
@@ -39,7 +36,7 @@ class ToolFlyoutSlot extends StatefulWidget {
   });
 
   final IconData icon;
-  final String tooltip;
+  final String? tooltip;
   final bool active;
 
   /// Slot tap when the group is not active.
@@ -243,41 +240,6 @@ class _FlyoutPopover extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Shape tool-group slot: the generic flyout fed by [ShapeKind].
-class ShapeFlyoutButton extends StatelessWidget {
-  const ShapeFlyoutButton({
-    super.key,
-    required this.shapeTool,
-    required this.active,
-    required this.onActivate,
-  });
-
-  final ShapeTool shapeTool;
-  final bool active;
-
-  /// Called with the picked kind (or null to just activate the tool).
-  final void Function(ShapeKind? kind) onActivate;
-
-  @override
-  Widget build(BuildContext context) {
-    return ToolFlyoutSlot(
-      icon: shapeIcon(shapeTool.kind),
-      tooltip: '${shapeLabel(shapeTool.kind)} (M)',
-      active: active,
-      onActivate: () => onActivate(null),
-      entries: [
-        for (final kind in ShapeKind.values)
-          FlyoutEntry(
-            icon: shapeIcon(kind),
-            label: shapeLabel(kind),
-            selected: kind == shapeTool.kind,
-            onPick: () => onActivate(kind),
-          ),
-      ],
     );
   }
 }

@@ -281,8 +281,8 @@ class _NewProjectPageState extends State<NewProjectPage> {
             label: 'Location…',
             onPressed: () async {
               final path = await pickSavePath(
-                suffix: '.embproj',
-                suggestedName: '${_nameController.text.trim()}.embproj',
+                suffix: '.swl',
+                suggestedName: '${_nameController.text.trim()}.swl',
               );
               if (path != null) setState(() => _location = path);
             },

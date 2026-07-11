@@ -20,30 +20,29 @@ void main() {
   test('record upserts by path, most-recent-first, capped at 20', () {
     final store = RecentsStore.memory();
     for (var i = 0; i < 25; i++) {
-      store.record(entry('/p/$i.embproj'));
+      store.record(entry('/p/$i.swl'));
     }
     expect(store.entries.length, 20);
-    expect(store.entries.first.path, '/p/24.embproj');
-    store.record(entry('/p/24.embproj', name: 'renamed'));
+    expect(store.entries.first.path, '/p/24.swl');
+    store.record(entry('/p/24.swl', name: 'renamed'));
     expect(store.entries.length, 20);
     expect(store.entries.first.name, 'renamed');
   });
 
   test('remove drops the entry', () {
-    final store = RecentsStore.memory()..record(entry('/p/a.embproj'));
-    store.remove('/p/a.embproj');
+    final store = RecentsStore.memory()..record(entry('/p/a.swl'));
+    store.remove('/p/a.swl');
     expect(store.entries, isEmpty);
   });
 
   test('round-trips through the JSON file, creating parent dirs', () async {
     final path = '${temp.path}/nested/recents.json';
     RecentsStore(path)
-      ..record(entry('/p/a.embproj'))
-      ..record(entry('/p/b.embproj'));
+      ..record(entry('/p/a.swl'))
+      ..record(entry('/p/b.swl'));
     final reloaded = RecentsStore(path);
     await reloaded.load();
-    expect(
-        reloaded.entries.map((e) => e.path), ['/p/b.embproj', '/p/a.embproj']);
+    expect(reloaded.entries.map((e) => e.path), ['/p/b.swl', '/p/a.swl']);
     expect(reloaded.entries.first.hoopWidthMm, 100);
   });
 
