@@ -82,23 +82,12 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   // edit we just committed.
   late double _value;
 
-  // While the user is actively stepping/scrubbing, the field owns the
-  // value: parent rebuilds (which lag a frame or more behind, and may
-  // briefly report a default/mixed value mid-burst) must not overwrite it.
-  // After this quiet window with no local edit, genuine external changes
-  // (undo, selecting another object) are adopted again.
-  static const _interactionWindow = Duration(milliseconds: 600);
-  DateTime _lastLocalEdit = DateTime.fromMillisecondsSinceEpoch(0);
-
   late final _controller =
       TextEditingController(text: widget.mixed ? '' : _format(widget.value));
   final _focusNode = FocusNode();
   double _scrubStartValue = 0;
   Offset _scrubAccum = Offset.zero;
   bool _scrubbing = false;
-
-  bool get _interacting =>
-      DateTime.now().difference(_lastLocalEdit) < _interactionWindow;
 
   String _format(double v) => widget.integer
       ? v.round().toString()
@@ -118,9 +107,6 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   void didUpdateWidget(StudioNumberField oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_focusNode.hasFocus) return;
-    // Mid-burst: the field is authoritative — ignore lagging parent echoes
-    // and transient default/mixed reports that would reset the value.
-    if (_interacting) return;
     if (widget.mixed) {
       _value = widget.value;
       if (_controller.text.isNotEmpty) _controller.text = '';
@@ -154,11 +140,9 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
     return r;
   }
 
-  /// Sets the local value, reflects it in the field, and notifies. Marks
-  /// the interaction so lagging parent rebuilds don't clobber the value.
+  /// Sets the local value, reflects it in the field, and notifies.
   void _emit(double v) {
     _value = v;
-    _lastLocalEdit = DateTime.now();
     _controller.text = _format(v);
     widget.onSubmitted?.call(v);
   }
@@ -236,11 +220,19 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
     if (enabled) {
       // Horizontal click-drag scrubs the value; double-click resets to
       // [defaultValue]. Taps still fall through to focus/edit the field.
+      //
+      // Reset-on-double-tap is disabled when steppers are shown: a rapid
+      // burst of +/- clicks would otherwise be recognized as double-taps
+      // and snap the value back to the default. The − button already
+      // covers going down, so nothing is lost.
+      final onDoubleTap = (widget.defaultValue == null || widget.steppers)
+          ? null
+          : _resetToDefault;
       field = Listener(
         onPointerDown: _onScrubPointerDown,
         onPointerMove: _onScrubPointerMove,
         child: GestureDetector(
-          onDoubleTap: widget.defaultValue == null ? null : _resetToDefault,
+          onDoubleTap: onDoubleTap,
           child: field,
         ),
       );

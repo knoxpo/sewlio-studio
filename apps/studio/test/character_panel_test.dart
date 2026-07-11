@@ -118,6 +118,27 @@ void main() {
     expect(obj.fontFamily, MonolineTextFont().family);
   });
 
+  testWidgets('rapid stepper taps accumulate (no double-tap reset)',
+      (tester) async {
+    final vm = WorkspaceViewModel(session: StudioSession());
+    vm.execute(AddObject(_text('hi'), parent: null));
+    vm.selectRef(const DocumentNodeRef(DocumentNodeKind.object, Id('t1')));
+    await _pumpPanel(tester, vm);
+
+    final plus = find.descendant(
+      of: find.byKey(const Key('char-field-trackingMm')),
+      matching: find.byIcon(Icons.add),
+    );
+    // Frame-per-tap burst (what real rapid clicking produces).
+    for (var i = 0; i < 5; i++) {
+      await tester.tap(plus);
+      await tester.pump();
+    }
+    final obj = vm.session.document.objectById(const Id('t1')) as TextObject;
+    expect(obj.attrsAt(0).trackingMm, closeTo(0.5, 1e-9),
+        reason: 'frame-per-tap burst');
+  });
+
   testWidgets('mixed size across runs shows a mixed field', (tester) async {
     final vm = WorkspaceViewModel(session: StudioSession());
     // Two characters with different sizes → 'sizeMm' is mixed over the
