@@ -1,8 +1,11 @@
+import 'package:flutter/widgets.dart';
+
 import '../panels/placeholder_panel.dart';
 import '../toolbox.dart';
 import '../workspace_view_model.dart';
 import 'domain_module.dart';
 import 'icon_registry.dart';
+import 'overlay_def.dart';
 import 'project_type.dart';
 
 /// Embroidery domain UI contributions (ARCH-036: embroidery registers
@@ -16,7 +19,47 @@ final embroideryModule = DomainUiModule(
   domainToolbox: _stitchToolbox,
   quickActions: _quickActions,
   domainPanels: _stitchPanels,
+  domainOverlays: _stitchOverlays,
+  simulationOverlays: _simulationOverlays,
 );
+
+/// Placeholder overlay: an invisible keyed layer so visibility wiring,
+/// toggles, and tests work before the painters exist.
+// TODO: replace with real painters as stitch generation lands; heavy
+// overlays move into CanvasView's paint pipeline.
+OverlayDef _stubOverlay(String id, String label,
+        {bool defaultVisible = true}) =>
+    OverlayDef(
+      id: id,
+      label: label,
+      defaultVisible: defaultVisible,
+      builder: (context, model) =>
+          IgnorePointer(child: SizedBox.shrink(key: Key('overlay-$id'))),
+    );
+
+final _stitchOverlays = [
+  _stubOverlay('stitch-points', 'Stitch points'),
+  _stubOverlay('stitch-paths', 'Stitch paths'),
+  _stubOverlay('direction-arrows', 'Direction arrows'),
+  _stubOverlay('entry-exit-markers', 'Entry / exit markers'),
+  _stubOverlay('travel-lines', 'Travel lines'),
+  _stubOverlay('jump-lines', 'Jump lines'),
+  _stubOverlay('trim-markers', 'Trim markers'),
+  _stubOverlay('underlay-overlay', 'Underlay'),
+  _stubOverlay('hoop-boundary', 'Hoop boundary'),
+  _stubOverlay('density-heatmap', 'Density heatmap', defaultVisible: false),
+];
+
+final _simulationOverlays = [
+  _stubOverlay('active-stitch', 'Active stitch'),
+  _stubOverlay('executed-path', 'Executed path'),
+  _stubOverlay('pending-path', 'Pending path'),
+  _stubOverlay('color-block-highlight', 'Color block highlight'),
+  _stubOverlay('needle-position', 'Needle position'),
+  _stubOverlay('travel-route', 'Travel / jump route'),
+  _stubOverlay('hoop-boundary', 'Hoop boundary'),
+  _stubOverlay('problem-markers', 'Problem markers'),
+];
 
 const _divider = ToolboxGroup('divider', []);
 

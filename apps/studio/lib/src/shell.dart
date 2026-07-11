@@ -21,6 +21,7 @@ import 'tool_options.dart';
 import 'toolbox.dart';
 import 'tools/tool_contributions.dart';
 import 'workspace/domain_module.dart';
+import 'workspace/overlay_def.dart';
 import 'workspace/project_type_registry.dart';
 import 'workspace_view_model.dart';
 
@@ -181,7 +182,19 @@ class EditorWorkspace extends StatelessWidget {
               Expanded(
                 child: Column(children: [
                   _domainToolbar(module),
-                  Expanded(child: _buildCanvas()),
+                  Expanded(
+                    child: Builder(
+                      builder: (context) => Stack(children: [
+                        _buildCanvas(),
+                        // Contributed overlays: presentation-only layers
+                        // above the shared canvas (ARCH-038).
+                        for (final overlay
+                            in model.activeOverlays(WorkspaceMode.domain))
+                          Positioned.fill(
+                              child: overlay.builder(context, model)),
+                      ]),
+                    ),
+                  ),
                 ]),
               ),
               DockHost(
@@ -225,11 +238,47 @@ class EditorWorkspace extends StatelessWidget {
             ]),
           ),
         ),
+        _overlayToggles(module),
         StudioIconButton(
             icon: Icons.fit_screen_outlined,
             tooltip: 'Fit to canvas',
             onPressed: model.fitCanvas),
       ]),
+    );
+  }
+
+  /// Overlay visibility menu for the current mode's contributed overlays.
+  Widget _overlayToggles(DomainUiModule module) {
+    final overlays = model.mode == WorkspaceMode.simulation
+        ? module.simulationOverlays
+        : module.domainOverlays;
+    if (overlays.isEmpty) return const SizedBox.shrink();
+    return PopupMenuButton<OverlayDef>(
+      key: const Key('overlay-toggles'),
+      tooltip: 'Overlays',
+      color: AppTokens.popoverSurface,
+      icon: Icon(Icons.visibility_outlined,
+          size: 15, color: AppTokens.textMuted),
+      onSelected: (overlay) => model.toggleOverlay(model.mode, overlay),
+      itemBuilder: (context) => [
+        for (final overlay in overlays)
+          PopupMenuItem(
+            key: Key('overlay-toggle-${overlay.id}'),
+            value: overlay,
+            height: 30,
+            child: Row(children: [
+              Icon(
+                Icons.check,
+                size: 14,
+                color: model.overlayVisible(model.mode, overlay)
+                    ? AppTokens.primary
+                    : Colors.transparent,
+              ),
+              const SizedBox(width: 8),
+              Text(overlay.label, style: const TextStyle(fontSize: 12)),
+            ]),
+          ),
+      ],
     );
   }
 

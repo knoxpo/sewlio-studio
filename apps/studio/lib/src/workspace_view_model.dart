@@ -22,7 +22,9 @@ import 'font_library.dart';
 import 'stroke_style.dart';
 import 'tools/tool_contributions.dart';
 import 'workspace/cursor_registry.dart';
+import 'workspace/overlay_def.dart';
 import 'workspace/project_type.dart';
+import 'workspace/project_type_registry.dart';
 
 enum ToolKind {
   select,
@@ -114,6 +116,44 @@ final class WorkspaceViewModel extends BarleyViewModel {
     mode = value;
     notify();
   }
+
+  /// Per-mode hidden overlay ids (view state; defaults come from each
+  /// overlay's defaultVisible flag).
+  final _hiddenOverlays = <WorkspaceMode, Set<String>>{};
+
+  bool overlayVisible(WorkspaceMode forMode, OverlayDef overlay) {
+    final hidden = _hiddenOverlays[forMode];
+    return hidden == null ? overlay.defaultVisible : !hidden.contains(overlay.id);
+  }
+
+  void toggleOverlay(WorkspaceMode forMode, OverlayDef overlay) {
+    final hidden = _hiddenOverlays.putIfAbsent(
+        forMode,
+        () => {
+              // Seed from defaults so the first toggle behaves.
+              for (final o in _overlaysFor(forMode))
+                if (!o.defaultVisible) o.id,
+            });
+    hidden.contains(overlay.id)
+        ? hidden.remove(overlay.id)
+        : hidden.add(overlay.id);
+    notify();
+  }
+
+  List<OverlayDef> _overlaysFor(WorkspaceMode forMode) {
+    final module = moduleFor(projectType);
+    return switch (forMode) {
+      WorkspaceMode.domain => module.domainOverlays,
+      WorkspaceMode.simulation => module.simulationOverlays,
+      WorkspaceMode.design => const [],
+    };
+  }
+
+  /// Overlays to render in [forMode], visibility toggles applied.
+  List<OverlayDef> activeOverlays(WorkspaceMode forMode) => [
+        for (final o in _overlaysFor(forMode))
+          if (overlayVisible(forMode, o)) o,
+      ];
 
   /// Bound by the view each build: the Hoop tool opens Document Setup.
   void Function()? onOpenHoopSetup;
