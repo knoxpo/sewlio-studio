@@ -51,8 +51,10 @@ void main() {
     await tester.pump();
     expect(dock.layout.groups, hasLength(2));
     expect(dock.layout.groups[0].panelIds, ['layers']);
-    expect(dock.layout.groups[1].panelIds,
-        [for (final id in defaultPanelIds) if (id != 'layers') id]);
+    expect(dock.layout.groups[1].panelIds, [
+      for (final id in defaultPanelIds)
+        if (id != 'layers') id
+    ]);
     // Both groups render their tab bars.
     expect(find.byKey(const Key('dock-tab-layers')), findsOneWidget);
     expect(find.byKey(const Key('dock-splitter-1')), findsOneWidget);

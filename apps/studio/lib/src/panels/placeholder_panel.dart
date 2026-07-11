@@ -45,6 +45,6 @@ PanelDef placeholderPanel(String id, String title, IconData icon,
       id: id,
       title: title,
       icon: icon,
-      builder: (context, model) =>
-          PlaceholderPanel(key: Key('placeholder-$id'), title: title, note: note),
+      builder: (context, model) => PlaceholderPanel(
+          key: Key('placeholder-$id'), title: title, note: note),
     );

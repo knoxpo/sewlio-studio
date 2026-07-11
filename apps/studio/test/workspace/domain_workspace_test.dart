@@ -21,14 +21,13 @@ void main() {
     expect(find.text('Stitch View'), findsOneWidget);
 
     // Module toolbox: live select + dimmed placeholders.
-    expect(
-        find.byKey(const Key('tool-Select Stitch Object')), findsOneWidget);
+    expect(find.byKey(const Key('tool-Select Stitch Object')), findsOneWidget);
     expect(find.byKey(const Key('tool-Satin Column')), findsOneWidget);
 
     // Module panels docked (Production structure, not Artwork).
     expect(find.byKey(const Key('dock-tab-stitch-objects')), findsOneWidget);
-    expect(find.byKey(const Key('dock-tab-sequence-color-film')),
-        findsOneWidget);
+    expect(
+        find.byKey(const Key('dock-tab-sequence-color-film')), findsOneWidget);
     // Design layers panel does NOT leak into the domain dock.
     expect(find.byKey(const Key('dock-tab-layers')), findsNothing);
   });

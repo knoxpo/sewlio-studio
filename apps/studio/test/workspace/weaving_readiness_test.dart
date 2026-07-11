@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:studio/main.dart';
 import 'package:studio/src/app_shell.dart';
 import 'package:studio/src/app_view_model.dart';
 import 'package:studio/src/recents.dart';
@@ -44,8 +43,8 @@ void main() {
 
   test('weaving is a planned module, kept out of New Project', () async {
     final app = AppViewModel(recents: RecentsStore.memory());
-    final tab = await app.createProject(
-        name: 'Default', hoop: const HoopSettings());
+    final tab =
+        await app.createProject(name: 'Default', hoop: const HoopSettings());
     expect(tab.vm.projectType, ProjectType.embroidery);
   });
 }

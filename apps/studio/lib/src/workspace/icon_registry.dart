@@ -106,5 +106,4 @@ final studioIcons = <String, StudioIcon>{
 };
 
 /// Icon glyph for [id]; unknown ids get an obvious placeholder box.
-IconData iconFor(String id) =>
-    studioIcons[id]?.fallback ?? Icons.crop_square;
+IconData iconFor(String id) => studioIcons[id]?.fallback ?? Icons.crop_square;

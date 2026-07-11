@@ -369,7 +369,8 @@ class EditorWorkspace extends StatelessWidget {
               PopupMenuItem(
                   value: preset,
                   height: 30,
-                  child: Text('$preset×', style: const TextStyle(fontSize: 12))),
+                  child:
+                      Text('$preset×', style: const TextStyle(fontSize: 12))),
           ],
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -433,8 +434,8 @@ class EditorWorkspace extends StatelessWidget {
       key: const Key('overlay-toggles'),
       tooltip: 'Overlays',
       color: AppTokens.popoverSurface,
-      icon: Icon(Icons.visibility_outlined,
-          size: 15, color: AppTokens.textMuted),
+      icon:
+          Icon(Icons.visibility_outlined, size: 15, color: AppTokens.textMuted),
       onSelected: (overlay) => model.toggleOverlay(model.mode, overlay),
       itemBuilder: (context) => [
         for (final overlay in overlays)

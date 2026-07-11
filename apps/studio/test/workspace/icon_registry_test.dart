@@ -15,8 +15,7 @@ void main() {
 
   test('every registered SVG asset exists on disk', () {
     for (final icon in studioIcons.values) {
-      expect(File(icon.svgAsset!).existsSync(), isTrue,
-          reason: icon.svgAsset);
+      expect(File(icon.svgAsset!).existsSync(), isTrue, reason: icon.svgAsset);
     }
   });
 

@@ -34,8 +34,8 @@ final class SimulationViewModel extends ChangeNotifier {
   void play() {
     if (playing || ops.isEmpty) return;
     if (playback.position >= ops.length) playback.position = 0;
-    _timer = Timer.periodic(
-        const Duration(milliseconds: _tickMs), (_) => tick());
+    _timer =
+        Timer.periodic(const Duration(milliseconds: _tickMs), (_) => tick());
     notifyListeners();
   }
 

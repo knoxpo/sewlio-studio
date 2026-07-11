@@ -124,7 +124,9 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   bool overlayVisible(WorkspaceMode forMode, OverlayDef overlay) {
     final hidden = _hiddenOverlays[forMode];
-    return hidden == null ? overlay.defaultVisible : !hidden.contains(overlay.id);
+    return hidden == null
+        ? overlay.defaultVisible
+        : !hidden.contains(overlay.id);
   }
 
   void toggleOverlay(WorkspaceMode forMode, OverlayDef overlay) {

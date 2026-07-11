@@ -74,8 +74,8 @@ ToolboxGroup _soon(String id, String iconId, String label) =>
 final _stitchToolbox = <ToolboxGroup>[
   // Selection / reshape
   ToolboxGroup('stitch-select', [
-    ToolboxTool(ToolKind.select, iconFor('stitch-select'),
-        'Select Stitch Object',
+    ToolboxTool(
+        ToolKind.select, iconFor('stitch-select'), 'Select Stitch Object',
         shortcut: 'V'),
   ]),
   _soon('stitch-reshape', 'stitch-reshape', 'Reshape Stitch Object'),
@@ -122,9 +122,7 @@ final _quickActions = <QuickActionDef>[
       label: 'Regenerate selected',
       icon: iconFor('sim-loop')),
   QuickActionDef(
-      id: 'regenerate-all',
-      label: 'Regenerate all',
-      icon: iconFor('sim-loop')),
+      id: 'regenerate-all', label: 'Regenerate all', icon: iconFor('sim-loop')),
   QuickActionDef(
       id: 'reverse-direction',
       label: 'Reverse direction',
@@ -144,8 +142,8 @@ final _quickActions = <QuickActionDef>[
 /// Production panels (Production/Sequence structure) — deliberately
 /// separate from the design-side Artwork/Layers panels.
 final _stitchPanels = [
-  placeholderPanel('stitch-objects', 'Stitch Objects',
-      iconFor('panel-stitch-objects')),
+  placeholderPanel(
+      'stitch-objects', 'Stitch Objects', iconFor('panel-stitch-objects')),
   placeholderPanel('sequence-color-film', 'Sequence / Color Film',
       iconFor('panel-sequence')),
   placeholderPanel('stitch-properties', 'Stitch Properties',
@@ -169,8 +167,8 @@ final _simulationPanels = [
     icon: iconFor('panel-timeline'),
     builder: (context, model) => TimelinePanelContent(sim: model.simulation),
   ),
-  placeholderPanel('playback-events', 'Playback Events',
-      iconFor('panel-playback-events')),
+  placeholderPanel(
+      'playback-events', 'Playback Events', iconFor('panel-playback-events')),
   placeholderPanel(
       'color-sequence', 'Color Sequence', iconFor('panel-color-sequence')),
   placeholderPanel(

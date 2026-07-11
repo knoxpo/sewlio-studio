@@ -73,8 +73,8 @@ final class AppViewModel extends BarleyViewModel {
           ? module.domainPanels
           : module.simulationPanels;
       final ids = [for (final p in panels) p.id];
-      final controller = _dockFactory?.call(mode, ids) ??
-          DockController.memory(panelIds: ids);
+      final controller =
+          _dockFactory?.call(mode, ids) ?? DockController.memory(panelIds: ids);
       controller.load();
       controller.addListener(notify);
       return controller;

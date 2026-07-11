@@ -31,7 +31,8 @@ final class CursorRegistry {
     // Painted by the canvas (system cursor hidden): pen family, plus
     // rotation and diagonal resize — macOS ships no public cursors for
     // those, so native mapping renders a plain arrow there.
-    ToolCursor.rotate: CursorSpec(SystemMouseCursors.none, PaintedCursor.rotate),
+    ToolCursor.rotate:
+        CursorSpec(SystemMouseCursors.none, PaintedCursor.rotate),
     ToolCursor.resizeNWSE:
         CursorSpec(SystemMouseCursors.none, PaintedCursor.resizeNWSE),
     ToolCursor.resizeNESW:
