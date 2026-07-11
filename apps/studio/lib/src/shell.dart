@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
+import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart' as g;
 
 import 'app_shell.dart';
@@ -23,6 +24,7 @@ import 'tools/tool_contributions.dart';
 import 'workspace/domain_module.dart';
 import 'workspace/overlay_def.dart';
 import 'workspace/project_type_registry.dart';
+import 'workspace/simulation_view_model.dart';
 import 'workspace_view_model.dart';
 
 /// CAD editor workspace (barley MVVM view): renders [WorkspaceViewModel]
@@ -42,12 +44,7 @@ class EditorWorkspace extends StatelessWidget {
     final sequence = model.sequence;
     if (model.mode == WorkspaceMode.domain) return _domainWorkspace(context);
     if (model.mode == WorkspaceMode.simulation) {
-      // ponytail: full-bleed playback strip until the simulation
-      // workspace (transport bar + panels) lands.
-      return Column(children: [
-        Expanded(child: SimulationSection(sequence: sequence)),
-        _statusBar(),
-      ]);
+      return _simulationWorkspace(context);
     }
     return Focus(
         autofocus: true,
@@ -243,6 +240,185 @@ class EditorWorkspace extends StatelessWidget {
             icon: Icons.fit_screen_outlined,
             tooltip: 'Fit to canvas',
             onPressed: model.fitCanvas),
+      ]),
+    );
+  }
+
+  // ---------------------------------------------------- simulation view
+
+  /// Simulation workspace: transport toolbar, playback canvas, and the
+  /// module's simulation panels. Execution-oriented — playback state
+  /// lives on [SimulationViewModel]; nothing here mutates the document.
+  Widget _simulationWorkspace(BuildContext context) {
+    final module = moduleFor(model.projectType);
+    final sim = model.simulation;
+    return ListenableBuilder(
+      listenable: sim,
+      builder: (context, _) => Column(children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Column(children: [
+                  _transportBar(module, sim),
+                  Expanded(child: _playbackCanvas(context, sim)),
+                ]),
+              ),
+              DockHost(
+                  controller: app.dockFor(model.mode, model.projectType),
+                  model: model),
+            ],
+          ),
+        ),
+        _statusBar(),
+      ]),
+    );
+  }
+
+  Widget _playbackCanvas(BuildContext context, SimulationViewModel sim) {
+    return Container(
+      color: AppTokens.background,
+      child: Stack(children: [
+        Positioned.fill(
+          child: sim.ops.isEmpty
+              ? Center(
+                  child: Text('No stitches yet — draw in Design mode.',
+                      style:
+                          TextStyle(fontSize: 12, color: AppTokens.textMuted)),
+                )
+              : CustomPaint(
+                  size: Size.infinite,
+                  painter: StitchPreviewPainter(
+                    ops: sim.playback.visible,
+                    all: sim.ops,
+                    color: AppTokens.primary,
+                    threadColors: [
+                      for (final thread in sim.sequence.threads)
+                        Color(0xFF000000 |
+                            int.parse(thread.color.substring(1), radix: 16)),
+                    ],
+                  ),
+                ),
+        ),
+        for (final overlay in model.activeOverlays(WorkspaceMode.simulation))
+          Positioned.fill(child: overlay.builder(context, model)),
+      ]),
+    );
+  }
+
+  static const _speedPresets = [0.25, 0.5, 1.0, 2.0, 4.0];
+
+  /// Transport controls: play/pause/stop, stepping, scrub, speed, jump
+  /// targets, loop, and path-visibility toggles.
+  Widget _transportBar(DomainUiModule module, SimulationViewModel sim) {
+    final hasOps = sim.ops.isNotEmpty;
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppTokens.panel,
+        border: Border(bottom: BorderSide(color: AppTokens.border)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.play_circle_outline,
+            size: 14, color: AppTokens.primary),
+        const SizedBox(width: 4),
+        const Text('Simulation',
+            style: TextStyle(color: AppTokens.primary, fontSize: 11)),
+        const SizedBox(width: 12),
+        StudioIconButton(
+            key: const Key('sim-play'),
+            icon: sim.playing ? Icons.pause : Icons.play_arrow,
+            tooltip: sim.playing ? 'Pause' : 'Play',
+            onPressed: hasOps ? (sim.playing ? sim.pause : sim.play) : null),
+        StudioIconButton(
+            key: const Key('sim-stop'),
+            icon: Icons.stop,
+            tooltip: 'Stop',
+            onPressed: hasOps ? sim.stop : null),
+        StudioIconButton(
+            key: const Key('sim-step-back'),
+            icon: Icons.skip_previous,
+            tooltip: 'Step back',
+            onPressed: hasOps ? () => sim.stepBy(-1) : null),
+        StudioIconButton(
+            key: const Key('sim-step-forward'),
+            icon: Icons.skip_next,
+            tooltip: 'Step forward',
+            onPressed: hasOps ? () => sim.stepBy(1) : null),
+        // Scrub
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: StudioSlider(
+              key: const Key('sim-scrub'),
+              value: sim.playback.fraction.clamp(0, 1),
+              onChanged: hasOps ? sim.seek : null,
+            ),
+          ),
+        ),
+        // Speed
+        PopupMenuButton<double>(
+          key: const Key('sim-speed'),
+          tooltip: 'Playback speed',
+          color: AppTokens.popoverSurface,
+          onSelected: sim.setSpeed,
+          itemBuilder: (context) => [
+            for (final preset in _speedPresets)
+              PopupMenuItem(
+                  value: preset,
+                  height: 30,
+                  child: Text('$preset×', style: const TextStyle(fontSize: 12))),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text('${sim.speed}×',
+                style: TextStyle(fontSize: 11, color: AppTokens.textMuted)),
+          ),
+        ),
+        StudioIconButton(
+            key: const Key('sim-jump-color'),
+            icon: Icons.palette_outlined,
+            tooltip: 'Jump to color change',
+            onPressed:
+                hasOps ? () => sim.jumpToNext(StitchKind.colorChange) : null),
+        StudioIconButton(
+            key: const Key('sim-jump-trim'),
+            icon: Icons.content_cut,
+            tooltip: 'Jump to trim',
+            onPressed: hasOps ? () => sim.jumpToNext(StitchKind.trim) : null),
+        // TODO: jump-to-object needs op→object provenance in Stitch IR.
+        const StudioIconButton(
+            key: Key('sim-jump-object'),
+            icon: Icons.widgets_outlined,
+            tooltip: 'Jump to object — coming soon',
+            onPressed: null),
+        StudioIconButton(
+            key: const Key('sim-loop'),
+            icon: Icons.repeat,
+            tooltip: 'Loop',
+            active: sim.loop,
+            onPressed: sim.toggleLoop),
+        StudioIconButton(
+            key: const Key('sim-show-needle'),
+            icon: Icons.gps_fixed,
+            tooltip: 'Show needle path',
+            active: sim.showNeedle,
+            onPressed: () => sim.toggleShow('needle')),
+        StudioIconButton(
+            key: const Key('sim-show-travel'),
+            icon: Icons.moving,
+            tooltip: 'Show travel',
+            active: sim.showTravel,
+            onPressed: () => sim.toggleShow('travel')),
+        StudioIconButton(
+            key: const Key('sim-show-machine-path'),
+            icon: Icons.route_outlined,
+            tooltip: 'Show machine path',
+            active: sim.showMachinePath,
+            onPressed: () => sim.toggleShow('machine-path')),
+        _overlayToggles(module),
       ]),
     );
   }

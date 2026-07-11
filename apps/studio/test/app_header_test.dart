@@ -23,7 +23,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('mode-simulation')));
     await tester.pumpAndSettle();
-    expect(find.text('STITCH SIMULATION'), findsOneWidget);
+    expect(find.byKey(const Key('sim-play')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('mode-design')));
     await tester.pumpAndSettle();

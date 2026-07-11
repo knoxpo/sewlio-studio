@@ -25,6 +25,7 @@ import 'workspace/cursor_registry.dart';
 import 'workspace/overlay_def.dart';
 import 'workspace/project_type.dart';
 import 'workspace/project_type_registry.dart';
+import 'workspace/simulation_view_model.dart';
 
 enum ToolKind {
   select,
@@ -286,6 +287,20 @@ final class WorkspaceViewModel extends BarleyViewModel {
   StitchSequence get sequence =>
       digitizeObjects(session.document.flattenVisibleObjects());
 
+  SimulationViewModel? _sim;
+  int? _simRevision;
+
+  /// Simulation-mode playback state, rebuilt when the document changes
+  /// (the digitized sequence is derived per revision).
+  SimulationViewModel get simulation {
+    if (_sim == null || _simRevision != session.document.revision) {
+      _sim?.dispose();
+      _sim = SimulationViewModel(sequence)..addListener(notify);
+      _simRevision = session.document.revision;
+    }
+    return _sim!;
+  }
+
   /// Stitches-panel glyph highlight: a text object's outline range
   /// [start, end). View state only — never touches the document.
   ({Id id, int start, int end})? stitchHighlight;
@@ -399,6 +414,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
   @override
   void dispose() {
     _eventSub?.cancel();
+    _sim?.dispose();
     super.dispose();
   }
 

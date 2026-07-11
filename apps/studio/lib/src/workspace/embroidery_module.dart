@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../panels/panel_def.dart';
 import '../panels/placeholder_panel.dart';
 import '../toolbox.dart';
 import '../workspace_view_model.dart';
@@ -7,6 +8,7 @@ import 'domain_module.dart';
 import 'icon_registry.dart';
 import 'overlay_def.dart';
 import 'project_type.dart';
+import 'simulation_panels.dart';
 
 /// Embroidery domain UI contributions (ARCH-036: embroidery registers
 /// as the active MVP domain). Everything below is scaffolding: one real
@@ -19,6 +21,7 @@ final embroideryModule = DomainUiModule(
   domainToolbox: _stitchToolbox,
   quickActions: _quickActions,
   domainPanels: _stitchPanels,
+  simulationPanels: _simulationPanels,
   domainOverlays: _stitchOverlays,
   simulationOverlays: _simulationOverlays,
 );
@@ -155,4 +158,29 @@ final _stitchPanels = [
   placeholderPanel('statistics', 'Statistics', iconFor('panel-statistics')),
   placeholderPanel(
       'machine-hoop', 'Machine / Hoop', iconFor('panel-machine-hoop')),
+];
+
+/// Simulation panels: timeline + runtime stats are live; the rest are
+/// placeholders until the playback event model exists.
+final _simulationPanels = [
+  PanelDef(
+    id: 'timeline',
+    title: 'Timeline',
+    icon: iconFor('panel-timeline'),
+    builder: (context, model) => TimelinePanelContent(sim: model.simulation),
+  ),
+  placeholderPanel('playback-events', 'Playback Events',
+      iconFor('panel-playback-events')),
+  placeholderPanel(
+      'color-sequence', 'Color Sequence', iconFor('panel-color-sequence')),
+  placeholderPanel(
+      'machine-event-log', 'Machine Event Log', iconFor('panel-event-log')),
+  PanelDef(
+    id: 'runtime-stats',
+    title: 'Runtime Stats',
+    icon: iconFor('panel-runtime-stats'),
+    builder: (context, model) =>
+        RuntimeStatsPanelContent(sim: model.simulation),
+  ),
+  placeholderPanel('warnings', 'Warnings', iconFor('panel-warnings')),
 ];
