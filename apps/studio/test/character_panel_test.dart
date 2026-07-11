@@ -41,11 +41,15 @@ void main() {
   StudioNumberField field(WidgetTester tester, String key) =>
       tester.widget<StudioNumberField>(find.byKey(Key(key)));
 
-  testWidgets('empty state when no text is selected', (tester) async {
+  testWidgets('no selection: full panel shown but disabled', (tester) async {
     final vm = WorkspaceViewModel(session: StudioSession());
     await _pumpPanel(tester, vm);
-    expect(find.byKey(const Key('character-empty')), findsOneWidget);
+    // Panel keeps its full shape (not an empty message) but is inert.
+    expect(find.byKey(const Key('character-panel')), findsOneWidget);
     expect(find.text('No text selected'), findsOneWidget);
+    final ignore = tester
+        .widget<IgnorePointer>(find.byKey(const Key('character-disabled')));
+    expect(ignore.ignoring, isTrue);
   });
 
   testWidgets('shows the target font and size', (tester) async {
@@ -82,6 +86,36 @@ void main() {
     final obj = vm.session.document.objectById(const Id('t1')) as TextObject;
     // The whole-string range now resolves to the new size.
     expect(obj.attrsAt(0).sizeMm, 9);
+  });
+
+  test('applyCharAttrs is synchronous so rapid steps accumulate', () {
+    final vm = WorkspaceViewModel(session: StudioSession());
+    vm.execute(AddObject(_text('hi'), parent: null));
+    vm.selectRef(const DocumentNodeRef(DocumentNodeKind.object, Id('t1')));
+
+    // Simulate a stepper burst: each read of the current value must
+    // reflect the previous apply immediately (no async round-trip),
+    // otherwise every click reads the same stale value.
+    var value = vm.characterAttrs!.shared.trackingMm ?? 0;
+    for (var i = 0; i < 3; i++) {
+      value += 0.1;
+      vm.applyCharAttrs(CharAttrs(trackingMm: value),
+          mergeKey: 'char-trackingMm');
+      // Synchronous: the document already carries the new value.
+      expect(vm.characterAttrs!.shared.trackingMm, closeTo(value, 1e-9));
+    }
+    expect(vm.characterAttrs!.shared.trackingMm, closeTo(0.3, 1e-9));
+  });
+
+  test('changing font family updates the object base family', () {
+    final vm = WorkspaceViewModel(session: StudioSession());
+    vm.execute(AddObject(_text('hi'), parent: null));
+    vm.selectRef(const DocumentNodeRef(DocumentNodeKind.object, Id('t1')));
+    // Monoline is always cached, so the family change applies synchronously
+    // to the object's base font (not just a run).
+    vm.applyCharAttrs(CharAttrs(fontFamily: const MonolineTextFont().family));
+    final obj = vm.session.document.objectById(const Id('t1')) as TextObject;
+    expect(obj.fontFamily, MonolineTextFont().family);
   });
 
   testWidgets('mixed size across runs shows a mixed field', (tester) async {

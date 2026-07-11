@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:studio_core/studio_core.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
+import 'package:studio_geometry/studio_geometry.dart' as g;
 import 'package:studio_tools/studio_tools.dart';
 
 import '../font_library.dart';
@@ -46,8 +48,9 @@ class _CharacterPanelState extends State<CharacterPanel> {
   TextStyle get _glyph => TextStyle(fontSize: 13, color: AppTokens.textMuted);
 
   void _apply(CharAttrs patch, {String? mergeKey}) {
-    // Fire-and-forget: applyCharAttrs is async (regenerates outlines) and
-    // emits its own document event, which rebuilds the panel.
+    // applyCharAttrs regenerates outlines and emits a document event that
+    // rebuilds the panel; it is synchronous when the font is cached, so a
+    // stepper burst accumulates instead of racing an async round-trip.
     _model.applyCharAttrs(patch, mergeKey: mergeKey);
   }
 
@@ -78,13 +81,23 @@ class _CharacterPanelState extends State<CharacterPanel> {
     return FontLibrary.instance.isPreviewReady(family) ? family : null;
   }
 
+  // Shown (disabled) when nothing is selected, so the panel keeps its
+  // full shape instead of collapsing to an empty message.
+  static final _placeholder = TextObject(
+    id: Id('character-placeholder'),
+    path: g.Path(start: g.Point.zero),
+    text: '',
+    fontFamily: FontLibrary.builtinFamily,
+  );
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _model,
       builder: (context, _) {
         final target = _model.characterTarget;
-        if (target == null) return _empty();
+        final disabled = target == null;
+        final display = target ?? _placeholder;
 
         final query = _model.characterAttrs;
         final shared = query?.shared ?? CharAttrs.empty;
@@ -94,18 +107,24 @@ class _CharacterPanelState extends State<CharacterPanel> {
         // Font not cached yet (a system TrueType face): kick off a load
         // and rebuild once its capabilities are available. Monoline is
         // always cached, so this only runs for real installed fonts.
-        if (font == null && _loadingFamily != target.fontFamily) {
+        if (!disabled && font == null && _loadingFamily != target.fontFamily) {
           _loadingFamily = target.fontFamily;
           FontLibrary.instance.load(target.fontFamily).then((_) {
             if (mounted) setState(() {});
           });
         }
 
-        return ListView(
+        final panel = ListView(
           key: const Key('character-panel'),
           padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
           children: [
-            _core(target, shared, mixed, font),
+            if (disabled)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text('No text selected',
+                    style: TextStyle(fontSize: 10, color: AppTokens.textMuted)),
+              ),
+            _core(display, shared, mixed, font),
             _section('decorations', 'Decorations', _decorations(shared, mixed)),
             _section(
                 'transform', 'Position & Transform', _transform(shared, mixed)),
@@ -114,31 +133,17 @@ class _CharacterPanelState extends State<CharacterPanel> {
             _section('typography', 'Typography', _typography(shared, font)),
           ],
         );
+
+        // Disable-in-place: keep the whole panel visible but inert when
+        // there is no text target (requested over an empty placeholder).
+        return IgnorePointer(
+          key: const Key('character-disabled'),
+          ignoring: disabled,
+          child: Opacity(opacity: disabled ? 0.45 : 1, child: panel),
+        );
       },
     );
   }
-
-  Widget _empty() => Center(
-        key: const Key('character-empty'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.text_fields_outlined,
-                  size: 20, color: AppTokens.textMuted),
-              const SizedBox(height: 8),
-              Text('No text selected',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: AppTokens.textMuted)),
-              const SizedBox(height: 2),
-              Text('Select or edit a text object to format it.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 10, color: AppTokens.textMuted)),
-            ],
-          ),
-        ),
-      );
 
   // ------------------------------------------------------------ scaffolding
 

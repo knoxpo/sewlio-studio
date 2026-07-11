@@ -369,6 +369,14 @@ final class TextObject extends EmbroideryObject {
   /// in the tools layer, so regeneration happens there, not here).
   TextObject withOutlines(List<Path> outlines) => _with(outlines: outlines);
 
+  /// A copy with the base [fontFamily] replaced. Font family is
+  /// object-level (layout resolves one font per object today), so the
+  /// Character panel applies a family change through this rather than a
+  /// per-range run.
+  // ponytail: per-run font substitution needs a font resolver in layout;
+  // until then family is whole-object.
+  TextObject withFontFamily(String fontFamily) => _with(fontFamily: fontFamily);
+
   Point get anchor => path.start;
 
   @override
@@ -400,14 +408,18 @@ final class TextObject extends EmbroideryObject {
         outlines: [for (final o in outlines) o.transformed(t)],
       );
 
-  TextObject _with({Path? path, List<Path>? outlines, List<StyleRun>? runs}) =>
+  TextObject _with(
+          {Path? path,
+          List<Path>? outlines,
+          List<StyleRun>? runs,
+          String? fontFamily}) =>
       TextObject(
         id: id,
         path: path ?? this.path,
         stroke: stroke,
         name: name,
         text: text,
-        fontFamily: fontFamily,
+        fontFamily: fontFamily ?? this.fontFamily,
         sizeMm: sizeMm,
         trackingMm: trackingMm,
         lineHeight: lineHeight,

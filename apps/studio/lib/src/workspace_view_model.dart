@@ -746,12 +746,31 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// Applies [patch] to the active character range and regenerates the
   /// cached outlines with the run-aware layout, as one undoable edit.
   /// Pass [mergeKey] to coalesce a scrub into a single undo entry.
-  Future<void> applyCharAttrs(CharAttrs patch, {String? mergeKey}) async {
+  ///
+  /// Synchronous when the font is already cached (it always is while a
+  /// text object is on screen) so that a stepper/scrub burst updates the
+  /// document — and the panel's field value — between clicks instead of
+  /// racing an async round-trip. Only the first use of an uncached family
+  /// defers: it loads, then re-applies.
+  void applyCharAttrs(CharAttrs patch, {String? mergeKey}) {
     final target = characterTarget;
     final range = characterRange;
     if (target == null || range == null) return;
-    final font = await FontLibrary.instance.load(target.fontFamily);
-    final updated = target.withRangeAttrs(range.start, range.end, patch);
+
+    // Font family is object-level (layout resolves one font per object),
+    // so a family change updates the base and lays out with the new font.
+    final family = patch.fontFamily ?? target.fontFamily;
+    final font = FontLibrary.instance.cached(family);
+    if (font == null) {
+      FontLibrary.instance
+          .load(family)
+          .then((_) => applyCharAttrs(patch, mergeKey: mergeKey));
+      return;
+    }
+
+    final base =
+        patch.fontFamily != null ? target.withFontFamily(family) : target;
+    final updated = base.withRangeAttrs(range.start, range.end, patch);
     final outlines = layoutText(
       updated.text,
       font,
