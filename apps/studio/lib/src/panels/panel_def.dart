@@ -66,6 +66,7 @@ final panelRegistry = <PanelDef>[
       selectedRefs: model.selection.selectedRefs,
       primarySelection: model.primarySelection,
       onCommand: model.execute,
+      onConvertText: model.convertTextToStitches,
       framed: false,
     ),
   ),

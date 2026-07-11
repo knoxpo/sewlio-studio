@@ -2,20 +2,22 @@ import 'dart:math' as math;
 
 import 'package:studio_geometry/studio_geometry.dart';
 
+import 'fill.dart';
 import 'objects.dart';
+import 'satin.dart';
 import 'stitch_ir.dart';
 
-/// Generates stitch ops for one object. Dispatches on object type;
-/// satin/fill throw [UnimplementedError] until their sprint.
+/// Generates stitch ops for one object. Dispatches on object type
+/// (ADR-042: satin and fill generators are implemented).
 List<StitchOp> generateStitches(EmbroideryObject object) => switch (object) {
       RunningStitchObject(:final path, :final stitchLength) =>
         generateRunningStitch(path, stitchLength: stitchLength),
       TextObject(:final outlines, :final stitchLength) =>
         _outlineRuns(outlines, stitchLength),
-      SatinObject() =>
-        throw UnimplementedError('Satin generator lands post-MVP-S4'),
-      FillObject() =>
-        throw UnimplementedError('Fill generator lands post-MVP-S4'),
+      SatinObject(:final path, :final width) =>
+        generateSatin(path, width: width),
+      FillObject(:final path, :final holes, :final spacing) =>
+        generateFill([path, ...holes], spacing: spacing),
     };
 
 /// Running stitch over each contour, joined by trim + jump — text

@@ -148,18 +148,29 @@ void main() {
           throwsArgumentError);
     });
 
-    test('dispatch: running works, satin/fill are skeletons', () {
-      const path =
+    test('dispatch: running, satin, and fill all generate (ADR-042)', () {
+      const line =
           Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]);
+      const square = Path(
+          start: Point(0, 0),
+          segments: [
+            LineSegment(Point(6, 0)),
+            LineSegment(Point(6, 6)),
+            LineSegment(Point(0, 6)),
+          ],
+          closed: true);
       expect(
-        generateStitches(const RunningStitchObject(id: Id('o1'), path: path)),
+        generateStitches(const RunningStitchObject(id: Id('o1'), path: line)),
         isNotEmpty,
       );
       expect(
-          () => generateStitches(const SatinObject(id: Id('o2'), path: path)),
-          throwsUnimplementedError);
-      expect(() => generateStitches(const FillObject(id: Id('o3'), path: path)),
-          throwsUnimplementedError);
+        generateStitches(const SatinObject(id: Id('o2'), path: line)),
+        isNotEmpty,
+      );
+      expect(
+        generateStitches(const FillObject(id: Id('o3'), path: square)),
+        isNotEmpty,
+      );
     });
   });
 

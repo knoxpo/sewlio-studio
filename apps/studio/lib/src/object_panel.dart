@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:studio_commands/studio_commands.dart';
+import 'package:studio_core/studio_core.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart' as g;
+
+import 'workspace_view_model.dart' show StitchTarget;
 
 /// Properties panel: object transform fields for a single object
 /// selection, or basic hierarchy controls for layers/groups.
@@ -14,6 +17,7 @@ class ObjectPropertiesPanel extends StatelessWidget {
     required this.selectedRefs,
     required this.primarySelection,
     required this.onCommand,
+    this.onConvertText,
     this.framed = true,
   });
 
@@ -21,6 +25,10 @@ class ObjectPropertiesPanel extends StatelessWidget {
   final List<DocumentNodeRef> selectedRefs;
   final DocumentNodeRef? primarySelection;
   final void Function(Command command) onCommand;
+
+  /// Converts the text object with the given id into stitch objects
+  /// (ADR-042). Null hides the convert control.
+  final void Function(Id id, StitchTarget target)? onConvertText;
   final bool framed;
 
   @override
@@ -58,6 +66,7 @@ class ObjectPropertiesPanel extends StatelessWidget {
       DocumentNodeKind.object => _ObjectProperties(
           object: document.objectById(ref.id)!,
           onCommand: onCommand,
+          onConvertText: onConvertText,
         ),
       DocumentNodeKind.group => _HierarchyProperties(
           name: document.groupById(ref.id)!.name,
@@ -125,10 +134,12 @@ class _HierarchyProperties extends StatelessWidget {
 }
 
 class _ObjectProperties extends StatelessWidget {
-  const _ObjectProperties({required this.object, required this.onCommand});
+  const _ObjectProperties(
+      {required this.object, required this.onCommand, this.onConvertText});
 
   final EmbroideryObject object;
   final void Function(Command command) onCommand;
+  final void Function(Id id, StitchTarget target)? onConvertText;
 
   @override
   Widget build(BuildContext context) {
@@ -176,10 +187,31 @@ class _ObjectProperties extends StatelessWidget {
         const SizedBox(height: 8),
         Text(switch (object) {
           RunningStitchObject() => 'Type: running stitch',
-          SatinObject() => 'Type: satin (generator pending)',
-          FillObject() => 'Type: fill (generator pending)',
+          SatinObject() => 'Type: satin',
+          FillObject() => 'Type: fill',
           TextObject(:final text) => 'Type: text — "$text"',
         }),
+        if (object is TextObject && onConvertText != null) ...[
+          const SizedBox(height: 8),
+          Text('Convert to stitches',
+              style: TextStyle(fontSize: 11, color: AppTokens.textMuted)),
+          const SizedBox(height: 4),
+          Row(children: [
+            for (final (target, label) in const [
+              (StitchTarget.running, 'Running'),
+              (StitchTarget.satin, 'Satin'),
+              (StitchTarget.fill, 'Fill'),
+            ]) ...[
+              StudioButton(
+                key: Key('convert-${target.name}'),
+                label: label,
+                variant: StudioButtonVariant.secondary,
+                onPressed: () => onConvertText!(object.id, target),
+              ),
+              const SizedBox(width: 6),
+            ],
+          ]),
+        ],
         if (object case RunningStitchObject(:final stitchLength)) ...[
           const SizedBox(height: 8),
           _mmField(

@@ -365,8 +365,17 @@ final class TextTool extends Tool {
     _caret = object.text.runes.length;
     _selectionAnchor = _caret;
     _editingId = object.id;
+    _stroke = object.stroke;
     notifyListeners();
   }
+
+  // New text renders as solid glyphs by default (ADR-042): a fill plus a
+  // matching outline. A single-stroke font (Monoline) has no interior, so
+  // the fill branch is a no-op there — it stays an outline skeleton.
+  // ponytail: one object color; per-run fill colors are a future add.
+  static const _defaultTextStroke =
+      StrokeProps(fillHex: '#111111', colorHex: '#111111');
+  StrokeProps _stroke = _defaultTextStroke;
 
   /// Commits the buffer as one editable TextObject with cached glyph
   /// outlines, and leaves editing mode.
@@ -376,6 +385,7 @@ final class TextTool extends Tool {
       final object = TextObject(
         id: _editingId ?? nextId(),
         path: Path(start: anchor),
+        stroke: _editingId == null ? _defaultTextStroke : _stroke,
         text: _text,
         fontFamily: font.family,
         sizeMm: sizeMm,

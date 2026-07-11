@@ -526,6 +526,11 @@ class _DesignPainter extends CustomPainter {
           continue;
         }
       }
+      // Build one screen path per contour; fill all closed contours as a
+      // single even-odd path so holes (glyph counters 'O'/'e', fill holes)
+      // stay empty, then stroke each contour on top.
+      final screenPaths = <Path>[];
+      final fillPath = Path()..fillType = PathFillType.evenOdd;
       for (final contour in object.renderPaths) {
         final points = contour.toPolyline();
         if (points.isEmpty) continue;
@@ -537,15 +542,21 @@ class _DesignPainter extends CustomPainter {
           path.lineTo(o.dx, o.dy);
         }
         if (contour.closed) path.close();
+        screenPaths.add(path);
         if (contour.closed && props.fillHex != null) {
-          canvas.drawPath(
-            path,
-            Paint()
-              ..style = PaintingStyle.fill
-              ..color = Color(0xFF000000 |
-                  int.parse(props.fillHex!.substring(1), radix: 16)),
-          );
+          fillPath.addPath(path, Offset.zero);
         }
+      }
+      if (props.fillHex != null) {
+        canvas.drawPath(
+          fillPath,
+          Paint()
+            ..style = PaintingStyle.fill
+            ..color = Color(
+                0xFF000000 | int.parse(props.fillHex!.substring(1), radix: 16)),
+        );
+      }
+      for (final path in screenPaths) {
         canvas.drawPath(path, stroke);
       }
 

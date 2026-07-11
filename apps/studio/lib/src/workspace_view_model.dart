@@ -54,6 +54,9 @@ final class ExportResult {
 /// hardcoded here (ARCH-038).
 enum WorkspaceMode { design, domain, simulation }
 
+/// Stitch type a text object converts to (ADR-042).
+enum StitchTarget { running, satin, fill }
+
 /// A floating palette's placement: docked on a canvas-edge hotspot, or
 /// free at an absolute canvas offset.
 final class PalettePlacement {
@@ -801,6 +804,56 @@ final class WorkspaceViewModel extends BarleyViewModel {
     final target = characterTarget;
     if (target == null) return null;
     return FontLibrary.instance.cached(target.fontFamily);
+  }
+
+  /// Converts the text object [id] into editable stitch objects grouped
+  /// in place (ADR-042): one running/satin object per glyph contour, or a
+  /// single even-odd fill object. Replaces the text as ONE undo step
+  /// (history transaction) and selects the new group.
+  void convertTextToStitches(Id id, StitchTarget target) {
+    final obj = session.document.objectById(id);
+    if (obj is! TextObject || obj.outlines.isEmpty) return;
+
+    final ref = DocumentNodeRef(DocumentNodeKind.object, id);
+    final parentRef = session.document.parentOf(ref);
+    final parent = parentRef == null
+        ? HierarchyParentRef(
+            DocumentNodeKind.layer, session.document.defaultLayer.id)
+        : HierarchyParentRef(parentRef.kind, parentRef.id);
+    final index = session.document.indexOfChild(parent, ref);
+
+    // Fill = one even-odd object over all contours; running/satin = one
+    // object per glyph contour.
+    final children = <EmbroideryObject>[];
+    if (target == StitchTarget.fill) {
+      children.add(FillObject(
+        id: nextId(),
+        path: obj.outlines.first,
+        holes: obj.outlines.skip(1).toList(),
+        stroke: obj.stroke,
+      ));
+    } else {
+      for (final contour in obj.outlines) {
+        children.add(target == StitchTarget.satin
+            ? SatinObject(id: nextId(), path: contour, stroke: obj.stroke)
+            : RunningStitchObject(
+                id: nextId(), path: contour, stroke: obj.stroke));
+      }
+    }
+
+    final group = GroupNode(
+      id: nextId(),
+      name: obj.text.trim().isEmpty ? 'Text' : obj.text.trim(),
+    );
+    session.history.beginTransaction();
+    execute(RemoveObject(id));
+    execute(AddGroup(group, parent: parent, index: index < 0 ? null : index));
+    final groupParent = HierarchyParentRef(DocumentNodeKind.group, group.id);
+    for (final child in children) {
+      execute(AddObject(child, parent: groupParent));
+    }
+    session.history.endTransaction();
+    selection.replaceWith(DocumentNodeRef(DocumentNodeKind.group, group.id));
   }
 
   /// Next free object id. Opened documents restore their stored ids

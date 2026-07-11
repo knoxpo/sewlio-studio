@@ -21,13 +21,15 @@ void main() {
     expect(seq.threads, hasLength(1));
   });
 
-  test('skips generator-less objects and reports them', () {
+  test('satin and fill now digitize (ADR-042), joined with trim + jump', () {
     final skipped = <EmbroideryObject>[];
     final seq = digitizeObjects(const [
       RunningStitchObject(id: Id('a'), path: lineA),
       SatinObject(id: Id('s'), path: lineB),
     ], skipped: skipped);
-    expect(skipped.map((o) => o.id), [const Id('s')]);
-    expect(seq.ops.map((op) => op.kind), isNot(contains(StitchKind.trim)));
+    // Both objects have generators now — nothing is skipped, and they are
+    // joined with a trim + jump.
+    expect(skipped, isEmpty);
+    expect(seq.ops.map((op) => op.kind), contains(StitchKind.trim));
   });
 }

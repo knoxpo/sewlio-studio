@@ -42,6 +42,9 @@ void main() {
     // H = 3 strokes, I = 3 strokes of cached outline geometry.
     expect(object.renderPaths, hasLength(6));
     expect(object.anchor, const Point(10, 20));
+    // New text defaults to a fill so a real (closed-contour) font renders
+    // as solid glyphs (ADR-042).
+    expect(object.stroke.fillHex, isNotNull);
   });
 
   test('backspace edits the buffer; empty commit creates nothing', () {

@@ -144,7 +144,11 @@ sealed class EmbroideryObject {
               if (widthProfile != null) 'widthProfile': widthProfile,
             },
           SatinObject(:final width) => {'width': width},
-          FillObject(:final spacing) => {'spacing': spacing},
+          FillObject(:final spacing, :final holes) => {
+              'spacing': spacing,
+              if (holes.isNotEmpty)
+                'holes': [for (final h in holes) h.toJson()],
+            },
           TextObject(
             :final text,
             :final fontFamily,
@@ -197,11 +201,15 @@ sealed class EmbroideryObject {
           name: name,
           width: (json['width'] as num).toDouble()),
       'fill' => FillObject(
-          id: id,
-          path: path,
-          stroke: stroke,
-          name: name,
-          spacing: (json['spacing'] as num).toDouble()),
+            id: id,
+            path: path,
+            stroke: stroke,
+            name: name,
+            spacing: (json['spacing'] as num).toDouble(),
+            holes: [
+              for (final h in (json['holes'] as List? ?? const []))
+                Path.fromJson(h as Map<String, dynamic>)
+            ]),
       'text' => TextObject(
           id: id,
           path: path,
@@ -291,14 +299,50 @@ final class FillObject extends EmbroideryObject {
       required super.path,
       super.stroke,
       super.name,
-      this.spacing = 0.4});
+      this.spacing = 0.4,
+      this.holes = const []});
 
   /// Fill line spacing in mm.
   final double spacing;
 
+  /// Inner boundary contours (ADR-042): the fill uses the even-odd rule
+  /// over `[path, ...holes]`, so counters ('O', 'e') stay unstitched.
+  final List<Path> holes;
+
   @override
-  FillObject withPath(Path path) => FillObject(
-      id: id, path: path, stroke: stroke, name: name, spacing: spacing);
+  List<Path> get renderPaths => [path, ...holes];
+
+  @override
+  Bounds bounds() {
+    var b = path.bounds();
+    for (final h in holes) {
+      b = b.union(h.bounds());
+    }
+    return b;
+  }
+
+  @override
+  FillObject withPath(Path path) {
+    // Transforms of a fill translate/scale its boundary; holes move with
+    // it. A pure path swap (node edit) keeps the same holes.
+    return FillObject(
+        id: id,
+        path: path,
+        stroke: stroke,
+        name: name,
+        spacing: spacing,
+        holes: holes);
+  }
+
+  @override
+  FillObject transformedBy(Transform2 t) => FillObject(
+        id: id,
+        path: path.transformed(t),
+        stroke: stroke,
+        name: name,
+        spacing: spacing,
+        holes: [for (final h in holes) h.transformed(t)],
+      );
 }
 
 /// A single editable text element (ADR-028): the design intent (string,
