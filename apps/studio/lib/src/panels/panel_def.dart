@@ -4,8 +4,10 @@ import '../object_panel.dart';
 import '../workspace/icon_registry.dart';
 import '../workspace/project_type_registry.dart';
 import '../workspace_view_model.dart';
+import '../shell.dart';
 import 'layers_panel.dart';
 import 'placeholder_panel.dart';
+import 'preview_panels.dart';
 import 'stitches_panel.dart';
 
 /// A dockable panel: stable identity, chrome metadata, and a builder
@@ -77,6 +79,23 @@ final panelRegistry = <PanelDef>[
       onCommand: model.execute,
       framed: false,
     ),
+  ),
+  PanelDef(
+    id: 'hoop',
+    title: 'Hoop',
+    icon: iconFor('panel-machine-hoop'),
+    minHeight: 200,
+    builder: (context, model) => HoopPanelContent(
+      hoop: model.hoop,
+      onEdit: () => showDocumentSetup(context, model),
+    ),
+  ),
+  PanelDef(
+    id: 'stitch-simulation',
+    title: 'Stitch Simulation',
+    icon: iconFor('sim-play'),
+    minHeight: 220,
+    builder: (context, model) => SimulationSection(sequence: model.sequence),
   ),
   // Design-view placeholder panels — universal (not embroidery-specific),
   // filled in as each feature lands. 'stitches'/'layers' above are the

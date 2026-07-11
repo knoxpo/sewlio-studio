@@ -16,9 +16,11 @@ void main() {
       (tester) async {
     await pumpDomainMode(tester);
 
-    // Shared canvas stays live (editing view, not a preview).
+    // Shared canvas stays live (editing view, not a preview), framed by
+    // the same mm rulers as the design view.
     expect(find.byType(CanvasView), findsOneWidget);
     expect(find.text('Stitch View'), findsOneWidget);
+    expect(find.text('mm'), findsOneWidget);
 
     // Module toolbox: live select + dimmed placeholders.
     expect(find.byKey(const Key('tool-Select Stitch Object')), findsOneWidget);

@@ -9,7 +9,7 @@ import 'package:studio_geometry/studio_geometry.dart' as g;
 
 import 'app_shell.dart';
 import 'app_view_model.dart';
-import 'bottom_panel.dart';
+import 'panels/preview_panels.dart';
 import 'dock/dock_host.dart';
 import 'form_factor.dart';
 import 'menu/app_menus.dart';
@@ -41,7 +41,6 @@ class EditorWorkspace extends StatelessWidget {
   Widget build(BuildContext context) {
     // Reassigned every build so the closure captures the live context.
     model.onOpenHoopSetup = () => showDocumentSetup(context, model);
-    final sequence = model.sequence;
     if (model.mode == WorkspaceMode.domain) return _domainWorkspace(context);
     if (model.mode == WorkspaceMode.simulation) {
       return _simulationWorkspace(context);
@@ -56,12 +55,6 @@ class EditorWorkspace extends StatelessWidget {
                 return _workspaceBody(
                     context, formFactorFor(constraints.maxWidth));
               }),
-            ),
-            BottomPanel(
-              sequence: sequence,
-              hoop: model.hoop,
-              onEditHoop: () => showDocumentSetup(context, model),
-              onExport: (suffix) => exportWithPicker(context, model, suffix),
             ),
             _statusBar(),
           ],
@@ -181,15 +174,18 @@ class EditorWorkspace extends StatelessWidget {
                   _domainToolbar(module),
                   Expanded(
                     child: Builder(
-                      builder: (context) => Stack(children: [
-                        _buildCanvas(),
-                        // Contributed overlays: presentation-only layers
-                        // above the shared canvas (ARCH-038).
-                        for (final overlay
-                            in model.activeOverlays(WorkspaceMode.domain))
-                          Positioned.fill(
-                              child: overlay.builder(context, model)),
-                      ]),
+                      builder: (context) => _rulerFrame(
+                        context,
+                        Stack(children: [
+                          _buildCanvas(),
+                          // Contributed overlays: presentation-only layers
+                          // above the shared canvas (ARCH-038).
+                          for (final overlay
+                              in model.activeOverlays(WorkspaceMode.domain))
+                            Positioned.fill(
+                                child: overlay.builder(context, model)),
+                        ]),
+                      ),
                     ),
                   ),
                 ]),

@@ -24,8 +24,9 @@ void main() {
     expect(find.text('Properties'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
-    expect(find.text('STITCH SIMULATION'), findsOneWidget);
-    expect(find.text('HOOP'), findsOneWidget);
+    // Hoop + Stitch Simulation moved from the bottom strip into the dock.
+    expect(find.byKey(const Key('dock-tab-hoop')), findsOneWidget);
+    expect(find.byKey(const Key('dock-tab-stitch-simulation')), findsOneWidget);
     expect(find.textContaining('Select:'), findsOneWidget); // status bar
   });
 
