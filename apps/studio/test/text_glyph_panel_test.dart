@@ -34,6 +34,10 @@ void main() {
     final id = session.document.objects.keys.single;
     final revision = session.document.revision;
 
+    // Stitch Objects panel lives in the Stitch view.
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
+
     // Expand the text row into per-glyph entries.
     await tester.tap(find.byKey(Key('glyphs-expand-${id.value}')));
     await tester.pumpAndSettle();

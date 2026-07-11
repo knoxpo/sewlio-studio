@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../panels/panel_def.dart';
 import '../panels/placeholder_panel.dart';
+import '../panels/stitches_panel.dart';
 import '../toolbox.dart';
 import '../workspace_view_model.dart';
 import 'domain_module.dart';
@@ -142,8 +143,19 @@ final _quickActions = <QuickActionDef>[
 /// Production panels (Production/Sequence structure) — deliberately
 /// separate from the design-side Artwork/Layers panels.
 final _stitchPanels = [
-  placeholderPanel(
-      'stitch-objects', 'Stitch Objects', iconFor('panel-stitch-objects')),
+  PanelDef(
+    id: 'stitch-objects',
+    title: 'Stitch Objects',
+    icon: iconFor('panel-stitch-objects'),
+    builder: (context, model) => StitchesPanelContent(
+      document: model.session.document,
+      selectedRefs: model.selection.selectedRefs,
+      onSelect: model.selectRef,
+      onMoveNode: model.moveNode,
+      stitchHighlight: model.stitchHighlight,
+      onHighlightGlyph: model.setStitchHighlight,
+    ),
+  ),
   placeholderPanel('sequence-color-film', 'Sequence / Color Film',
       iconFor('panel-sequence')),
   placeholderPanel('stitch-properties', 'Stitch Properties',

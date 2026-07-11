@@ -8,7 +8,6 @@ import '../shell.dart';
 import 'layers_panel.dart';
 import 'placeholder_panel.dart';
 import 'preview_panels.dart';
-import 'stitches_panel.dart';
 
 /// A dockable panel: stable identity, chrome metadata, and a builder
 /// that wires the panel's content to the active document's view model.
@@ -35,21 +34,10 @@ final class PanelDef {
 
 /// All built-in panels, in default dock order. Adding a panel here is
 /// the whole registration story — the dock renders whatever is listed.
+/// Design panels are vector/document surfaces only (Illustrator-like);
+/// stitch structures live in the domain module's panels.
 // ponytail: plugin panels later just append to this list at startup.
 final panelRegistry = <PanelDef>[
-  PanelDef(
-    id: 'stitches',
-    title: 'Stitches',
-    icon: Icons.format_list_numbered,
-    builder: (context, model) => StitchesPanelContent(
-      document: model.session.document,
-      selectedRefs: model.selection.selectedRefs,
-      onSelect: model.selectRef,
-      onMoveNode: model.moveNode,
-      stitchHighlight: model.stitchHighlight,
-      onHighlightGlyph: model.setStitchHighlight,
-    ),
-  ),
   PanelDef(
     id: 'layers',
     title: 'Layers',

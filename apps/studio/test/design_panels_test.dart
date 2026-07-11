@@ -12,9 +12,9 @@ void main() {
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(StudioApp(session: StudioSession()));
 
-    // No bottom strip anymore.
+    // No bottom strip anymore; thread bar moved to the Stitch view.
     expect(find.byType(SimulationSection), findsNothing);
-    expect(find.text('Colorway 1'), findsOneWidget); // thread bar stays
+    expect(find.text('Colorway 1'), findsNothing);
 
     // Hoop panel: docked, opens Document Setup.
     await tester.ensureVisible(find.byKey(const Key('dock-tab-hoop')));

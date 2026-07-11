@@ -123,11 +123,17 @@ void main() {
     ));
     await tester.pumpWidget(StudioApp(session: session));
 
-    // Select the nested object from the Stitches panel (Layers closed).
+    // Select the nested object from the Stitch view's Stitch Objects
+    // panel (Layers closed) — selection is shared across modes.
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Running Stitch').first);
     await tester.pump();
 
-    // Opening Layers reveals the selection: ancestors auto-expanded.
+    // Back in design, opening Layers reveals the selection: ancestors
+    // auto-expanded.
+    await tester.tap(find.byKey(const Key('mode-design')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('dock-tab-layers')));
     await tester.pump();
     expect(find.text('Group 1'), findsOneWidget);
@@ -233,7 +239,9 @@ void main() {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(StudioApp(session: session));
-    // Stitches tab is active by default; two running-stitch rows.
+    // Stitch Objects panel lives in the Stitch view (default active tab).
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     expect(find.text('Running Stitch'), findsNWidgets(2));
     List<Id> order() => [
           for (final o in session.document.flattenVisibleObjects()) o.id,

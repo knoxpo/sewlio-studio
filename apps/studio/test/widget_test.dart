@@ -19,7 +19,8 @@ void main() {
 
     expect(find.text('File'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Stitches'), findsWidgets); // tab + list header
+    // Design dock is vector-only: no Stitches panel (Illustrator-like).
+    expect(find.byKey(const Key('dock-tab-stitches')), findsNothing);
     expect(find.text('Layers'), findsOneWidget);
     expect(find.text('Properties'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
@@ -54,8 +55,12 @@ void main() {
 
     expect(session.document.objects, hasLength(1));
     expect(find.text('Untitled.swl*'), findsOneWidget);
-    // Stitch list shows the object with a real count.
+    // The Stitch view's object list shows the new object.
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     expect(find.text('Running Stitch'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('mode-design')));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -83,8 +88,13 @@ void main() {
     await tester.tapAt(canvas + const Offset(80, 60));
     await tester.pump(const Duration(milliseconds: 400));
 
+    // Select the object from the Stitch view's list (selection shared).
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Running Stitch'));
     await tester.pump();
+    await tester.tap(find.byKey(const Key('mode-design')));
+    await tester.pumpAndSettle();
     // The tab bar scrolls horizontally — the Properties tab may sit
     // past the dock edge under touch-sized chrome.
     await tester.ensureVisible(find.byKey(const Key('dock-tab-properties')));
@@ -144,10 +154,9 @@ void main() {
     await tester.tap(find.byType(StudioSwitch).first);
     await tester.pump();
 
-    await tester.ensureVisible(find.byKey(const Key('dock-tab-stitches')));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('dock-tab-stitches')));
-    await tester.pump();
+    // Hidden group's objects drop from the Stitch view's object list.
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     expect(find.text('Running Stitch'), findsNothing);
   });
 

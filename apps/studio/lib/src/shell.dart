@@ -188,6 +188,7 @@ class EditorWorkspace extends StatelessWidget {
                       ),
                     ),
                   ),
+                  _threadBar(),
                 ]),
               ),
               DockHost(
@@ -201,8 +202,9 @@ class EditorWorkspace extends StatelessWidget {
     );
   }
 
-  /// Mode-aware top toolbar: domain label + the module's quick actions
-  /// (disabled placeholders until their commands exist).
+  /// Mode-aware top toolbar: domain label, the module's quick actions
+  /// (disabled placeholders until their commands exist), stitch view
+  /// toggles, overlays, and the same zoom controls as the design view.
   Widget _domainToolbar(DomainUiModule module) {
     return Container(
       height: 32,
@@ -217,6 +219,28 @@ class EditorWorkspace extends StatelessWidget {
         Text('${module.domainLabel} View',
             style: const TextStyle(color: AppTokens.primary, fontSize: 11)),
         const SizedBox(width: 16),
+        // View toggles: visualization only, never document state.
+        _ViewToggleGroup(segments: [
+          (
+            Icons.gesture,
+            'Show stitches (S)',
+            model.showStitches,
+            model.toggleShowStitches,
+          ),
+          (
+            Icons.polyline_outlined,
+            'Show outlines (O)',
+            model.showOutlines,
+            model.toggleShowOutlines,
+          ),
+          (
+            Icons.grain,
+            'Show needle holes (N)',
+            model.showNeedleHoles,
+            model.toggleShowNeedleHoles,
+          ),
+        ]),
+        const SizedBox(width: 8),
         Expanded(
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -236,7 +260,55 @@ class EditorWorkspace extends StatelessWidget {
             icon: Icons.fit_screen_outlined,
             tooltip: 'Fit to canvas',
             onPressed: model.fitCanvas),
+        StudioIconButton(
+            icon: Icons.zoom_out,
+            tooltip: 'Zoom out',
+            onPressed: () => model.zoomBy(0.8)),
+        _zoomControl(),
+        StudioIconButton(
+            icon: Icons.zoom_in,
+            tooltip: 'Zoom in',
+            onPressed: () => model.zoomBy(1.25)),
       ]),
+    );
+  }
+
+  /// Thread palette strip (stitch-derived — Stitch view only).
+  Widget _threadBar() {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppTokens.panel,
+        border: Border(top: BorderSide(color: AppTokens.border)),
+      ),
+      child: Row(
+        children: [
+          Text('Colorway 1',
+              style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+          const SizedBox(width: 12),
+          for (final (index, thread) in model.sequence.threads.indexed)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Container(
+                width: 20,
+                height: 20,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Color(0xFF000000 |
+                      int.parse(thread.color.substring(1), radix: 16)),
+                  borderRadius: BorderRadius.circular(2),
+                  border: Border.all(color: AppTokens.border),
+                ),
+                child: Text('${index + 1}',
+                    style: const TextStyle(
+                        fontSize: 9,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -474,30 +546,6 @@ class EditorWorkspace extends StatelessWidget {
               const SizedBox(width: 4),
               const Text('Design View',
                   style: TextStyle(color: AppTokens.primary, fontSize: 11)),
-              const SizedBox(width: 16),
-              // View toggles: visualization only, never document state.
-              // Grouped pill, same design language as the header's
-              // workspace switcher (multi-select: each segment toggles).
-              _ViewToggleGroup(segments: [
-                (
-                  Icons.gesture,
-                  'Show stitches (S)',
-                  model.showStitches,
-                  model.toggleShowStitches,
-                ),
-                (
-                  Icons.polyline_outlined,
-                  'Show outlines (O)',
-                  model.showOutlines,
-                  model.toggleShowOutlines,
-                ),
-                (
-                  Icons.grain,
-                  'Show needle holes (N)',
-                  model.showNeedleHoles,
-                  model.toggleShowNeedleHoles,
-                ),
-              ]),
               const Spacer(),
               StudioIconButton(
                   icon: Icons.fit_screen_outlined,
@@ -537,42 +585,6 @@ class EditorWorkspace extends StatelessWidget {
             ]),
           ),
         ),
-        // Thread palette bar
-        Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppTokens.panel,
-            border: Border(top: BorderSide(color: AppTokens.border)),
-          ),
-          child: Row(
-            children: [
-              Text('Colorway 1',
-                  style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
-              const SizedBox(width: 12),
-              for (final (index, thread) in model.sequence.threads.indexed)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF000000 |
-                          int.parse(thread.color.substring(1), radix: 16)),
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: AppTokens.border),
-                    ),
-                    child: Text('${index + 1}',
-                        style: const TextStyle(
-                            fontSize: 9,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -608,10 +620,15 @@ class EditorWorkspace extends StatelessWidget {
       previewPaths: model.tool.preview,
       previewWidths: model.previewWidths,
       markers: model.canvasMarkers,
-      stitches: model.showStitches ? model.sequence : null,
+      // Design view is pure vector (Illustrator-like): stitch rendering
+      // and its toggles live in the domain (Stitch) view only.
+      stitches: model.mode == WorkspaceMode.domain && model.showStitches
+          ? model.sequence
+          : null,
       highlightStitches: model.highlightedStitchOps,
-      showOutlines: model.showOutlines,
-      showNeedleHoles: model.showNeedleHoles,
+      showOutlines: model.mode == WorkspaceMode.design || model.showOutlines,
+      showNeedleHoles:
+          model.mode == WorkspaceMode.domain && model.showNeedleHoles,
       cursor: cursor,
       paintedCursor: penBadge,
       paintedCursorWorld: penWorld,
@@ -1148,9 +1165,9 @@ Future<void> showShortcutsDialog(BuildContext context) {
     ('T', 'Text'),
     ('H', 'Pan'),
     ('R', 'Measure'),
-    ('S', 'Toggle stitch preview'),
-    ('O', 'Toggle outlines'),
-    ('N', 'Toggle needle holes'),
+    ('S', 'Toggle stitches (Stitch view)'),
+    ('O', 'Toggle outlines (Stitch view)'),
+    ('N', 'Toggle needle holes (Stitch view)'),
     ('Esc', 'Cancel current tool action'),
     ('⌘N', 'New project'),
     ('⌘O', 'Open project'),

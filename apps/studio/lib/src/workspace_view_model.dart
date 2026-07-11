@@ -868,18 +868,20 @@ final class WorkspaceViewModel extends BarleyViewModel {
       deleteSelection();
       return KeyEventResult.handled;
     }
-    // View toggles (canvas toolbar).
-    if (event.logicalKey == LogicalKeyboardKey.keyS) {
-      toggleShowStitches();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.keyO) {
-      toggleShowOutlines();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.keyN) {
-      toggleShowNeedleHoles();
-      return KeyEventResult.handled;
+    // View toggles (Stitch-view toolbar only — design is pure vector).
+    if (mode == WorkspaceMode.domain) {
+      if (event.logicalKey == LogicalKeyboardKey.keyS) {
+        toggleShowStitches();
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.keyO) {
+        toggleShowOutlines();
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.keyN) {
+        toggleShowNeedleHoles();
+        return KeyEventResult.handled;
+      }
     }
     final group = _shortcuts[event.logicalKey];
     if (group == null) return KeyEventResult.ignored;
