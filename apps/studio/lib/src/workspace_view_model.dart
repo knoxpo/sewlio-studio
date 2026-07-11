@@ -21,6 +21,7 @@ import 'file_io.dart';
 import 'font_library.dart';
 import 'stroke_style.dart';
 import 'tools/tool_contributions.dart';
+import 'workspace/cursor_registry.dart';
 import 'workspace/project_type.dart';
 
 enum ToolKind {
@@ -925,39 +926,6 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// notifier so hover moves don't trigger full workspace rebuilds.
   final canvasCursor = ValueNotifier<MouseCursor>(SystemMouseCursors.basic);
 
-  static const _cursorMap = <ToolCursor, MouseCursor>{
-    ToolCursor.basic: SystemMouseCursors.basic,
-    ToolCursor.crosshair: SystemMouseCursors.precise,
-    ToolCursor.text: SystemMouseCursors.text,
-    ToolCursor.move: SystemMouseCursors.move,
-    ToolCursor.grab: SystemMouseCursors.grab,
-    ToolCursor.grabbing: SystemMouseCursors.grabbing,
-    ToolCursor.zoomIn: SystemMouseCursors.zoomIn,
-    ToolCursor.zoomOut: SystemMouseCursors.zoomOut,
-    ToolCursor.resizeNS: SystemMouseCursors.resizeUpDown,
-    ToolCursor.resizeEW: SystemMouseCursors.resizeLeftRight,
-    // Painted by the canvas (system cursor hidden): pen family, plus
-    // rotation and diagonal resize — macOS ships no public cursors for
-    // those, so native mapping renders a plain arrow there.
-    ToolCursor.rotate: SystemMouseCursors.none,
-    ToolCursor.resizeNWSE: SystemMouseCursors.none,
-    ToolCursor.resizeNESW: SystemMouseCursors.none,
-    ToolCursor.pen: SystemMouseCursors.none,
-    ToolCursor.penAdd: SystemMouseCursors.none,
-    ToolCursor.penMinus: SystemMouseCursors.none,
-    ToolCursor.penClose: SystemMouseCursors.none,
-  };
-
-  static const _paintedCursors = <ToolCursor, PaintedCursor>{
-    ToolCursor.pen: PaintedCursor.penStart,
-    ToolCursor.penAdd: PaintedCursor.penAdd,
-    ToolCursor.penMinus: PaintedCursor.penRemove,
-    ToolCursor.penClose: PaintedCursor.penClose,
-    ToolCursor.rotate: PaintedCursor.rotate,
-    ToolCursor.resizeNWSE: PaintedCursor.resizeNWSE,
-    ToolCursor.resizeNESW: PaintedCursor.resizeNESW,
-  };
-
   /// Painted pen-cursor badge (null unless the pen family is active).
   final paintedCursor = ValueNotifier<PaintedCursor?>(null);
 
@@ -993,9 +961,11 @@ final class WorkspaceViewModel extends BarleyViewModel {
       paintedCursor.value = null;
       return;
     }
-    final kind = tool.cursorAt(world);
-    canvasCursor.value = _cursorMap[kind]!;
-    paintedCursor.value = _paintedCursors[kind];
+    final spec = cursorRegistry.resolve(
+        toolContributionFor(activeKind)?.id ?? 'core.select',
+        tool.cursorAt(world));
+    canvasCursor.value = spec.native;
+    paintedCursor.value = spec.painted;
   }
 
   void hover(g.Point world) {
