@@ -21,6 +21,7 @@ import 'file_io.dart';
 import 'font_library.dart';
 import 'stroke_style.dart';
 import 'tools/tool_contributions.dart';
+import 'workspace/project_type.dart';
 
 enum ToolKind {
   select,
@@ -43,8 +44,11 @@ final class ExportResult {
   final int skipped;
 }
 
-/// Primary editor workspaces, switched from the app header.
-enum WorkspaceMode { design, stitchPreview, simulation }
+/// Primary editor workspaces, switched from the app header. `domain` is
+/// the production-authoring view — its label and contents resolve from
+/// the project type (embroidery → Stitch, weaving → Weaving), never
+/// hardcoded here (ARCH-038).
+enum WorkspaceMode { design, domain, simulation }
 
 /// A floating palette's placement: docked on a canvas-edge hotspot, or
 /// free at an absolute canvas offset.
@@ -60,11 +64,18 @@ final class PalettePlacement {
 /// model and forwards gestures/dialog results; every document mutation
 /// still flows through commands (ARCH-003).
 final class WorkspaceViewModel extends BarleyViewModel {
-  WorkspaceViewModel({required StudioSession session}) {
+  WorkspaceViewModel({
+    required StudioSession session,
+    this.projectType = ProjectType.embroidery,
+  }) {
     _bind(session);
   }
 
   late StudioSession session;
+
+  /// Persistent production type (ARCH-034) — resolves the domain-mode
+  /// contributions. Set at project creation, never a toolbar switch.
+  final ProjectType projectType;
   final viewport = ViewportController();
   final selection = SelectionController();
   final cursor = ValueNotifier<g.Point?>(null);

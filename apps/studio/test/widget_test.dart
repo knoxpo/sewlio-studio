@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
+import 'package:studio/src/object_panel.dart';
 import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_core/studio_core.dart';
@@ -92,7 +93,12 @@ void main() {
 
     expect(find.text('Object Properties'), findsOneWidget);
     expect(find.text('Transform'), findsOneWidget);
-    expect(find.text('Stitch'), findsOneWidget);
+    // Scoped: the header's domain-mode segment is also labeled 'Stitch'.
+    expect(
+        find.descendant(
+            of: find.byType(ObjectPropertiesPanel),
+            matching: find.text('Stitch')),
+        findsOneWidget);
   });
 
   testWidgets('layers tab shows hierarchy and hidden groups drop from stitches',

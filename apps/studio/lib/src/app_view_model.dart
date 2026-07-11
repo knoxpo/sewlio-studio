@@ -7,6 +7,7 @@ import 'dock/dock_controller.dart';
 import 'file_io.dart';
 import 'panels/panel_def.dart';
 import 'recents.dart';
+import 'workspace/project_type.dart';
 import 'workspace_view_model.dart';
 
 /// One open document: engine session + editor state + tab bookkeeping.
@@ -79,6 +80,7 @@ final class AppViewModel extends BarleyViewModel {
     required HoopSettings hoop,
     ProjectUnits units = ProjectUnits.mm,
     ColorProfile colorProfile = ColorProfile.srgb,
+    ProjectType type = ProjectType.embroidery,
     String? location,
   }) async {
     final document = Document(
@@ -88,7 +90,7 @@ final class AppViewModel extends BarleyViewModel {
       units: units,
       colorProfile: colorProfile,
     );
-    final tab = _addTab(StudioSession(document: document));
+    final tab = _addTab(StudioSession(document: document), type: type);
     if (location != null) await saveTab(tab, location);
     notify();
     return tab;
@@ -144,9 +146,13 @@ final class AppViewModel extends BarleyViewModel {
   /// Test hook: wraps a pre-built engine session in an active tab.
   DocumentTab adoptSession(StudioSession session) => _addTab(session);
 
-  DocumentTab _addTab(StudioSession session, {String? path}) {
+  DocumentTab _addTab(
+    StudioSession session, {
+    String? path,
+    ProjectType type = ProjectType.embroidery,
+  }) {
     final tab = DocumentTab(
-      WorkspaceViewModel(session: session),
+      WorkspaceViewModel(session: session, projectType: type),
       path: path,
       savedRevision: session.document.revision,
     );

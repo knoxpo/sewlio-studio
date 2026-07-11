@@ -10,6 +10,7 @@ import 'menu/menu_renderers.dart';
 import 'new_project_page.dart';
 import 'prompts.dart';
 import 'shell.dart';
+import 'workspace/project_type_registry.dart';
 import 'workspace_view_model.dart';
 
 /// Application shell (UI-010/012 Option B): a pinned Home tab plus one
@@ -106,6 +107,8 @@ class _AppView extends StatelessWidget {
               listenable: app.activeTab!.vm,
               builder: (context, _) => WorkspaceModeSwitcher(
                 mode: app.activeTab!.vm.mode,
+                domainLabel:
+                    moduleFor(app.activeTab!.vm.projectType).domainLabel,
                 onChanged: app.activeTab!.vm.setMode,
               ),
             ),
@@ -245,20 +248,29 @@ class _AppView extends StatelessWidget {
   }
 }
 
-/// Segmented pill switching the primary workspaces: Design, Stitch
-/// Preview, Simulation. A thumb slides under the active segment.
+/// Segmented pill switching the primary workspaces: Design, the
+/// project-type domain view (Stitch / Weaving — resolved, never
+/// hardcoded), Simulation. A thumb slides under the active segment.
 class WorkspaceModeSwitcher extends StatelessWidget {
-  const WorkspaceModeSwitcher(
-      {super.key, required this.mode, required this.onChanged});
+  const WorkspaceModeSwitcher({
+    super.key,
+    required this.mode,
+    required this.domainLabel,
+    required this.onChanged,
+  });
 
   final WorkspaceMode mode;
+
+  /// Domain-mode label from the active project type's module (ARCH-038).
+  final String domainLabel;
+
   final ValueChanged<WorkspaceMode> onChanged;
 
-  static final _segments = [
-    (WorkspaceMode.design, Icons.edit_outlined, 'Design'),
-    (WorkspaceMode.stitchPreview, Icons.visibility_outlined, 'Stitch Preview'),
-    (WorkspaceMode.simulation, Icons.play_circle_outline, 'Simulation'),
-  ];
+  List<(WorkspaceMode, IconData, String)> get _segments => [
+        (WorkspaceMode.design, Icons.edit_outlined, 'Design'),
+        (WorkspaceMode.domain, Icons.format_line_spacing, domainLabel),
+        (WorkspaceMode.simulation, Icons.play_circle_outline, 'Simulation'),
+      ];
 
   static const double _segmentWidth = 118;
   static const double _height = 26;

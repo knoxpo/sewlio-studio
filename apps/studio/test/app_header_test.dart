@@ -15,7 +15,7 @@ void main() {
 
     expect(find.byType(CanvasView), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('mode-stitchPreview')));
+    await tester.tap(find.byKey(const Key('mode-domain')));
     await tester.pumpAndSettle();
     expect(find.byType(CanvasView), findsNothing);
     expect(find.textContaining('No stitches yet'), findsOneWidget);
