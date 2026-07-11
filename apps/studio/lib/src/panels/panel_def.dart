@@ -108,6 +108,19 @@ List<String> get defaultPanelIds => [for (final p in panelRegistry) p.id];
 /// simulation modes resolve their own sets from the active module).
 List<String> get designPanelIds => defaultPanelIds;
 
+/// Default design dock: three stacked tab rows.
+final designPanelRows = <List<String>>[
+  [
+    'properties',
+    'color-fill-stroke',
+    'character',
+    'align-arrange',
+    'paragraph'
+  ],
+  ['layers', 'assets-reference', 'path-operations'],
+  ['hoop', 'transform', 'stitch-simulation'],
+];
+
 /// Panel lookup for the dock host: built-ins/tool panels first, then
 /// domain-module contributions (ARCH-038) — modules keep their panels
 /// out of the design dock by not being in [panelRegistry].

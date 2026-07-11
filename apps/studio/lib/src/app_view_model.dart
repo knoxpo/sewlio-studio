@@ -41,7 +41,9 @@ final class AppViewModel extends BarleyViewModel {
     DockController? dock,
     DockController Function(WorkspaceMode mode, List<String> panelIds)?
         dockFactory,
-  })  : dock = dock ?? DockController.memory(panelIds: designPanelIds),
+  })  : dock = dock ??
+            DockController.memory(
+                panelIds: designPanelIds, rows: designPanelRows),
         _dockFactory = dockFactory {
     // Menus (Window > Show/Hide panel) reflect dock changes.
     this.dock.addListener(notify);

@@ -8,18 +8,23 @@ import 'dock_layout.dart';
 /// [RecentsStore] pattern: tolerant load, save on mutation, `.memory()`
 /// for tests and platforms without file IO.
 final class DockController extends ChangeNotifier {
-  DockController(this.path, {required this.panelIds})
-      : layout = DockLayout.defaults(panelIds);
+  DockController(this.path, {required this.panelIds, List<List<String>>? rows})
+      : defaultRows = rows ?? [panelIds],
+        layout = DockLayout.grouped(rows ?? [panelIds]);
 
   /// No-persistence controller for tests and web.
-  DockController.memory({required this.panelIds})
+  DockController.memory({required this.panelIds, List<List<String>>? rows})
       : path = null,
-        layout = DockLayout.defaults(panelIds);
+        defaultRows = rows ?? [panelIds],
+        layout = DockLayout.grouped(rows ?? [panelIds]);
 
   final String? path;
 
   /// Registered panel ids, in default order.
   final List<String> panelIds;
+
+  /// Out-of-the-box tab groups (one list per stacked row).
+  final List<List<String>> defaultRows;
 
   DockLayout layout;
 
@@ -33,7 +38,7 @@ final class DockController extends ChangeNotifier {
       layout = DockLayout.decode(await readFileString(file));
     } catch (_) {
       // Corrupt layout is not worth failing startup over — use defaults.
-      layout = DockLayout.defaults(panelIds);
+      layout = DockLayout.grouped(defaultRows);
     }
     layout.normalize(panelIds);
     notifyListeners();
@@ -117,7 +122,7 @@ final class DockController extends ChangeNotifier {
   }
 
   void resetToDefault() {
-    layout = DockLayout.defaults(panelIds);
+    layout = DockLayout.grouped(defaultRows);
     save();
   }
 

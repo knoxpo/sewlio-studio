@@ -53,8 +53,13 @@ final class DockLayout {
 
   /// The out-of-the-box layout: one group with every registered panel;
   /// no groups at all for panel-less modes (planned domain modules).
-  factory DockLayout.defaults(List<String> panelIds) => DockLayout(groups: [
-        if (panelIds.isNotEmpty) DockGroup(panelIds: [...panelIds])
+  factory DockLayout.defaults(List<String> panelIds) =>
+      DockLayout.grouped([panelIds]);
+
+  /// A default layout of stacked tab groups, one per row.
+  factory DockLayout.grouped(List<List<String>> rows) => DockLayout(groups: [
+        for (final row in rows)
+          if (row.isNotEmpty) DockGroup(panelIds: [...row])
       ]);
 
   String encode() => jsonEncode({

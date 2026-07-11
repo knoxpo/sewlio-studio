@@ -36,7 +36,8 @@ Future<void> main() async {
         recentsPath == null ? RecentsStore.memory() : RecentsStore(recentsPath),
     dock: dockPath == null
         ? null
-        : DockController(dockPath, panelIds: defaultPanelIds),
+        : DockController(dockPath,
+            panelIds: defaultPanelIds, rows: designPanelRows),
     // Domain/simulation docks persist per mode next to the design one.
     dockFactory: (mode, ids) {
       final path = appStatePath('workspace_layout_${mode.name}.json');
