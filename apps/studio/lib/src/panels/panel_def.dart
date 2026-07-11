@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../object_panel.dart';
 import '../workspace/icon_registry.dart';
+import '../workspace/project_type_registry.dart';
 import '../workspace_view_model.dart';
 import 'layers_panel.dart';
 import 'placeholder_panel.dart';
@@ -100,4 +101,12 @@ List<String> get defaultPanelIds => [for (final p in panelRegistry) p.id];
 /// simulation modes resolve their own sets from the active module).
 List<String> get designPanelIds => defaultPanelIds;
 
-PanelDef panelById(String id) => panelRegistry.firstWhere((p) => p.id == id);
+/// Panel lookup for the dock host: built-ins/tool panels first, then
+/// domain-module contributions (ARCH-038) — modules keep their panels
+/// out of the design dock by not being in [panelRegistry].
+PanelDef panelById(String id) => panelRegistry.firstWhere(
+      (p) => p.id == id,
+      orElse: () => domainModules
+          .expand((m) => [...m.domainPanels, ...m.simulationPanels])
+          .firstWhere((p) => p.id == id),
+    );

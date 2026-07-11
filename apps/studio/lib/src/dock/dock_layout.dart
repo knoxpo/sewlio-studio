@@ -51,9 +51,10 @@ final class DockLayout {
   final List<DockGroup> groups;
   final Set<String> hidden;
 
-  /// The out-of-the-box layout: one group with every registered panel.
+  /// The out-of-the-box layout: one group with every registered panel;
+  /// no groups at all for panel-less modes (planned domain modules).
   factory DockLayout.defaults(List<String> panelIds) => DockLayout(groups: [
-        DockGroup(panelIds: [...panelIds])
+        if (panelIds.isNotEmpty) DockGroup(panelIds: [...panelIds])
       ]);
 
   String encode() => jsonEncode({
@@ -89,8 +90,11 @@ final class DockLayout {
     groups.removeWhere((g) => g.panelIds.isEmpty);
     final missing = registeredIds.where((id) => !placed.contains(id));
     if (missing.isNotEmpty) {
-      if (groups.isEmpty) groups.add(DockGroup(panelIds: []));
-      groups.last.panelIds.addAll(missing);
+      if (groups.isEmpty) {
+        groups.add(DockGroup(panelIds: [...missing]));
+      } else {
+        groups.last.panelIds.addAll(missing);
+      }
     }
     for (final group in groups) {
       if (!group.panelIds.contains(group.activeId)) {
