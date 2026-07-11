@@ -9,3 +9,4 @@ export 'src/digitize.dart';
 export 'src/objects.dart';
 export 'src/running_stitch.dart';
 export 'src/stitch_ir.dart';
+export 'src/text_style.dart';

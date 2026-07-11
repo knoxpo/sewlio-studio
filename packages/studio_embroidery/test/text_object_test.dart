@@ -45,8 +45,7 @@ void main() {
   });
 
   test('transformedBy moves anchor and every outline', () {
-    final moved =
-        _sample().transformedBy(Transform2.translation(5, -5)) as TextObject;
+    final moved = _sample().transformedBy(Transform2.translation(5, -5));
     expect(moved.anchor, const Point(15, 15));
     expect(moved.outlines.first.start, const Point(15, 15));
     expect(moved.outlines.last.start, const Point(25, 15));

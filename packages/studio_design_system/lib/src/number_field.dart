@@ -22,6 +22,8 @@ class StudioNumberField extends StatefulWidget {
     this.suffix,
     this.steppers = false,
     this.step,
+    this.defaultValue,
+    this.mixed = false,
     this.width,
     this.textAlign = TextAlign.start,
   });
@@ -47,8 +49,17 @@ class StudioNumberField extends StatefulWidget {
   final bool steppers;
 
   /// Stepper increment; defaults to 1 for integers, else 1 when the
-  /// value is ≥ 10 and 0.1 below that.
+  /// value is ≥ 10 and 0.1 below that. Also the amount added per unit of
+  /// horizontal drag-scrub distance.
   final double? step;
+
+  /// Value restored on double-click. Null disables the reset gesture.
+  final double? defaultValue;
+
+  /// Show a blank field with a muted indicator instead of [value] (a
+  /// mixed multi-object selection). The blank is not written back until
+  /// the user edits or scrubs.
+  final bool mixed;
 
   final double? width;
   final TextAlign textAlign;
@@ -58,8 +69,16 @@ class StudioNumberField extends StatefulWidget {
 }
 
 class _StudioNumberFieldState extends State<StudioNumberField> {
-  late final _controller = TextEditingController(text: _format(widget.value));
+  /// Logical pixels of horizontal drag that advance the value by one
+  /// [_step].
+  static const _pixelsPerStep = 4.0;
+
+  late final _controller =
+      TextEditingController(text: widget.mixed ? '' : _format(widget.value));
   final _focusNode = FocusNode();
+  double _scrubStartValue = 0;
+  Offset _scrubAccum = Offset.zero;
+  bool _scrubbing = false;
 
   String _format(double v) => widget.integer
       ? v.round().toString()
@@ -77,7 +96,10 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   @override
   void didUpdateWidget(StudioNumberField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value && !_focusNode.hasFocus) {
+    if (_focusNode.hasFocus) return;
+    if (widget.mixed) {
+      if (_controller.text.isNotEmpty) _controller.text = '';
+    } else if (widget.value != oldWidget.value || oldWidget.mixed) {
       _controller.text = _format(widget.value);
     }
   }
@@ -92,7 +114,7 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   void _onFocusChanged() {
     if (!_focusNode.hasFocus) {
       // Discard uncommitted edits on blur.
-      _controller.text = _format(widget.value);
+      _controller.text = widget.mixed ? '' : _format(widget.value);
     }
   }
 
@@ -121,6 +143,38 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
     _controller.text = _format(v);
   }
 
+  // Raw pointer scrubbing (rather than a HorizontalDragGestureRecognizer)
+  // so the field's own text-selection drag doesn't win the gesture arena
+  // and swallow the scrub. Vertical drags fall through untouched so the
+  // field can still live inside a scrollable panel.
+  void _onScrubPointerDown(PointerDownEvent _) {
+    _scrubStartValue = widget.value;
+    _scrubAccum = Offset.zero;
+    _scrubbing = false;
+  }
+
+  void _onScrubPointerMove(PointerMoveEvent event) {
+    _scrubAccum += event.delta;
+    if (!_scrubbing) {
+      if (_scrubAccum.dx.abs() > 4 &&
+          _scrubAccum.dx.abs() > _scrubAccum.dy.abs()) {
+        _scrubbing = true;
+      } else {
+        return;
+      }
+    }
+    final v =
+        _clamp(_scrubStartValue + (_scrubAccum.dx / _pixelsPerStep) * _step);
+    widget.onSubmitted?.call(v);
+    _controller.text = _format(v);
+  }
+
+  void _resetToDefault() {
+    final v = _clamp(widget.defaultValue!);
+    widget.onSubmitted?.call(v);
+    _controller.text = _format(v);
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
@@ -134,7 +188,7 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onSubmitted != null;
-    final field = Focus(
+    Widget field = Focus(
       skipTraversal: true,
       onKeyEvent: _onKey,
       child: StudioTextField(
@@ -142,6 +196,7 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
         focusNode: _focusNode,
         enabled: enabled,
         textAlign: widget.textAlign,
+        hint: widget.mixed ? '—' : null,
         style: const TextStyle(fontSize: 12),
         keyboardType:
             const TextInputType.numberWithOptions(decimal: true, signed: true),
@@ -154,6 +209,18 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
         onSubmitted: _commit,
       ),
     );
+    if (enabled) {
+      // Horizontal click-drag scrubs the value; double-click resets to
+      // [defaultValue]. Taps still fall through to focus/edit the field.
+      field = Listener(
+        onPointerDown: _onScrubPointerDown,
+        onPointerMove: _onScrubPointerMove,
+        child: GestureDetector(
+          onDoubleTap: widget.defaultValue == null ? null : _resetToDefault,
+          child: field,
+        ),
+      );
+    }
     return widget.width == null
         ? field
         : SizedBox(width: widget.width, child: field);

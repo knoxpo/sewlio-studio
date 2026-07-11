@@ -201,4 +201,139 @@ void main() {
     }
     expect(created.single.alignment, 'right');
   });
+
+  // ------------------------------------------------------- run-aware layout
+
+  test('run-aware layout: a larger run size widens the advance', () {
+    const font = MonolineTextFont();
+    final uniform = layoutCaret('AB', font, origin: Point.zero, sizeMm: 10);
+    final run = layoutCaret('AB', font,
+        origin: Point.zero,
+        sizeMm: 10,
+        attrsOf: (o) => o == 0 ? const CharAttrs(sizeMm: 20) : CharAttrs.empty);
+    // The double-size first glyph pushes the end caret further right.
+    expect(run.x, greaterThan(uniform.x));
+  });
+
+  test('run-aware layout: baseline shift and hScale move/scale bounds', () {
+    const font = MonolineTextFont();
+    final base = _bounds(layoutText('A', font, origin: Point.zero, sizeMm: 10));
+    // Baseline shift up by 5mm (up = -Y): both edges move up by 5.
+    final shifted = _bounds(layoutText('A', font,
+        origin: Point.zero,
+        sizeMm: 10,
+        attrsOf: (_) => const CharAttrs(baselineShiftMm: 5)));
+    expect(shifted.minY, closeTo(base.minY - 5, 1e-6));
+    expect(shifted.maxY, closeTo(base.maxY - 5, 1e-6));
+    // Horizontal scale 2x about the glyph origin doubles the width.
+    final scaled = _bounds(layoutText('A', font,
+        origin: Point.zero,
+        sizeMm: 10,
+        attrsOf: (_) => const CharAttrs(hScale: 2)));
+    expect(scaled.width, closeTo(base.width * 2, 1e-6));
+  });
+
+  test('offset threading: glyph indices are absolute rune offsets', () {
+    const font = MonolineTextFont();
+    // '\n' at offset 2 is dropped from layout; the next line keeps its
+    // absolute offsets (3, 4), proving offsets thread through wrapping.
+    final groups = glyphOutlineGroups('AB\nCD', font);
+    expect([for (final g in groups) g.index], [0, 1, 3, 4]);
+  });
+
+  test('offset threading: a run transforms only its own line', () {
+    const font = MonolineTextFont();
+    final uniform = layoutText('AB\nCD', font, origin: Point.zero, sizeMm: 10);
+    final run = layoutText('AB\nCD', font,
+        origin: Point.zero,
+        sizeMm: 10,
+        attrsOf: (o) =>
+            o >= 3 ? const CharAttrs(baselineShiftMm: 100) : CharAttrs.empty);
+    // A + B = 4 strokes on line 1: unchanged.
+    for (var i = 0; i < 4; i++) {
+      expect(run[i].start.y, closeTo(uniform[i].start.y, 1e-9));
+    }
+    // C + D on line 2: lifted up by 100 (Y decreased).
+    for (var i = 4; i < run.length; i++) {
+      expect(run[i].start.y, closeTo(uniform[i].start.y - 100, 1e-9));
+    }
+  });
+
+  // ------------------------------------------------------------- selection
+
+  test('selection: click-drag via offsetAtPoint selects a range', () {
+    tool.tap(Point.zero);
+    tool.insert('HELLO');
+    final adv = tool.font.advanceMm(0x48, tool.sizeMm);
+    tool.pointerSelectStart(const Point(0, 0)); // before H
+    tool.pointerSelectUpdate(Point(adv * 3, 0)); // through 3 glyphs
+    expect(tool.hasSelection, isTrue);
+    expect(tool.selectionStart, 0);
+    expect(tool.selectionEnd, 3);
+  });
+
+  test('selection: Shift+Arrow extends; a plain move collapses', () {
+    tool.tap(Point.zero);
+    tool.insert('ABC'); // caret 3
+    tool.moveCaret(-1, extend: true); // anchor 3, caret 2
+    expect(tool.hasSelection, isTrue);
+    expect(tool.selectionStart, 2);
+    expect(tool.selectionEnd, 3);
+    tool.moveCaret(-1); // collapses
+    expect(tool.hasSelection, isFalse);
+    expect(tool.caret, 1);
+  });
+
+  test('selection: word, paragraph, and select-all ranges', () {
+    tool.tap(Point.zero);
+    tool.insert('AB CD\nEF');
+    tool.selectWordAt(1);
+    expect([tool.selectionStart, tool.selectionEnd], [0, 2]);
+    tool.selectWordAt(4);
+    expect([tool.selectionStart, tool.selectionEnd], [3, 5]);
+    tool.selectParagraphAt(1);
+    expect([tool.selectionStart, tool.selectionEnd], [0, 5]);
+    tool.selectParagraphAt(7);
+    expect([tool.selectionStart, tool.selectionEnd], [6, 8]);
+    tool.selectAll();
+    expect([tool.selectionStart, tool.selectionEnd], [0, 8]);
+  });
+
+  test('selection: typing and backspace replace the selection', () {
+    tool.tap(Point.zero);
+    tool.insert('ABCDE');
+    tool.moveCaretToEdge(home: true);
+    tool.moveCaret(3, extend: true); // select 'ABC'
+    tool.insert('X'); // replaces the range
+    expect(tool.text, 'XDE');
+    expect(tool.caret, 1);
+    expect(tool.hasSelection, isFalse);
+
+    tool.selectAll();
+    tool.backspace(); // deletes the whole selection
+    expect(tool.text, '');
+    expect(tool.hasSelection, isFalse);
+  });
+
+  test('selection: word-wise caret motion', () {
+    tool.tap(Point.zero);
+    tool.insert('AB CD');
+    tool.moveCaretToEdge(home: true);
+    tool.moveCaretByWord(1); // to end of first word
+    expect(tool.caret, 2);
+    tool.moveCaretByWord(1); // to end of second word
+    expect(tool.caret, 5);
+    tool.moveCaretByWord(-1, extend: true); // extend back to word start
+    expect(tool.selectionStart, 3);
+    expect(tool.selectionEnd, 5);
+  });
+}
+
+/// Union bounds of a set of paths (test helper).
+Bounds _bounds(List<Path> paths) {
+  var b = paths.first.bounds();
+  for (final p in paths.skip(1)) {
+    b = b.union(p.bounds());
+  }
+  return b;
 }

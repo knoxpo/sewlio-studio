@@ -51,6 +51,68 @@ final class ReplaceObject extends Command {
   final EmbroideryObject object;
 }
 
+/// Applies [patch] to the rune range `[start, end)` of the TextObject
+/// with [objectId] (ADR-040). No-op if the object is not a TextObject.
+/// Undoable — the reverse restores the prior object.
+final class ApplyCharAttrs extends Command {
+  const ApplyCharAttrs(this.objectId, this.start, this.end, this.patch);
+  final Id objectId;
+  final int start;
+  final int end;
+  final CharAttrs patch;
+}
+
+/// Adds a reusable character style (ADR-040). Undoable.
+final class AddCharacterStyle extends Command {
+  const AddCharacterStyle(this.style, {this.index});
+  final CharacterStyle style;
+  final int? index;
+}
+
+/// Renames the character style with [id]. Undoable.
+final class RenameCharacterStyle extends Command {
+  const RenameCharacterStyle(this.id, this.name);
+  final String id;
+  final String name;
+}
+
+/// Replaces the base attributes of the character style with [id].
+/// Undoable.
+final class UpdateCharacterStyle extends Command {
+  const UpdateCharacterStyle(this.id, this.base);
+  final String id;
+  final CharAttrs base;
+}
+
+/// Duplicates the character style with [id] under [newId]. Undoable.
+final class DuplicateCharacterStyle extends Command {
+  const DuplicateCharacterStyle(this.id, this.newId);
+  final String id;
+  final String newId;
+}
+
+/// Removes the character style with [id]. Undoable.
+final class DeleteCharacterStyle extends Command {
+  const DeleteCharacterStyle(this.id);
+  final String id;
+}
+
+/// Emitted when [Document.characterStyles] changes.
+final class CharacterStylesChanged extends Event {
+  const CharacterStylesChanged();
+}
+
+/// Replaces the document-wide optical-alignment preset table (undoable).
+final class SetOpticalRules extends Command {
+  const SetOpticalRules(this.rules);
+  final List<OpticalRule> rules;
+}
+
+/// Emitted when [Document.opticalRules] changes.
+final class OpticalRulesChanged extends Event {
+  const OpticalRulesChanged();
+}
+
 final class AddLayer extends Command {
   const AddLayer(this.layer, {this.index});
   final LayerNode layer;
@@ -265,6 +327,104 @@ void registerDocumentHandlers(CommandBus bus, Document document) {
     return CommandOutcome(
       events: [ObjectReplaced(command.object.id)],
       reverse: ReplaceObject(old),
+    );
+  });
+
+  bus.register<ApplyCharAttrs>((command) {
+    final object = document.objects[command.objectId];
+    if (object is! TextObject) {
+      // Not a text object: nothing to style, nothing to undo.
+      return const CommandOutcome();
+    }
+    document.objects[command.objectId] =
+        object.withRangeAttrs(command.start, command.end, command.patch);
+    document.revision++;
+    // ponytail: runs only; the UI re-runs text layout to refresh outlines
+    // (the font engine lives in studio_tools, which this package cannot use).
+    return CommandOutcome(
+      events: [ObjectReplaced(command.objectId)],
+      reverse: ReplaceObject(object),
+    );
+  });
+
+  bus.register<AddCharacterStyle>((command) {
+    if (document.characterStyleById(command.style.id) != null) {
+      throw StateError('Duplicate character style ${command.style.id}');
+    }
+    final index = command.index ?? document.characterStyles.length;
+    document.characterStyles.insert(index, command.style);
+    document.revision++;
+    return CommandOutcome(
+      events: const [CharacterStylesChanged()],
+      reverse: DeleteCharacterStyle(command.style.id),
+    );
+  });
+
+  bus.register<RenameCharacterStyle>((command) {
+    final index =
+        document.characterStyles.indexWhere((style) => style.id == command.id);
+    if (index < 0) throw StateError('No character style ${command.id}');
+    final old = document.characterStyles[index];
+    document.characterStyles[index] = old.copyWith(name: command.name);
+    document.revision++;
+    return CommandOutcome(
+      events: const [CharacterStylesChanged()],
+      reverse: RenameCharacterStyle(command.id, old.name),
+    );
+  });
+
+  bus.register<UpdateCharacterStyle>((command) {
+    final index =
+        document.characterStyles.indexWhere((style) => style.id == command.id);
+    if (index < 0) throw StateError('No character style ${command.id}');
+    final old = document.characterStyles[index];
+    document.characterStyles[index] = old.copyWith(base: command.base);
+    document.revision++;
+    return CommandOutcome(
+      events: const [CharacterStylesChanged()],
+      reverse: UpdateCharacterStyle(command.id, old.base),
+    );
+  });
+
+  bus.register<DuplicateCharacterStyle>((command) {
+    final index =
+        document.characterStyles.indexWhere((style) => style.id == command.id);
+    if (index < 0) throw StateError('No character style ${command.id}');
+    if (document.characterStyleById(command.newId) != null) {
+      throw StateError('Duplicate character style ${command.newId}');
+    }
+    final source = document.characterStyles[index];
+    final copy =
+        CharacterStyle(command.newId, '${source.name} copy', source.base);
+    document.characterStyles.insert(index + 1, copy);
+    document.revision++;
+    return CommandOutcome(
+      events: const [CharacterStylesChanged()],
+      reverse: DeleteCharacterStyle(command.newId),
+    );
+  });
+
+  bus.register<DeleteCharacterStyle>((command) {
+    final index =
+        document.characterStyles.indexWhere((style) => style.id == command.id);
+    if (index < 0) throw StateError('No character style ${command.id}');
+    final removed = document.characterStyles.removeAt(index);
+    document.revision++;
+    return CommandOutcome(
+      events: const [CharacterStylesChanged()],
+      reverse: AddCharacterStyle(removed, index: index),
+    );
+  });
+
+  bus.register<SetOpticalRules>((command) {
+    final old = [for (final rule in document.opticalRules) rule];
+    document.opticalRules
+      ..clear()
+      ..addAll(command.rules);
+    document.revision++;
+    return CommandOutcome(
+      events: const [OpticalRulesChanged()],
+      reverse: SetOpticalRules(old),
     );
   });
 

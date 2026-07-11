@@ -23,4 +23,5 @@ workspace:
   - packages/studio_import
   - packages/studio_machine
   - packages/studio_simulation
+  - packages/studio_text_shaping
   - packages/studio_tools

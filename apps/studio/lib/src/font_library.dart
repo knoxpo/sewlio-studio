@@ -23,6 +23,12 @@ final class FontLibrary {
     return [builtinFamily, ...system.keys.toList()..sort()];
   }
 
+  /// The already-loaded font for [family], or null if not yet cached.
+  /// Synchronous — for UI that needs font capabilities during build; a
+  /// null result means "trigger [load] and rebuild".
+  TextFont? cached(String family) =>
+      family == builtinFamily ? const MonolineTextFont() : _cache[family];
+
   /// Loads (and caches) the font for [family]; falls back to the
   /// built-in monoline font when the file can't be parsed.
   Future<TextFont> load(String family) async {

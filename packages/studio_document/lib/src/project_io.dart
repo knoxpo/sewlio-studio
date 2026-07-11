@@ -36,6 +36,14 @@ String encodeProject(Document document) =>
       },
       if (document.guides.isNotEmpty)
         'guides': [for (final guide in document.guides) guide.toJson()],
+      if (document.characterStyles.isNotEmpty)
+        'characterStyles': [
+          for (final style in document.characterStyles) style.toJson()
+        ],
+      if (document.opticalRules.isNotEmpty)
+        'opticalRules': [
+          for (final rule in document.opticalRules) rule.toJson()
+        ],
       'hoop': document.hoop.toJson(),
       // Additive metadata (defaults applied on decode) — older readers
       // ignore unknown keys, so the schema version stays '2'.
@@ -73,6 +81,14 @@ Document decodeProject(String source) {
   }
   for (final guide in (json['guides'] as List?) ?? const []) {
     document.guides.add(Guide.fromJson(guide as Map<String, dynamic>));
+  }
+  for (final style in (json['characterStyles'] as List?) ?? const []) {
+    document.characterStyles
+        .add(CharacterStyle.fromJson(style as Map<String, dynamic>));
+  }
+  for (final rule in (json['opticalRules'] as List?) ?? const []) {
+    document.opticalRules
+        .add(OpticalRule.fromJson(rule as Map<String, dynamic>));
   }
   if (json['hoop'] case final Map<String, dynamic> hoop) {
     document.hoop = HoopSettings.fromJson(hoop);

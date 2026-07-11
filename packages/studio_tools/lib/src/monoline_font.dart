@@ -236,6 +236,21 @@ final class MonolineTextFont implements TextFont {
   bool supports(int rune) =>
       _glyphs.containsKey(String.fromCharCode(rune).toUpperCase());
 
+  // Single-stroke font: one style, no variation axes, no OpenType
+  // features. The panel disables the corresponding controls.
+  @override
+  List<String> get styleNames => const ['Regular'];
+
+  @override
+  List<({String tag, double min, double def, double max})> variationAxes() =>
+      const [];
+
+  @override
+  List<String> availableFeatures() => const [];
+
+  @override
+  bool supportsFeature(String tag) => false;
+
   @override
   double advanceMm(int rune, double sizeMm) => _advance * (sizeMm / _capHeight);
 

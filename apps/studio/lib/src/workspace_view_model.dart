@@ -711,7 +711,78 @@ final class WorkspaceViewModel extends BarleyViewModel {
   void undo() => session.history.undo();
   void redo() => session.history.redo();
 
-  void execute(Command command) => session.history.execute(command);
+  void execute(Command command, {String? mergeKey}) =>
+      session.history.execute(command, mergeKey: mergeKey);
+
+  // ------------------------------------------------ character formatting
+
+  TextTool get _textTool => tools[ToolKind.text]! as TextTool;
+
+  /// The text object the Character panel targets: the one being edited on
+  /// canvas, else the primary selection when it is a text object.
+  TextObject? get characterTarget {
+    final tool = _textTool;
+    if (tool.editing && tool.editingId != null) {
+      final o = session.document.objectById(tool.editingId!);
+      if (o is TextObject) return o;
+    }
+    final primary = primarySelectedObject;
+    return primary is TextObject ? primary : null;
+  }
+
+  /// The active character range for the Character panel: the on-canvas
+  /// text selection when editing, else the whole string. Returns null
+  /// when there is no text target.
+  ({int start, int end})? get characterRange {
+    final target = characterTarget;
+    if (target == null) return null;
+    final tool = _textTool;
+    if (tool.editing && tool.editingId == target.id && tool.hasSelection) {
+      return (start: tool.selectionStart, end: tool.selectionEnd);
+    }
+    return (start: 0, end: target.text.runes.length);
+  }
+
+  /// Applies [patch] to the active character range and regenerates the
+  /// cached outlines with the run-aware layout, as one undoable edit.
+  /// Pass [mergeKey] to coalesce a scrub into a single undo entry.
+  Future<void> applyCharAttrs(CharAttrs patch, {String? mergeKey}) async {
+    final target = characterTarget;
+    final range = characterRange;
+    if (target == null || range == null) return;
+    final font = await FontLibrary.instance.load(target.fontFamily);
+    final updated = target.withRangeAttrs(range.start, range.end, patch);
+    final outlines = layoutText(
+      updated.text,
+      font,
+      origin: updated.anchor,
+      sizeMm: updated.sizeMm,
+      trackingMm: updated.trackingMm,
+      lineHeight: updated.lineHeight,
+      align: MonoTextAlign.values.asNameMap()[updated.alignment] ??
+          MonoTextAlign.left,
+      frameWidthMm: updated.frameWidthMm,
+      attrsOf: (offset) => updated.attrsAt(offset),
+    );
+    execute(ReplaceObject(updated.withOutlines(outlines)), mergeKey: mergeKey);
+  }
+
+  /// The merged attributes over the active range, plus the set of fields
+  /// that are mixed across it — drives the panel's value display.
+  ({CharAttrs shared, Set<String> mixed})? get characterAttrs {
+    final target = characterTarget;
+    final range = characterRange;
+    if (target == null || range == null) return null;
+    return queryRange(target.runs, target.defaultAttrs, range.start, range.end);
+  }
+
+  /// Capabilities of the target object's font (drives enable/disable of
+  /// OpenType / variable-axis controls). Empty when no font is cached.
+  TextFont? get characterFont {
+    final target = characterTarget;
+    if (target == null) return null;
+    return FontLibrary.instance.cached(target.fontFamily);
+  }
 
   /// Next free object id. Opened documents restore their stored ids
   /// ('obj-N'), while each session's sequential generator restarts at
@@ -893,15 +964,30 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// Canvas typing (KeyDown + KeyRepeat): Enter commits, Shift+Enter
   /// breaks the line, Esc commits, Backspace deletes.
   KeyEventResult _onTextKey(TextTool text, KeyEvent event) {
-    // Let menu chords (⌘S, ⌘Z, …) through even while typing.
-    if (HardwareKeyboard.instance.isMetaPressed ||
-        HardwareKeyboard.instance.isControlPressed) {
+    final key = event.logicalKey;
+    final meta = HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isControlPressed;
+    final shift = HardwareKeyboard.instance.isShiftPressed;
+    if (meta) {
+      // Editing chords intercepted before the menu chords fall through:
+      // select-all and word-wise caret motion (extended with Shift).
+      if (key == LogicalKeyboardKey.keyA) {
+        text.selectAll();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.arrowLeft) {
+        text.moveCaretByWord(-1, extend: shift);
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.arrowRight) {
+        text.moveCaretByWord(1, extend: shift);
+        return KeyEventResult.handled;
+      }
+      // Let other menu chords (⌘S save, ⌘Z undo, …) through.
       return KeyEventResult.ignored;
     }
-    final key = event.logicalKey;
     if (key == LogicalKeyboardKey.escape ||
-        key == LogicalKeyboardKey.enter &&
-            !HardwareKeyboard.instance.isShiftPressed) {
+        key == LogicalKeyboardKey.enter && !shift) {
       text.commit();
       return KeyEventResult.handled;
     }
@@ -918,19 +1004,19 @@ final class WorkspaceViewModel extends BarleyViewModel {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowLeft) {
-      text.moveCaret(-1);
+      text.moveCaret(-1, extend: shift);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowRight) {
-      text.moveCaret(1);
+      text.moveCaret(1, extend: shift);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.home) {
-      text.moveCaretToEdge(home: true);
+      text.moveCaretToEdge(home: true, extend: shift);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.end) {
-      text.moveCaretToEdge(home: false);
+      text.moveCaretToEdge(home: false, extend: shift);
       return KeyEventResult.handled;
     }
     final character = event.character;

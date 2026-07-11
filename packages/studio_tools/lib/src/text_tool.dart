@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:studio_core/studio_core.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart';
@@ -38,6 +40,12 @@ final class TextTool extends Tool {
   /// character).
   int _caret = 0;
 
+  /// The other end of the selection (rune index). Equal to [_caret]
+  /// means a collapsed caret; otherwise `[selectionStart, selectionEnd)`
+  /// is selected. Runs live on the committed [TextObject]; the tool only
+  /// tracks text + caret + anchor.
+  int _selectionAnchor = 0;
+
   /// Set while re-editing a committed object: commit replaces it.
   Id? _editingId;
 
@@ -51,6 +59,12 @@ final class TextTool extends Tool {
 
   int get caret => _caret;
 
+  /// Ordered selection bounds (rune indices) and whether a range is
+  /// selected (vs. a collapsed caret).
+  int get selectionStart => math.min(_selectionAnchor, _caret);
+  int get selectionEnd => math.max(_selectionAnchor, _caret);
+  bool get hasSelection => _selectionAnchor != _caret;
+
   /// The committed object being re-edited, if any.
   Id? get editingId => _editingId;
 
@@ -61,6 +75,7 @@ final class TextTool extends Tool {
     _frameWidthMm = null;
     _text = '';
     _caret = 0;
+    _selectionAnchor = 0;
     notifyListeners();
   }
 
@@ -96,53 +111,239 @@ final class TextTool extends Tool {
     _frameWidthMm = width;
     _text = '';
     _caret = 0;
+    _selectionAnchor = 0;
     notifyListeners();
   }
 
   // ------------------------------------------------------------- editing
   //
-  // The buffer is edited at the caret (rune-indexed). ponytail: no
-  // selection range yet — add shift+arrows/select-all when asked.
+  // The buffer is edited at the caret (rune-indexed). A non-collapsed
+  // selection is replaced by inserts/deletes. Runs live on the committed
+  // TextObject, so the tool only tracks text + caret + anchor.
+
+  /// Removes the current selection from the buffer and collapses the
+  /// caret to its start. No-op when nothing is selected.
+  void _deleteSelection() {
+    final start = selectionStart, end = selectionEnd;
+    final runes = _text.runes.toList()..removeRange(start, end);
+    _text = String.fromCharCodes(runes);
+    _caret = _selectionAnchor = start;
+  }
 
   void insert(String characters) {
     if (!editing) return;
+    if (hasSelection) _deleteSelection();
     final runes = _text.runes.toList()..insertAll(_caret, characters.runes);
     _text = String.fromCharCodes(runes);
     _caret += characters.runes.length;
+    _selectionAnchor = _caret;
     notifyListeners();
   }
 
-  /// Deletes the rune before the caret (Backspace).
+  /// Deletes the selection, or the rune before the caret (Backspace).
   void backspace() {
-    if (!editing || _caret == 0) return;
+    if (!editing) return;
+    if (hasSelection) {
+      _deleteSelection();
+      notifyListeners();
+      return;
+    }
+    if (_caret == 0) return;
     final runes = _text.runes.toList()..removeAt(_caret - 1);
     _text = String.fromCharCodes(runes);
     _caret--;
+    _selectionAnchor = _caret;
     notifyListeners();
   }
 
-  /// Deletes the rune after the caret (Delete / Fn+Backspace).
+  /// Deletes the selection, or the rune after the caret (Delete).
   void deleteForward() {
+    if (!editing) return;
+    if (hasSelection) {
+      _deleteSelection();
+      notifyListeners();
+      return;
+    }
     final runes = _text.runes.toList();
-    if (!editing || _caret >= runes.length) return;
+    if (_caret >= runes.length) return;
     runes.removeAt(_caret);
     _text = String.fromCharCodes(runes);
+    _selectionAnchor = _caret;
     notifyListeners();
   }
 
-  /// Moves the caret by [delta] runes, clamped to the buffer.
-  void moveCaret(int delta) {
+  /// Moves the caret by [delta] runes, clamped to the buffer. [extend]
+  /// keeps the selection anchor (Shift+Arrow); otherwise the selection
+  /// collapses to the new caret.
+  void moveCaret(int delta, {bool extend = false}) {
     if (!editing) return;
     _caret = (_caret + delta).clamp(0, _text.runes.length);
+    if (!extend) _selectionAnchor = _caret;
     notifyListeners();
   }
 
   /// Moves the caret to the start (`home`) or end (`!home`) of the
-  /// buffer.
-  void moveCaretToEdge({required bool home}) {
+  /// buffer. [extend] keeps the selection anchor (Shift+Home/End).
+  void moveCaretToEdge({required bool home, bool extend = false}) {
     if (!editing) return;
     _caret = home ? 0 : _text.runes.length;
+    if (!extend) _selectionAnchor = _caret;
     notifyListeners();
+  }
+
+  /// Moves the caret to the previous (`dir < 0`) or next (`dir > 0`)
+  /// word boundary. [extend] keeps the selection anchor (word-extend).
+  void moveCaretByWord(int dir, {bool extend = false}) {
+    if (!editing) return;
+    final runes = _text.runes.toList();
+    var c = _caret;
+    if (dir < 0) {
+      while (c > 0 && _charClass(runes[c - 1]) == 0) {
+        c--;
+      }
+      if (c > 0) {
+        final cls = _charClass(runes[c - 1]);
+        while (c > 0 && _charClass(runes[c - 1]) == cls) {
+          c--;
+        }
+      }
+    } else {
+      while (c < runes.length && _charClass(runes[c]) == 0) {
+        c++;
+      }
+      if (c < runes.length) {
+        final cls = _charClass(runes[c]);
+        while (c < runes.length && _charClass(runes[c]) == cls) {
+          c++;
+        }
+      }
+    }
+    _caret = c;
+    if (!extend) _selectionAnchor = _caret;
+    notifyListeners();
+  }
+
+  // ----------------------------------------------------------- selection
+
+  /// Selects the whole buffer (Cmd/Ctrl+A).
+  void selectAll() {
+    if (!editing) return;
+    _selectionAnchor = 0;
+    _caret = _text.runes.length;
+    notifyListeners();
+  }
+
+  /// Selects the word around rune [offset] (double-click).
+  void selectWordAt(int offset) {
+    if (!editing) return;
+    final runes = _text.runes.toList();
+    if (runes.isEmpty) {
+      _selectionAnchor = _caret = 0;
+      notifyListeners();
+      return;
+    }
+    final o = offset.clamp(0, runes.length);
+    final idx = o >= runes.length ? runes.length - 1 : o;
+    final cls = _charClass(runes[idx]);
+    var start = idx, end = idx + 1;
+    while (start > 0 && _charClass(runes[start - 1]) == cls) {
+      start--;
+    }
+    while (end < runes.length && _charClass(runes[end]) == cls) {
+      end++;
+    }
+    _selectionAnchor = start;
+    _caret = end;
+    notifyListeners();
+  }
+
+  /// Selects the paragraph (between '\n' boundaries) around rune
+  /// [offset] (triple-click).
+  void selectParagraphAt(int offset) {
+    if (!editing) return;
+    final runes = _text.runes.toList();
+    var start = offset.clamp(0, runes.length);
+    var end = start;
+    while (start > 0 && runes[start - 1] != 0x0A) {
+      start--;
+    }
+    while (end < runes.length && runes[end] != 0x0A) {
+      end++;
+    }
+    _selectionAnchor = start;
+    _caret = end;
+    notifyListeners();
+  }
+
+  // ponytail: simple char-class word rule — a run of letters/digits, a
+  // run of whitespace, or a run of other (punctuation). No Unicode word
+  // segmentation; good enough for Latin editing.
+  static int _charClass(int rune) {
+    if (rune == 0x20 || rune == 0x09 || rune == 0x0A) return 0; // whitespace
+    final s = String.fromCharCode(rune);
+    if (rune > 0x7F || RegExp(r'[A-Za-z0-9]').hasMatch(s)) return 1; // word
+    return 2; // punctuation
+  }
+
+  /// Maps a canvas [world] point to the nearest rune boundary, using the
+  /// same layout metrics as rendering. attrsOf is null: the tool buffer
+  /// carries no runs (they live on the committed object), so the live
+  /// caret/selection layout is uniform.
+  int offsetAtPoint(Point world) {
+    final anchor = _anchor;
+    if (anchor == null) return _caret;
+    final metrics = layoutLineMetrics(
+      _text,
+      font,
+      origin: anchor,
+      sizeMm: sizeMm,
+      trackingMm: trackingMm,
+      lineHeight: lineHeight,
+      align: align,
+      frameWidthMm: _frameWidthMm,
+    );
+    if (metrics.isEmpty) return 0;
+    var line = metrics.first;
+    var bestDy = (world.y - line.baselineY).abs();
+    for (final m in metrics.skip(1)) {
+      final dy = (world.y - m.baselineY).abs();
+      if (dy < bestDy) {
+        bestDy = dy;
+        line = m;
+      }
+    }
+    var bestI = 0;
+    var bestDx = (world.x - line.xs.first).abs();
+    for (var i = 1; i < line.xs.length; i++) {
+      final dx = (world.x - line.xs[i]).abs();
+      if (dx < bestDx) {
+        bestDx = dx;
+        bestI = i;
+      }
+    }
+    return line.offsets[bestI];
+  }
+
+  /// Pointer-down inside the active text: collapse the selection to the
+  /// nearest boundary. ponytail: the shell decides a pointer landed
+  /// inside the editing box (vs. outside → commit) via hit-testing; the
+  /// tool just maps the point.
+  void pointerSelectStart(Point world) {
+    if (!editing) return;
+    _caret = _selectionAnchor = offsetAtPoint(world);
+    notifyListeners();
+  }
+
+  /// Pointer-drag: extend the selection to the nearest boundary.
+  void pointerSelectUpdate(Point world) {
+    if (!editing) return;
+    _caret = offsetAtPoint(world);
+    notifyListeners();
+  }
+
+  @override
+  void doubleTap(Point world) {
+    if (editing) selectWordAt(offsetAtPoint(world));
   }
 
   void newline() => insert('\n');
@@ -162,6 +363,7 @@ final class TextTool extends Tool {
     _frameWidthMm = object.frameWidthMm;
     _text = object.text;
     _caret = object.text.runes.length;
+    _selectionAnchor = _caret;
     _editingId = object.id;
     notifyListeners();
   }
@@ -198,6 +400,7 @@ final class TextTool extends Tool {
     _frameWidthMm = null;
     _text = '';
     _caret = 0;
+    _selectionAnchor = 0;
     _editingId = null;
     notifyListeners();
   }
@@ -232,6 +435,8 @@ final class TextTool extends Tool {
       final topLeft = Point(anchor.x, anchor.y - sizeMm);
       paths.add(_rect(topLeft, Point(topLeft.x + frame, topLeft.y + height)));
     }
+    // Selection highlight: filled rects per line behind the glyphs/caret.
+    paths.addAll(_selectionRects(anchor));
     paths.addAll(layoutText(
       _text,
       font,
@@ -262,6 +467,38 @@ final class TextTool extends Tool {
       segments: [LineSegment(Point(caret.x, caret.y - sizeMm))],
     ));
     return paths;
+  }
+
+  /// One filled rect per visual line spanning the selected runes, using
+  /// the same layout metrics as the glyphs.
+  List<Path> _selectionRects(Point anchor) {
+    if (!hasSelection) return const [];
+    final metrics = layoutLineMetrics(
+      _text,
+      font,
+      origin: anchor,
+      sizeMm: sizeMm,
+      trackingMm: trackingMm,
+      lineHeight: lineHeight,
+      align: align,
+      frameWidthMm: _frameWidthMm,
+    );
+    final start = selectionStart, end = selectionEnd;
+    final rects = <Path>[];
+    for (final m in metrics) {
+      int? lo, hi;
+      for (var i = 0; i < m.offsets.length; i++) {
+        final o = m.offsets[i];
+        if (o >= start && o <= end) {
+          lo ??= i;
+          hi = i;
+        }
+      }
+      if (lo == null || hi == null || hi == lo) continue;
+      final top = m.baselineY - sizeMm, bottom = m.baselineY;
+      rects.add(_rect(Point(m.xs[lo], top), Point(m.xs[hi], bottom)));
+    }
+    return rects;
   }
 
   static Path _rect(Point a, Point b) => Path(

@@ -5,6 +5,7 @@ import '../workspace/icon_registry.dart';
 import '../workspace/project_type_registry.dart';
 import '../workspace_view_model.dart';
 import '../shell.dart';
+import 'character_panel.dart';
 import 'layers_panel.dart';
 import 'placeholder_panel.dart';
 import 'preview_panels.dart';
@@ -96,7 +97,13 @@ final panelRegistry = <PanelDef>[
       'assets-reference', 'Assets / Reference', iconFor('panel-assets')),
   placeholderPanel(
       'path-operations', 'Path Operations', iconFor('panel-path-ops')),
-  placeholderPanel('character', 'Character', iconFor('panel-character')),
+  PanelDef(
+    id: 'character',
+    title: 'Character',
+    icon: iconFor('panel-character'),
+    minHeight: 240,
+    builder: (context, model) => CharacterPanel(model: model),
+  ),
   placeholderPanel('paragraph', 'Paragraph', iconFor('panel-paragraph')),
   placeholderPanel('align-arrange', 'Align / Arrange', iconFor('panel-align')),
 ];
