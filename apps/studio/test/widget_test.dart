@@ -91,13 +91,13 @@ void main() {
     await tester.tap(find.byKey(const Key('dock-tab-properties')));
     await tester.pump();
 
+    // Scoped to the panel: 'Transform' also names a dock tab and
+    // 'Stitch' also labels the header's domain-mode segment.
     expect(find.text('Object Properties'), findsOneWidget);
-    expect(find.text('Transform'), findsOneWidget);
-    // Scoped: the header's domain-mode segment is also labeled 'Stitch'.
-    expect(
-        find.descendant(
-            of: find.byType(ObjectPropertiesPanel),
-            matching: find.text('Stitch')),
+    final panel = find.byType(ObjectPropertiesPanel);
+    expect(find.descendant(of: panel, matching: find.text('Transform')),
+        findsOneWidget);
+    expect(find.descendant(of: panel, matching: find.text('Stitch')),
         findsOneWidget);
   });
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../object_panel.dart';
+import '../workspace/icon_registry.dart';
 import '../workspace_view_model.dart';
 import 'layers_panel.dart';
+import 'placeholder_panel.dart';
 import 'stitches_panel.dart';
 
 /// A dockable panel: stable identity, chrome metadata, and a builder
@@ -75,9 +77,27 @@ final panelRegistry = <PanelDef>[
       framed: false,
     ),
   ),
+  // Design-view placeholder panels — universal (not embroidery-specific),
+  // filled in as each feature lands. 'stitches'/'layers' above are the
+  // Artwork structures; production/sequence panels are contributed
+  // separately by domain modules and never merged with these.
+  placeholderPanel('transform', 'Transform', iconFor('panel-transform')),
+  placeholderPanel('color-fill-stroke', 'Color / Fill / Stroke',
+      iconFor('panel-color-fill-stroke')),
+  placeholderPanel(
+      'assets-reference', 'Assets / Reference', iconFor('panel-assets')),
+  placeholderPanel(
+      'path-operations', 'Path Operations', iconFor('panel-path-ops')),
+  placeholderPanel('character', 'Character', iconFor('panel-character')),
+  placeholderPanel('paragraph', 'Paragraph', iconFor('panel-paragraph')),
+  placeholderPanel('align-arrange', 'Align / Arrange', iconFor('panel-align')),
 ];
 
 /// Default panel-id order for constructing the dock layout.
 List<String> get defaultPanelIds => [for (final p in panelRegistry) p.id];
+
+/// Design-mode dock panels (all registered panels today; domain and
+/// simulation modes resolve their own sets from the active module).
+List<String> get designPanelIds => defaultPanelIds;
 
 PanelDef panelById(String id) => panelRegistry.firstWhere((p) => p.id == id);
