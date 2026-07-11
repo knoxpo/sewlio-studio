@@ -4,7 +4,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
-import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart' as g;
 
 import 'app_shell.dart';
@@ -21,6 +20,8 @@ import 'shape_palette.dart';
 import 'tool_options.dart';
 import 'toolbox.dart';
 import 'tools/tool_contributions.dart';
+import 'workspace/domain_module.dart';
+import 'workspace/project_type_registry.dart';
 import 'workspace_view_model.dart';
 
 /// CAD editor workspace (barley MVVM view): renders [WorkspaceViewModel]
@@ -38,16 +39,12 @@ class EditorWorkspace extends StatelessWidget {
     // Reassigned every build so the closure captures the live context.
     model.onOpenHoopSetup = () => showDocumentSetup(context, model);
     final sequence = model.sequence;
-    if (model.mode != WorkspaceMode.design) {
-      // Stitch Preview / Simulation workspaces: full-bleed sequence view,
-      // no editing chrome. ponytail: preview has no zoom/pan yet — grows
-      // one when digitized designs outsize the window.
+    if (model.mode == WorkspaceMode.domain) return _domainWorkspace(context);
+    if (model.mode == WorkspaceMode.simulation) {
+      // ponytail: full-bleed playback strip until the simulation
+      // workspace (transport bar + panels) lands.
       return Column(children: [
-        Expanded(
-          child: model.mode == WorkspaceMode.simulation
-              ? SimulationSection(sequence: sequence)
-              : _stitchPreview(sequence),
-        ),
+        Expanded(child: SimulationSection(sequence: sequence)),
         _statusBar(),
       ]);
     }
@@ -158,44 +155,80 @@ class EditorWorkspace extends StatelessWidget {
     return null;
   }
 
-  // -------------------------------------------------------- stitch preview
+  // -------------------------------------------------------- domain view
 
-  /// Stitch Preview workspace: the digitized sequence rendered with
-  /// per-thread colors, plus a small stats line.
-  Widget _stitchPreview(StitchSequence sequence) {
-    return Container(
-      color: AppTokens.background,
-      padding: const EdgeInsets.all(24),
+  /// Domain workspace: production authoring for the active project type
+  /// (ARCH-038). Structurally the design layout — rail, mode toolbar,
+  /// shared canvas, dock — with every surface resolved from the
+  /// project type's module. This is an editing view, not a preview:
+  /// selection works on the shared canvas.
+  // ponytail: desktop layout on every form factor — tablet variants
+  // arrive with the design ones once domain tools are real.
+  Widget _domainWorkspace(BuildContext context) {
+    final module = moduleFor(model.projectType);
+    return Focus(
+      autofocus: true,
+      onKeyEvent: model.onKey,
       child: Column(children: [
         Expanded(
-          child: sequence.ops.isEmpty
-              ? Center(
-                  child: Text('No stitches yet — draw in Design mode.',
-                      style:
-                          TextStyle(fontSize: 12, color: AppTokens.textMuted)),
-                )
-              : CustomPaint(
-                  size: Size.infinite,
-                  painter: StitchPreviewPainter(
-                    ops: sequence.ops,
-                    all: sequence.ops,
-                    color: AppTokens.primary,
-                    threadColors: [
-                      for (final thread in sequence.threads)
-                        Color(0xFF000000 |
-                            int.parse(thread.color.substring(1), radix: 16)),
-                    ],
-                  ),
-                ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            '${sequence.stitchCount} stitches · '
-            '${sequence.threads.length} thread(s)',
-            style: TextStyle(fontSize: 11, color: AppTokens.textMuted),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ToolboxRail(
+                  model: model,
+                  groups: module.domainToolbox,
+                  touchMode: isTouchPlatform),
+              Expanded(
+                child: Column(children: [
+                  _domainToolbar(module),
+                  Expanded(child: _buildCanvas()),
+                ]),
+              ),
+              DockHost(
+                  controller: app.dockFor(model.mode, model.projectType),
+                  model: model),
+            ],
           ),
         ),
+        _statusBar(),
+      ]),
+    );
+  }
+
+  /// Mode-aware top toolbar: domain label + the module's quick actions
+  /// (disabled placeholders until their commands exist).
+  Widget _domainToolbar(DomainUiModule module) {
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppTokens.panel,
+        border: Border(bottom: BorderSide(color: AppTokens.border)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.edit_outlined, size: 14, color: AppTokens.primary),
+        const SizedBox(width: 4),
+        Text('${module.domainLabel} View',
+            style: const TextStyle(color: AppTokens.primary, fontSize: 11)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              for (final action in module.quickActions)
+                StudioIconButton(
+                  key: Key('quick-${action.id}'),
+                  icon: action.icon,
+                  tooltip: '${action.label} — coming soon',
+                  onPressed: null,
+                ),
+            ]),
+          ),
+        ),
+        StudioIconButton(
+            icon: Icons.fit_screen_outlined,
+            tooltip: 'Fit to canvas',
+            onPressed: model.fitCanvas),
       ]),
     );
   }
