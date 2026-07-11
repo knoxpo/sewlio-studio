@@ -73,6 +73,15 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   /// [_step].
   static const _pixelsPerStep = 4.0;
 
+  // Local source of truth for the value being edited. Steppers/scrubbing
+  // advance THIS, not [widget.value] — the parent's value only updates on
+  // the next frame's rebuild, so reading it would make a rapid burst read
+  // the same stale value ten times and collapse to one step. [_value] is
+  // reconciled with the external value only on a genuine external change
+  // (undo, selecting another object), never on the parent echoing back an
+  // edit we just committed.
+  late double _value;
+
   late final _controller =
       TextEditingController(text: widget.mixed ? '' : _format(widget.value));
   final _focusNode = FocusNode();
@@ -85,11 +94,12 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
       : v.toStringAsFixed(widget.decimals);
 
   double get _step =>
-      widget.step ?? (widget.integer || widget.value >= 10 ? 1.0 : 0.1);
+      widget.step ?? (widget.integer || _value.abs() >= 10 ? 1.0 : 0.1);
 
   @override
   void initState() {
     super.initState();
+    _value = widget.value;
     _focusNode.addListener(_onFocusChanged);
   }
 
@@ -98,8 +108,14 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
     super.didUpdateWidget(oldWidget);
     if (_focusNode.hasFocus) return;
     if (widget.mixed) {
+      _value = widget.value;
       if (_controller.text.isNotEmpty) _controller.text = '';
-    } else if (widget.value != oldWidget.value || oldWidget.mixed) {
+      return;
+    }
+    // Adopt only genuine external changes; ignore the parent echoing back
+    // a value we just committed (which equals [_value] within fp noise).
+    if (oldWidget.mixed || (widget.value - _value).abs() > 1e-9) {
+      _value = widget.value;
       _controller.text = _format(widget.value);
     }
   }
@@ -114,7 +130,7 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   void _onFocusChanged() {
     if (!_focusNode.hasFocus) {
       // Discard uncommitted edits on blur.
-      _controller.text = widget.mixed ? '' : _format(widget.value);
+      _controller.text = widget.mixed ? '' : _format(_value);
     }
   }
 
@@ -124,31 +140,30 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
     return r;
   }
 
+  /// Sets the local value, reflects it in the field, and notifies.
+  void _emit(double v) {
+    _value = v;
+    _controller.text = _format(v);
+    widget.onSubmitted?.call(v);
+  }
+
   void _commit(String text) {
     final parsed = double.tryParse(text);
     if (parsed == null) {
-      _controller.text = _format(widget.value);
+      _controller.text = _format(_value);
       return;
     }
-    final v = _clamp(parsed);
-    widget.onSubmitted?.call(v);
-    // Canonicalize immediately ("5.678" → "5.68"), even when the
-    // committed value equals the current one and no rebuild follows.
-    _controller.text = _format(v);
+    _emit(_clamp(parsed));
   }
 
-  void _nudge(double delta) {
-    final v = _clamp(widget.value + delta);
-    widget.onSubmitted?.call(v);
-    _controller.text = _format(v);
-  }
+  void _nudge(double delta) => _emit(_clamp(_value + delta));
 
   // Raw pointer scrubbing (rather than a HorizontalDragGestureRecognizer)
   // so the field's own text-selection drag doesn't win the gesture arena
   // and swallow the scrub. Vertical drags fall through untouched so the
   // field can still live inside a scrollable panel.
   void _onScrubPointerDown(PointerDownEvent _) {
-    _scrubStartValue = widget.value;
+    _scrubStartValue = _value;
     _scrubAccum = Offset.zero;
     _scrubbing = false;
   }
@@ -163,22 +178,15 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
         return;
       }
     }
-    final v =
-        _clamp(_scrubStartValue + (_scrubAccum.dx / _pixelsPerStep) * _step);
-    widget.onSubmitted?.call(v);
-    _controller.text = _format(v);
+    _emit(_clamp(_scrubStartValue + (_scrubAccum.dx / _pixelsPerStep) * _step));
   }
 
-  void _resetToDefault() {
-    final v = _clamp(widget.defaultValue!);
-    widget.onSubmitted?.call(v);
-    _controller.text = _format(v);
-  }
+  void _resetToDefault() => _emit(_clamp(widget.defaultValue!));
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
-      _controller.text = _format(widget.value);
+      _controller.text = _format(_value);
       _focusNode.unfocus();
       return KeyEventResult.handled;
     }

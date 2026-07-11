@@ -68,6 +68,27 @@ void main() {
     expect(find.text('5'), findsOneWidget);
   });
 
+  testWidgets('rapid stepper taps accumulate without a parent rebuild',
+      (tester) async {
+    final sent = <double>[];
+    // The parent value stays 0 the whole time (simulating a burst of taps
+    // faster than the parent can rebuild). The field must still count up.
+    await tester.pumpWidget(_host(StudioNumberField(
+      value: 0,
+      step: 0.1,
+      steppers: true,
+      onSubmitted: sent.add,
+    )));
+    final plus = find.byIcon(Icons.add);
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(plus);
+      await tester.pump();
+    }
+    expect(sent, hasLength(3));
+    expect(sent.last, closeTo(0.3, 1e-9));
+    expect(find.text('0.30'), findsOneWidget);
+  });
+
   testWidgets('external value change updates text when unfocused',
       (tester) async {
     await tester.pumpWidget(_host(StudioNumberField(
