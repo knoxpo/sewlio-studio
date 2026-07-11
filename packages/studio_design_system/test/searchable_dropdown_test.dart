@@ -77,4 +77,16 @@ void main() {
     // Popover closed: the search box is gone.
     expect(find.byType(EditableText), findsNothing);
   });
+
+  testWidgets('itemFontFamily renders the selected label in that font',
+      (tester) async {
+    await tester.pumpWidget(_host(StudioSearchableDropdown<String>(
+      value: 'a',
+      items: _items,
+      onChanged: (_) {},
+      itemFontFamily: (v) => v == 'a' ? 'Apple Sans' : null,
+    )));
+    final label = tester.widget<Text>(find.text('Apple'));
+    expect(label.style?.fontFamily, 'Apple Sans');
+  });
 }

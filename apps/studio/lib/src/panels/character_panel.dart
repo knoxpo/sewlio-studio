@@ -52,6 +52,33 @@ class _CharacterPanelState extends State<CharacterPanel> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Rebuild when a font preview face finishes registering so the picker
+    // can render newly-available families in their own typeface.
+    FontLibrary.instance.addListener(_onFontsChanged);
+  }
+
+  @override
+  void dispose() {
+    FontLibrary.instance.removeListener(_onFontsChanged);
+    super.dispose();
+  }
+
+  void _onFontsChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// Font family to render a picker item's own label in: registers the
+  /// face on first sight and returns it once ready (else null → default
+  /// UI font until the async load completes and rebuilds).
+  String? _previewFamily(String family) {
+    if (family == FontLibrary.builtinFamily) return null;
+    FontLibrary.instance.ensurePreview(family);
+    return FontLibrary.instance.isPreviewReady(family) ? family : null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _model,
@@ -172,6 +199,7 @@ class _CharacterPanelState extends State<CharacterPanel> {
                     hint: mixed.contains('fontFamily') ? 'Mixed' : value,
                     width: double.infinity,
                     items: [for (final f in families) (f, f)],
+                    itemFontFamily: _previewFamily,
                     onChanged: (f) => _apply(CharAttrs(fontFamily: f)),
                   );
                 },

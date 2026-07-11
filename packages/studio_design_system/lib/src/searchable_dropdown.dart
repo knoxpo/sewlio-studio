@@ -19,6 +19,7 @@ class StudioSearchableDropdown<T> extends StatefulWidget {
     required this.onChanged,
     this.hint,
     this.width,
+    this.itemFontFamily,
   });
 
   final T? value;
@@ -28,6 +29,11 @@ class StudioSearchableDropdown<T> extends StatefulWidget {
   final void Function(T value) onChanged;
   final String? hint;
   final double? width;
+
+  /// Optional per-item font family: when non-null, that item's label is
+  /// rendered in the returned font (a WYSIWYG font picker). Return null to
+  /// keep the default UI font.
+  final String? Function(T value)? itemFontFamily;
 
   @override
   State<StudioSearchableDropdown<T>> createState() =>
@@ -184,7 +190,13 @@ class _StudioSearchableDropdownState<T>
       label ?? '',
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(fontSize: 12, color: AppTokens.textPrimary),
+      style: TextStyle(
+        fontSize: 12,
+        color: AppTokens.textPrimary,
+        fontFamily: widget.value == null
+            ? null
+            : widget.itemFontFamily?.call(widget.value as T),
+      ),
     );
 
     return OverlayPortal(
@@ -297,6 +309,7 @@ class _StudioSearchableDropdownState<T>
                           final (v, l) = filtered[i];
                           return _MenuRow(
                             label: l,
+                            fontFamily: widget.itemFontFamily?.call(v),
                             selected: v == widget.value,
                             highlighted: i == _highlighted,
                             onTap: () => _select(v),
@@ -318,6 +331,7 @@ class _StudioSearchableDropdownState<T>
 class _MenuRow extends StatelessWidget {
   const _MenuRow({
     required this.label,
+    required this.fontFamily,
     required this.selected,
     required this.highlighted,
     required this.onTap,
@@ -325,6 +339,7 @@ class _MenuRow extends StatelessWidget {
   });
 
   final String label;
+  final String? fontFamily;
   final bool selected;
   final bool highlighted;
   final VoidCallback onTap;
@@ -349,6 +364,7 @@ class _MenuRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12,
+                  fontFamily: fontFamily,
                   color:
                       highlighted ? AppTokens.onPrimary : AppTokens.textPrimary,
                 ),

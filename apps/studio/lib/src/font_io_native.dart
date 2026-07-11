@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:studio_tools/studio_tools.dart';
 
@@ -60,3 +61,12 @@ Future<Map<String, String>> scanSystemFontFamilies() {
 
 Future<TextFont?> loadFontFile(String path) async =>
     TtfTextFont.tryParse(await File(path).readAsBytes());
+
+/// Raw font-file bytes, for registering a preview face with Flutter.
+Future<Uint8List?> loadFontBytes(String path) async {
+  try {
+    return await File(path).readAsBytes();
+  } catch (_) {
+    return null;
+  }
+}
