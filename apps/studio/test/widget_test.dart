@@ -83,7 +83,11 @@ void main() {
 
     await tester.tap(find.text('Running Stitch'));
     await tester.pump();
-    await tester.tap(find.text('Properties'));
+    // The tab bar scrolls horizontally — the Properties tab may sit
+    // past the dock edge under touch-sized chrome.
+    await tester.ensureVisible(find.byKey(const Key('dock-tab-properties')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('dock-tab-properties')));
     await tester.pump();
 
     expect(find.text('Object Properties'), findsOneWidget);
@@ -123,14 +127,19 @@ void main() {
 
     await tester.tap(find.text('Group 1'));
     await tester.pump();
-    await tester.tap(find.text('Properties'));
+    // Scrollable tab bar: bring overflowing tabs into view first.
+    await tester.ensureVisible(find.byKey(const Key('dock-tab-properties')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('dock-tab-properties')));
     await tester.pump();
     expect(find.text('Group Properties'), findsOneWidget);
 
     await tester.tap(find.byType(StudioSwitch).first);
     await tester.pump();
 
-    await tester.tap(find.text('Stitches'));
+    await tester.ensureVisible(find.byKey(const Key('dock-tab-stitches')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('dock-tab-stitches')));
     await tester.pump();
     expect(find.text('Running Stitch'), findsNothing);
   });
@@ -145,7 +154,7 @@ void main() {
 
     await tester.tap(find.text('View'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Show Rulers'));
+    await tester.tap(find.text('Rulers'));
     await tester.pumpAndSettle();
     expect(find.byType(Ruler), findsNothing);
   });

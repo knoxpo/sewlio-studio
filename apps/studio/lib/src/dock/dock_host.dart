@@ -152,12 +152,17 @@ class _DockHostState extends State<DockHost> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Tabs take natural width, shrinking to ellipsis when tight.
+            // Tabs keep their natural width and scroll horizontally
+            // when tight (same pattern as the toolbox rail) — no
+            // ellipsized labels.
             Expanded(
-              child: Row(children: [
-                for (final (index, id) in group.panelIds.indexed)
-                  Flexible(child: _tab(group, index, id)),
-              ]),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  for (final (index, id) in group.panelIds.indexed)
+                    _tab(group, index, id),
+                ]),
+              ),
             ),
             _collapseChevron(group),
           ],
@@ -222,39 +227,54 @@ class _DockHostState extends State<DockHost> {
         final caretSide = _hoverTabId == id && candidates.isNotEmpty
             ? (_hoverTabAfter ? 1.0 : -1.0)
             : null;
+        final feedback = Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTokens.surfaceHigh,
+              border: Border.all(color: AppTokens.primary),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(def.title,
+                style: TextStyle(color: AppTokens.textPrimary, fontSize: 12)),
+          ),
+        );
+        final child = caretSide == null
+            ? tab
+            : Stack(children: [
+                tab,
+                // 2px insertion caret at the targeted tab edge.
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  left: caretSide < 0 ? 0 : null,
+                  right: caretSide > 0 ? 0 : null,
+                  child: Container(width: 2, color: AppTokens.primary),
+                ),
+              ]);
+        // Touch: a pan on the tab must scroll the tab bar, so tab
+        // drags start on long-press (the mobile reorder convention).
+        // Mouse drags stay immediate. Both anchor the feedback to the
+        // pointer so DragTarget.onMove's offset IS the pointer
+        // position (edge/zone math relies on it).
+        if (_touch) {
+          return LongPressDraggable<String>(
+            data: id,
+            dragAnchorStrategy: pointerDragAnchorStrategy,
+            onDragStarted: () => setState(() => _tabDragging = true),
+            onDragEnd: (_) => setState(() => _tabDragging = false),
+            feedback: feedback,
+            child: child,
+          );
+        }
         return Draggable<String>(
           data: id,
-          // Anchor the feedback to the pointer so DragTarget.onMove's
-          // offset IS the pointer position (edge/zone math relies on it).
           dragAnchorStrategy: pointerDragAnchorStrategy,
           onDragStarted: () => setState(() => _tabDragging = true),
           onDragEnd: (_) => setState(() => _tabDragging = false),
-          feedback: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppTokens.surfaceHigh,
-                border: Border.all(color: AppTokens.primary),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(def.title,
-                  style: TextStyle(color: AppTokens.textPrimary, fontSize: 12)),
-            ),
-          ),
-          child: caretSide == null
-              ? tab
-              : Stack(children: [
-                  tab,
-                  // 2px insertion caret at the targeted tab edge.
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: caretSide < 0 ? 0 : null,
-                    right: caretSide > 0 ? 0 : null,
-                    child: Container(width: 2, color: AppTokens.primary),
-                  ),
-                ]),
+          feedback: feedback,
+          child: child,
         );
       },
     );

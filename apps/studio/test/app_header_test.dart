@@ -54,6 +54,6 @@ void main() {
     expect(find.widgetWithText(StudioButton, 'Save'), findsNothing);
     await tester.tap(find.text('File'));
     await tester.pumpAndSettle();
-    expect(find.text('Save…'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
   });
 }

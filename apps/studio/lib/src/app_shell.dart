@@ -4,8 +4,10 @@ import 'package:studio_design_system/studio_design_system.dart';
 
 import 'app_view_model.dart';
 import 'home_workspace.dart';
+import 'menu/app_menu.dart';
+import 'menu/app_menus.dart';
+import 'menu/menu_renderers.dart';
 import 'new_project_page.dart';
-import 'panels/panel_def.dart';
 import 'prompts.dart';
 import 'shell.dart';
 import 'workspace_view_model.dart';
@@ -50,11 +52,18 @@ class _AppView extends StatelessWidget {
         ]),
       ),
     );
-    if (!useNativeMenus) return scaffold;
-    // App-level native menu bar (macOS): File menus work from Home;
-    // document actions grey out when no project is open.
-    return PlatformMenuBar(
-      menus: buildPlatformMenus(context, app),
+    // One menu definition (ADR-039), two surfaces: macOS renders it in
+    // the system menu bar (which also dispatches its shortcuts); other
+    // platforms render it in the header and bind the same shortcuts
+    // app-wide via CallbackShortcuts.
+    if (useNativeMenus) {
+      return PlatformMenuBar(
+        menus: buildPlatformMenus(context, app),
+        child: scaffold,
+      );
+    }
+    return CallbackShortcuts(
+      bindings: menuShortcutBindings(buildAppMenus(context, app)),
       child: scaffold,
     );
   }
@@ -120,129 +129,10 @@ class _AppView extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
         const SizedBox(width: 12),
         if (!useNativeMenus)
+          // Same tree as the macOS menu bar (ADR-039) — rendered
+          // in-app on Windows/Linux/web/tablets.
           Flexible(
-            child: MenuBar(
-              children: [
-                SubmenuButton(
-                  menuChildren: [
-                    MenuItemButton(
-                        onPressed: () => showNewProjectDialog(context, app),
-                        child: const Text('New Project…')),
-                    MenuItemButton(
-                        onPressed: app.activeTab != null
-                            ? () => showRenameDialog(context, app.activeTab!.vm)
-                            : null,
-                        child: const Text('Rename…')),
-                    MenuItemButton(
-                        onPressed: app.activeTab != null
-                            ? () => saveActiveProject(context, app)
-                            : null,
-                        child: const Text('Save…')),
-                    MenuItemButton(
-                        onPressed: () => openProjectWithPicker(context, app),
-                        child: const Text('Open…')),
-                    MenuItemButton(
-                        onPressed: app.activeTab != null
-                            ? () => requestCloseTab(context, app, app.active)
-                            : null,
-                        child: const Text('Close')),
-                    MenuItemButton(
-                        onPressed: app.activeTab != null
-                            ? () =>
-                                importSvgWithPicker(context, app.activeTab!.vm)
-                            : null,
-                        child: const Text('Import SVG…')),
-                    MenuItemButton(
-                        onPressed: app.activeTab != null
-                            ? () =>
-                                showDocumentSetup(context, app.activeTab!.vm)
-                            : null,
-                        child: const Text('Document Setup…')),
-                    MenuItemButton(
-                        onPressed: app.activeTab != null
-                            ? () => exportWithPicker(
-                                context, app.activeTab!.vm, '.dst')
-                            : null,
-                        child: const Text('Export DST…')),
-                    MenuItemButton(
-                        onPressed: app.activeTab != null
-                            ? () => exportWithPicker(
-                                context, app.activeTab!.vm, '.exp')
-                            : null,
-                        child: const Text('Export EXP…')),
-                  ],
-                  child: const Text('File'),
-                ),
-                SubmenuButton(
-                  menuChildren: [
-                    MenuItemButton(
-                      onPressed:
-                          app.activeTab != null && app.activeTab!.vm.canUndo
-                              ? app.activeTab!.vm.undo
-                              : null,
-                      child: const Text('Undo'),
-                    ),
-                    MenuItemButton(
-                      onPressed:
-                          app.activeTab != null && app.activeTab!.vm.canRedo
-                              ? app.activeTab!.vm.redo
-                              : null,
-                      child: const Text('Redo'),
-                    ),
-                  ],
-                  child: const Text('Edit'),
-                ),
-                SubmenuButton(
-                  menuChildren: [
-                    MenuItemButton(
-                      leadingIcon: app.activeTab != null
-                          ? Icon(
-                              app.activeTab!.vm.showRulers ? Icons.check : null,
-                              size: 14,
-                            )
-                          : null,
-                      onPressed: app.activeTab?.vm.toggleRulers,
-                      child: const Text('Show Rulers'),
-                    ),
-                    MenuItemButton(
-                      onPressed: app.activeTab?.vm.fitCanvas,
-                      child: const Text('Zoom to Fit'),
-                    ),
-                  ],
-                  child: const Text('View'),
-                ),
-                // Mirrors the native macOS "Panels" menu (FR-1204):
-                // same name, same entries, checkmark = visible.
-                SubmenuButton(
-                  menuChildren: [
-                    for (final def in panelRegistry)
-                      MenuItemButton(
-                        leadingIcon: Icon(
-                          app.dock.isVisible(def.id) ? Icons.check : null,
-                          size: 14,
-                        ),
-                        onPressed: () => app.dock.togglePanel(def.id),
-                        child: Text(def.title),
-                      ),
-                    const Divider(height: 8),
-                    MenuItemButton(
-                      onPressed: app.dock.resetToDefault,
-                      child: const Text('Reset Workspace'),
-                    ),
-                  ],
-                  child: const Text('Panels'),
-                ),
-                SubmenuButton(
-                  menuChildren: [
-                    MenuItemButton(
-                      onPressed: () => showShortcutsDialog(context),
-                      child: const Text('Keyboard Shortcuts'),
-                    ),
-                  ],
-                  child: const Text('Help'),
-                ),
-              ],
-            ),
+            child: toMenuBarWidget(buildAppMenus(context, app)),
           ),
       ],
     );

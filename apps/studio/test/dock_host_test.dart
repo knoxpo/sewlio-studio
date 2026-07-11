@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
@@ -5,6 +6,11 @@ import 'package:studio/src/dock/dock_controller.dart';
 import 'package:studio/src/panels/panel_def.dart';
 
 Future<DockController> pumpEditor(WidgetTester tester) async {
+  // Widget tests default to Android → touch-sized dock chrome, which
+  // makes the tabs overflow into the scrollable tab bar. These tests
+  // exercise desktop drag/drop geometry — pin a desktop platform that
+  // uses the in-app menu bar (not macOS, whose menus are native).
+  debugDefaultTargetPlatformOverride = TargetPlatform.windows;
   tester.view.physicalSize = const Size(1600, 1000);
   tester.view.devicePixelRatio = 1;
   final dock = DockController.memory(panelIds: defaultPanelIds);
@@ -24,6 +30,7 @@ void main() {
     await tester.tap(find.byKey(const Key('dock-tab-layers')));
     await tester.pump();
     expect(find.byTooltip('Add layer'), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('dragging a tab to a gap splits it into its own group',
@@ -48,6 +55,7 @@ void main() {
     // Both groups render their tab bars.
     expect(find.byKey(const Key('dock-tab-layers')), findsOneWidget);
     expect(find.byKey(const Key('dock-splitter-1')), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('dragging a tab onto another tab joins/reorders the group',
@@ -56,14 +64,22 @@ void main() {
     final target = find.byKey(const Key('dock-tab-properties'));
     final gesture = await tester.startGesture(
         tester.getCenter(find.byKey(const Key('dock-tab-stitches'))));
+    // The drag recognizer claims on the first move and fires
+    // onDragStarted on the second (see the split-out test above).
+    await gesture.moveBy(const Offset(0, 10));
     await tester.pump();
-    // Hover the right half of the Properties tab → insert after it.
-    await gesture.moveTo(tester.getCenter(target) + const Offset(30, 0));
+    await gesture.moveBy(const Offset(0, 10));
+    await tester.pump();
+    // Hover the left half of the Properties tab → insert before it.
+    // (Its right half may sit past the dock edge in the scrollable
+    // tab bar, so the left half is the reliably visible drop zone.)
+    await gesture.moveTo(tester.getTopLeft(target) + const Offset(20, 12));
     await tester.pump();
     await gesture.up();
     await tester.pump();
     expect(dock.layout.groups.single.panelIds,
-        ['layers', 'properties', 'stitches']);
+        ['layers', 'stitches', 'properties']);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('splitter drag resizes the pair and survives collapse toggle',
@@ -88,6 +104,7 @@ void main() {
     await tester.tap(find.byKey(const Key('dock-collapse-0')));
     await tester.pump();
     expect(find.byKey(const Key('dock-panel-layers')), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('width handle resizes the dock within bounds', (tester) async {
@@ -100,6 +117,7 @@ void main() {
         find.byKey(const Key('dock-width-handle')), const Offset(-500, 0));
     await tester.pump();
     expect(dock.layout.width, 480); // clamped to maxWidth
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('Panels menu toggles panels and resets the workspace',
@@ -120,5 +138,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(dock.layout.groups.single.panelIds, defaultPanelIds);
     expect(dock.isVisible('properties'), isTrue);
+    debugDefaultTargetPlatformOverride = null;
   });
 }
