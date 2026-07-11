@@ -53,6 +53,9 @@ bool fileExists(String path) => false;
 /// Ensure parent directory exists. No-op on web (FSA doesn't need this).
 void ensureParentDir(String path) {}
 
+/// Unused on web; exists so the facade exports one API surface.
+String? appStateBaseDirOverride;
+
 /// App state path is null on web (no persistent app state directory).
 String? appStatePath(String fileName) => null;
 

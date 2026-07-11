@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 
+import '../form_factor.dart';
 import '../panels/panel_def.dart';
 import '../workspace_view_model.dart';
 import 'dock_controller.dart';
@@ -20,7 +21,11 @@ class DockHost extends StatefulWidget {
 }
 
 class _DockHostState extends State<DockHost> {
-  static const _splitterThickness = 6.0;
+  /// Chrome hit areas grow to touch size on touch platforms
+  /// (platform-requirements §14); visuals stay compact.
+  bool get _touch => isTouchPlatform;
+  double get _splitterThickness => _touch ? 12.0 : 6.0;
+  double get _widthHandleThickness => _touch ? 16.0 : 5.0;
 
   /// Hover state for drop indicators while a tab drag is in flight.
   String? _hoverTabId; // tab whose edge is targeted
@@ -81,7 +86,7 @@ class _DockHostState extends State<DockHost> {
         onHorizontalDragUpdate: (details) =>
             controller.resizeWidth(layout.width - details.delta.dx),
         onHorizontalDragEnd: (_) => controller.save(),
-        child: const SizedBox(width: 5),
+        child: SizedBox(width: _widthHandleThickness),
       ),
     );
   }
@@ -173,7 +178,8 @@ class _DockHostState extends State<DockHost> {
       },
       child: Container(
         margin: const EdgeInsets.only(right: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: EdgeInsets.symmetric(
+            horizontal: _touch ? 14 : 10, vertical: _touch ? 14 : 4),
         decoration: BoxDecoration(
           // Affinity-style: the active tab is a filled chip.
           color: active ? AppTokens.surfaceHigh : null,
@@ -260,8 +266,8 @@ class _DockHostState extends State<DockHost> {
       borderRadius: BorderRadius.circular(4),
       onTap: () => controller.toggleCollapsed(group),
       child: Container(
-        width: 20,
-        height: 20,
+        width: _touch ? 40 : 20,
+        height: _touch ? 40 : 20,
         margin: const EdgeInsets.only(left: 4),
         decoration: BoxDecoration(
           border: Border.all(color: AppTokens.border),

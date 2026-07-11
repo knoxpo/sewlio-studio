@@ -102,10 +102,10 @@ void main() {
     expect(dock.layout.width, 480); // clamped to maxWidth
   });
 
-  testWidgets('Window menu toggles panels and resets the workspace',
+  testWidgets('Panels menu toggles panels and resets the workspace',
       (tester) async {
     final dock = await pumpEditor(tester);
-    await tester.tap(find.text('Window'));
+    await tester.tap(find.text('Panels'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(MenuItemButton, 'Properties'));
     await tester.pumpAndSettle();
@@ -114,7 +114,7 @@ void main() {
 
     dock.splitOut('layers', groupIndex: 0);
     await tester.pump();
-    await tester.tap(find.text('Window'));
+    await tester.tap(find.text('Panels'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(MenuItemButton, 'Reset Workspace'));
     await tester.pumpAndSettle();

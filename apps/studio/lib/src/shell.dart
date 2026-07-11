@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
@@ -11,7 +12,9 @@ import 'app_shell.dart';
 import 'app_view_model.dart';
 import 'bottom_panel.dart';
 import 'dock/dock_host.dart';
+import 'form_factor.dart';
 import 'new_project_page.dart';
+import 'panels/context_menu.dart';
 import 'panels/panel_def.dart';
 import 'prompts.dart';
 import 'shape_palette.dart';
@@ -54,16 +57,10 @@ class EditorWorkspace extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: Stack(children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ToolboxRail(model: model),
-                    Expanded(child: _canvasColumn(context)),
-                    DockHost(controller: app.dock, model: model),
-                  ],
-                ),
-              ]),
+              child: LayoutBuilder(builder: (context, constraints) {
+                return _workspaceBody(
+                    context, formFactorFor(constraints.maxWidth));
+              }),
             ),
             BottomPanel(
               sequence: sequence,
@@ -74,6 +71,53 @@ class EditorWorkspace extends StatelessWidget {
             _statusBar(),
           ],
         ));
+  }
+
+  /// Workspace layout per breakpoint (platform-requirements §14):
+  /// desktop keeps permanent edge panels; tablet landscape makes the
+  /// dock collapsible; tablet portrait floats toolbox and dock over a
+  /// full-bleed canvas.
+  Widget _workspaceBody(BuildContext context, FormFactor formFactor) {
+    final touch = isTouchPlatform;
+    switch (formFactor) {
+      case FormFactor.desktop:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ToolboxRail(model: model, touchMode: touch),
+            Expanded(child: _canvasColumn(context, formFactor)),
+            DockHost(controller: app.dock, model: model),
+          ],
+        );
+      case FormFactor.tabletLandscape:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ToolboxRail(model: model, touchMode: touch),
+            Expanded(child: _canvasColumn(context, formFactor)),
+            if (model.dockVisible) DockHost(controller: app.dock, model: model),
+          ],
+        );
+      case FormFactor.tabletPortrait:
+        return Stack(children: [
+          Positioned.fill(child: _canvasColumn(context, formFactor)),
+          Positioned(
+            left: 8,
+            top: 40,
+            bottom: 40,
+            // ponytail: always-visible floating rail — auto-hide-on-idle
+            // arrives if it proves to cover too much canvas in practice.
+            child: ToolboxRail(model: model, touchMode: touch, floating: true),
+          ),
+          if (model.dockVisible)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: DockHost(controller: app.dock, model: model),
+            ),
+        ]);
+    }
   }
 
   /// The multi-tool toolbox group containing the active tool, if any —
@@ -158,7 +202,7 @@ class EditorWorkspace extends StatelessWidget {
 
   // ---------------------------------------------------------- canvas column
 
-  Widget _canvasColumn(BuildContext context) {
+  Widget _canvasColumn(BuildContext context, FormFactor formFactor) {
     return Column(
       children: [
         // Canvas toolbar
@@ -213,6 +257,15 @@ class EditorWorkspace extends StatelessWidget {
                   icon: Icons.zoom_in,
                   tooltip: 'Zoom in',
                   onPressed: () => model.zoomBy(1.25)),
+              // Collapsible dock (tablet form factors only).
+              if (formFactor != FormFactor.desktop)
+                StudioIconButton(
+                    key: const Key('toggle-dock'),
+                    icon:
+                        model.dockVisible ? Icons.last_page : Icons.first_page,
+                    tooltip: model.dockVisible ? 'Hide panels' : 'Show panels',
+                    active: model.dockVisible,
+                    onPressed: model.toggleDock),
             ],
           ),
         ),
@@ -275,21 +328,21 @@ class EditorWorkspace extends StatelessWidget {
       builder: (context, cursor, _) => ValueListenableBuilder<PaintedCursor?>(
         valueListenable: model.paintedCursor,
         builder: (context, penBadge, _) => penBadge == null
-            ? _canvasView(cursor, null, null)
+            ? _canvasView(context, cursor, null, null)
             // Pen active: track the pointer so the painted pen cursor
             // follows every move (only then — other tools don't pay
             // the per-move rebuild).
             : ValueListenableBuilder<g.Point?>(
                 valueListenable: model.cursor,
                 builder: (context, world, _) =>
-                    _canvasView(cursor, penBadge, world),
+                    _canvasView(context, cursor, penBadge, world),
               ),
       ),
     );
   }
 
-  Widget _canvasView(
-      MouseCursor cursor, PaintedCursor? penBadge, g.Point? penWorld) {
+  Widget _canvasView(BuildContext context, MouseCursor cursor,
+      PaintedCursor? penBadge, g.Point? penWorld) {
     return CanvasView(
       document: model.session.document,
       viewport: model.viewport,
@@ -298,6 +351,7 @@ class EditorWorkspace extends StatelessWidget {
       selectedIds: model.showsTransformBox ? model.selectedObjectIds : const {},
       selectionBounds: model.showsTransformBox ? model.selectionBounds : null,
       previewPaths: model.tool.preview,
+      previewWidths: model.previewWidths,
       markers: model.canvasMarkers,
       stitches: model.showStitches ? model.sequence : null,
       highlightStitches: model.highlightedStitchOps,
@@ -311,12 +365,45 @@ class EditorWorkspace extends StatelessWidget {
       cursorLabelWorld:
           model.liveTransformLabel == null ? null : model.cursor.value,
       onTapWorld: model.onCanvasTap,
+      onLongPressWorld: (world, globalPosition) =>
+          _showCanvasContextMenu(context, world, globalPosition),
       onHoverWorld: model.hover,
       onHoverExit: model.pointerExited,
       onDragStartWorld: model.onCanvasDragStart,
       onDragUpdateWorld: model.onCanvasDragUpdate,
-      onDragEndWorld: model.tool.dragEnd,
+      onDragEndWorld: model.onCanvasDragEnd,
+      liveGuide: model.liveGuide,
+      hideGuideId: model.hiddenGuideId,
     );
+  }
+
+  /// Touch long-press context menu (tablets). With the Select tool a
+  /// press over an unselected object selects it first, so the menu
+  /// acts on what's under the finger.
+  Future<void> _showCanvasContextMenu(
+      BuildContext context, g.Point world, Offset globalPosition) async {
+    if (model.activeKind == ToolKind.select && model.primarySelection == null) {
+      model.onCanvasTap(world, toggle: false, extend: false);
+    }
+    final hasSelection = model.primarySelection != null;
+    final action = await showStudioMenu<String>(
+      context: context,
+      position: globalPosition,
+      entries: [
+        StudioMenuEntry('Duplicate', 'duplicate', enabled: hasSelection),
+        StudioMenuEntry('Delete', 'delete', enabled: hasSelection),
+        const StudioMenuEntry.divider(),
+        const StudioMenuEntry('Zoom to Fit', 'fit'),
+      ],
+    );
+    switch (action) {
+      case 'duplicate':
+        model.duplicatePrimary();
+      case 'delete':
+        model.deleteSelection();
+      case 'fit':
+        model.fitCanvas();
+    }
   }
 
   /// Wraps the canvas in top/left mm rulers when enabled (View menu).
@@ -354,6 +441,11 @@ class EditorWorkspace extends StatelessWidget {
               cursor: model.cursor,
               markers: model.markersFor(GuideAxis.vertical),
               onTapMm: (mm) => _onRulerTap(context, GuideAxis.vertical, mm),
+              // Illustrator pull-out: top ruler births a horizontal guide.
+              onGuidePullStart: (mm) =>
+                  model.beginGuidePull(GuideAxis.horizontal, mm),
+              onGuidePullUpdate: model.updateGuidePull,
+              onGuidePullEnd: model.endGuidePull,
             ),
           ),
         ),
@@ -371,6 +463,11 @@ class EditorWorkspace extends StatelessWidget {
               cursor: model.cursor,
               markers: model.markersFor(GuideAxis.horizontal),
               onTapMm: (mm) => _onRulerTap(context, GuideAxis.horizontal, mm),
+              // Left ruler births a vertical guide.
+              onGuidePullStart: (mm) =>
+                  model.beginGuidePull(GuideAxis.vertical, mm),
+              onGuidePullUpdate: model.updateGuidePull,
+              onGuidePullEnd: model.endGuidePull,
             ),
           ),
           Expanded(child: canvas),
@@ -448,8 +545,12 @@ class EditorWorkspace extends StatelessWidget {
                   color: AppTokens.accentGreen, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
-            Text(model.tool.status ?? 'Ready'),
-            const Spacer(),
+            // Ellipsize: tool hints outgrow narrow (tablet) windows.
+            Expanded(
+              child: Text(model.tool.status ?? 'Ready',
+                  overflow: TextOverflow.ellipsis),
+            ),
+            const SizedBox(width: 10),
             ListenableBuilder(
               listenable: model.viewport,
               builder: (context, _) =>
@@ -661,6 +762,24 @@ void _toast(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
+/// Save/export toast. On touch platforms the file lives in the app
+/// documents sandbox, so the toast carries a Share action (system
+/// share sheet → Files/Drive/AirDrop) as the way to get it out.
+void _toastSaved(BuildContext context, String message, String path) {
+  if (!isTouchPlatform) {
+    _toast(context, message);
+    return;
+  }
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Text(message),
+    action: SnackBarAction(
+      label: 'Share…',
+      onPressed: () =>
+          SharePlus.instance.share(ShareParams(files: [XFile(path)])),
+    ),
+  ));
+}
+
 /// Saves the active tab; [saveAs] (or an unsaved project) asks via the
 /// native dialog, which confirms overwrites itself.
 Future<void> saveActiveProject(BuildContext context, AppViewModel app,
@@ -675,7 +794,7 @@ Future<void> saveActiveProject(BuildContext context, AppViewModel app,
   if (path == null || !context.mounted) return;
   try {
     await app.saveTab(tab, path);
-    if (context.mounted) _toast(context, 'Saved $path');
+    if (context.mounted) _toastSaved(context, 'Saved $path', path);
   } catch (e) {
     if (context.mounted) _toast(context, 'Save failed: $e');
   }
@@ -725,10 +844,11 @@ Future<void> exportWithPicker(
   try {
     await model.writeExport(path, result.bytes!);
     if (context.mounted) {
-      _toast(
+      _toastSaved(
           context,
           'Exported $path'
-          '${result.skipped == 0 ? '' : ' (${result.skipped} object(s) skipped)'}');
+          '${result.skipped == 0 ? '' : ' (${result.skipped} object(s) skipped)'}',
+          path);
     }
   } catch (e) {
     if (context.mounted) _toast(context, 'Export failed: $e');
@@ -1157,16 +1277,10 @@ List<PlatformMenu> buildPlatformMenus(BuildContext context, AppViewModel app) {
         // the corresponding render options; not faked here.
       ]),
     ]),
-    PlatformMenu(label: 'Window', menus: [
-      const PlatformMenuItemGroup(members: [
-        PlatformProvidedMenuItem(
-            type: PlatformProvidedMenuItemType.minimizeWindow),
-        PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.zoomWindow),
-        PlatformProvidedMenuItem(
-            type: PlatformProvidedMenuItemType.toggleFullScreen),
-      ]),
-      // Dockable panels (FR-1204): PlatformMenuItem has no checked
-      // state, so labels flip Show/Hide like the rulers item above.
+    // Dedicated Panels menu, mirrored by the in-app menu bar so panel
+    // visibility lives in the same place on every platform (FR-1204).
+    // PlatformMenuItem has no checked state, so labels flip Show/Hide.
+    PlatformMenu(label: 'Panels', menus: [
       PlatformMenuItemGroup(members: [
         for (final def in panelRegistry)
           PlatformMenuItem(
@@ -1175,12 +1289,23 @@ List<PlatformMenu> buildPlatformMenus(BuildContext context, AppViewModel app) {
                 : 'Show ${def.title}',
             onSelected: () => app.dock.togglePanel(def.id),
           ),
+      ]),
+      PlatformMenuItemGroup(members: [
         PlatformMenuItem(
           label: 'Reset Workspace',
           onSelected: app.dock.resetToDefault,
         ),
       ]),
-      const PlatformProvidedMenuItem(
+    ]),
+    const PlatformMenu(label: 'Window', menus: [
+      PlatformMenuItemGroup(members: [
+        PlatformProvidedMenuItem(
+            type: PlatformProvidedMenuItemType.minimizeWindow),
+        PlatformProvidedMenuItem(type: PlatformProvidedMenuItemType.zoomWindow),
+        PlatformProvidedMenuItem(
+            type: PlatformProvidedMenuItemType.toggleFullScreen),
+      ]),
+      PlatformProvidedMenuItem(
           type: PlatformProvidedMenuItemType.arrangeWindowsInFront),
     ]),
     PlatformMenu(label: 'Help', menus: [

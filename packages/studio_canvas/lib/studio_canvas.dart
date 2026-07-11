@@ -6,4 +6,5 @@ library;
 
 export 'src/canvas_view.dart';
 export 'src/ruler.dart';
+export 'src/stylus_gesture.dart';
 export 'src/viewport.dart';

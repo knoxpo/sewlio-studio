@@ -18,7 +18,7 @@ final class RulerMarker {
 /// A millimeter ruler along one canvas edge (Affinity-style):
 /// three-level adaptive ticks, labels on majors, a live cursor marker,
 /// and clickable guide markers.
-class Ruler extends StatelessWidget {
+class Ruler extends StatefulWidget {
   const Ruler({
     super.key,
     required this.viewport,
@@ -26,6 +26,9 @@ class Ruler extends StatelessWidget {
     this.cursor,
     this.markers = const [],
     this.onTapMm,
+    this.onGuidePullStart,
+    this.onGuidePullUpdate,
+    this.onGuidePullEnd,
   });
 
   final ViewportController viewport;
@@ -41,13 +44,44 @@ class Ruler extends StatelessWidget {
   /// (guide creation/editing).
   final void Function(double mm)? onTapMm;
 
+  /// Illustrator-style pull-out: dragging from the ruler onto the
+  /// canvas creates a guide parallel to it (top ruler → horizontal
+  /// guide, left ruler → vertical guide). [mm] is the world coordinate
+  /// on the axis PERPENDICULAR to this ruler — the guide's position.
+  /// End reports whether the pointer actually left the ruler strip
+  /// (released inside it = cancelled).
+  final void Function(double mm)? onGuidePullStart;
+  final void Function(double mm)? onGuidePullUpdate;
+  final void Function({required bool commit})? onGuidePullEnd;
+
+  @override
+  State<Ruler> createState() => _RulerState();
+}
+
+class _RulerState extends State<Ruler> {
+  ViewportController get viewport => widget.viewport;
+  Axis get axis => widget.axis;
+
+  var _pulledOut = false;
+
   double _toMm(Offset local) => axis == Axis.horizontal
       ? (local.dx - viewport.pan.dx) / viewport.zoom
       : (local.dy - viewport.pan.dy) / viewport.zoom;
 
+  /// World coordinate perpendicular to the ruler: the ruler strip sits
+  /// [rulerThickness] before the canvas origin on that axis.
+  double _toPerpendicularMm(Offset local) => axis == Axis.horizontal
+      ? (local.dy - rulerThickness - viewport.pan.dy) / viewport.zoom
+      : (local.dx - rulerThickness - viewport.pan.dx) / viewport.zoom;
+
+  bool _insideStrip(Offset local) => axis == Axis.horizontal
+      ? local.dy <= rulerThickness
+      : local.dx <= rulerThickness;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final onTapMm = widget.onTapMm;
     return SizedBox(
       width: axis == Axis.vertical ? rulerThickness : null,
       height: axis == Axis.horizontal ? rulerThickness : null,
@@ -59,17 +93,37 @@ class Ruler extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTapUp: onTapMm == null
               ? null
-              : (details) => onTapMm!(_toMm(details.localPosition)),
+              : (details) => onTapMm(_toMm(details.localPosition)),
+          onPanStart: widget.onGuidePullStart == null
+              ? null
+              : (details) {
+                  _pulledOut = false;
+                  widget.onGuidePullStart!(
+                      _toPerpendicularMm(details.localPosition));
+                },
+          onPanUpdate: widget.onGuidePullUpdate == null
+              ? null
+              : (details) {
+                  if (!_insideStrip(details.localPosition)) _pulledOut = true;
+                  widget.onGuidePullUpdate!(
+                      _toPerpendicularMm(details.localPosition));
+                },
+          onPanEnd: widget.onGuidePullEnd == null
+              ? null
+              : (_) => widget.onGuidePullEnd!(commit: _pulledOut),
+          onPanCancel: widget.onGuidePullEnd == null
+              ? null
+              : () => widget.onGuidePullEnd!(commit: false),
           child: ListenableBuilder(
-            listenable:
-                Listenable.merge([viewport, if (cursor != null) cursor!]),
+            listenable: Listenable.merge(
+                [viewport, if (widget.cursor != null) widget.cursor!]),
             builder: (context, _) => CustomPaint(
               size: Size.infinite,
               painter: _RulerPainter(
                 viewport: viewport,
                 axis: axis,
-                cursor: cursor?.value,
-                markers: markers,
+                cursor: widget.cursor?.value,
+                markers: widget.markers,
                 colorScheme: scheme,
               ),
             ),

@@ -73,4 +73,25 @@ void main() {
       const Point(10, 10),
     ]);
   });
+
+  test(
+      'simplifyPolylineIndices keeps endpoints and maps back to the '
+      'same points', () {
+    final points = [
+      for (var x = 0.0; x <= 10; x += 0.5) Point(x, 0),
+      for (var y = 0.5; y <= 10; y += 0.5) Point(10, y),
+    ];
+    final kept = simplifyPolylineIndices(points, tolerance: 0.1);
+    expect(kept.first, 0);
+    expect(kept.last, points.length - 1);
+    expect([for (final i in kept) points[i]],
+        simplifyPolyline(points, tolerance: 0.1));
+  });
+
+  test('simplifyPolylineIndices on short input returns all indices', () {
+    expect(
+      simplifyPolylineIndices(const [Point(0, 0), Point(1, 1)]),
+      [0, 1],
+    );
+  });
 }

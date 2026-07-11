@@ -42,7 +42,7 @@ void main() {
   group('PencilTool', () {
     test('freehand trace simplifies to corners', () {
       Path? created;
-      final pencil = PencilTool(onCreate: (p) => created = p);
+      final pencil = PencilTool(onCreate: (p, {pressures}) => created = p);
       expect(pencil.dragStart(const Point(0, 0)), isTrue);
       for (var x = 0.5; x <= 10; x += 0.5) {
         pencil.dragUpdate(Point(x, 0));
@@ -53,6 +53,39 @@ void main() {
       pencil.dragEnd();
       expect(created!.toPolyline(),
           [const Point(0, 0), const Point(10, 0), const Point(10, 10)]);
+    });
+
+    test('stylus pressure decimates with the trace, one per node', () {
+      Path? created;
+      List<double>? captured;
+      final pencil = PencilTool(onCreate: (p, {pressures}) {
+        created = p;
+        captured = pressures;
+      });
+      pencil.pointerPressure = 0.2;
+      pencil.dragStart(const Point(0, 0));
+      for (var x = 0.5; x <= 10; x += 0.5) {
+        pencil.pointerPressure = x < 5 ? 0.2 : 0.9;
+        pencil.dragUpdate(Point(x, 0));
+      }
+      pencil.pointerPressure = 1.0;
+      pencil.dragUpdate(const Point(10, 10));
+      pencil.dragEnd();
+      expect(captured, isNotNull);
+      expect(captured!.length, created!.segments.length + 1);
+      expect(captured!.first, 0.2);
+      expect(captured!.last, 1.0);
+    });
+
+    test('uniform pressure yields no pressures (mouse/touch)', () {
+      List<double>? captured = [];
+      final pencil =
+          PencilTool(onCreate: (p, {pressures}) => captured = pressures);
+      pencil.dragStart(const Point(0, 0));
+      pencil.dragUpdate(const Point(10, 0));
+      pencil.dragUpdate(const Point(10, 10));
+      pencil.dragEnd();
+      expect(captured, isNull);
     });
   });
 

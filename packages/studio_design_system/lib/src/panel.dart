@@ -69,12 +69,18 @@ class StudioIconButton extends StatelessWidget {
     this.active = false,
     this.flyoutIndicator = false,
     this.size = 18,
+    this.minTarget,
   });
 
   final IconData icon;
 
   /// Icon size; padding scales down with it (compact panel toolbars).
   final double size;
+
+  /// Minimum tap-target edge in logical px (48 on touch devices per
+  /// platform-requirements §14); null keeps the compact desktop hit
+  /// area. Visuals stay the same size — only the hit area grows.
+  final double? minTarget;
 
   /// Hover tooltip; null suppresses it (e.g. when a richer hover card
   /// wraps the button).
@@ -98,6 +104,10 @@ class StudioIconButton extends StatelessWidget {
       hoverColor: AppTokens.surfaceHigh,
       child: Container(
         padding: EdgeInsets.all(size < 18 ? 4 : 6),
+        constraints: minTarget == null
+            ? null
+            : BoxConstraints(minWidth: minTarget!, minHeight: minTarget!),
+        alignment: minTarget == null ? null : Alignment.center,
         decoration: BoxDecoration(
           color: active ? AppTokens.primary : null,
           borderRadius: BorderRadius.circular(4),

@@ -27,7 +27,11 @@ final class StrokeStyle {
   ArrowheadStyle startArrow = ArrowheadStyle.none;
   ArrowheadStyle endArrow = ArrowheadStyle.none;
   ArrowPlacement arrowPlacement = ArrowPlacement.atLineEnd;
-  PressureProfile pressure = PressureProfile.none;
+
+  /// Default on so stylus pressure "just works" on tablets (ADR-038);
+  /// mouse/touch never vary pressure, so desktop strokes stay uniform.
+  /// None = explicitly ignore hardware pressure.
+  PressureProfile pressure = PressureProfile.pressure;
 
   /// Arrowhead sizes as % of stroke width; [scalesLinked] keeps them
   /// in sync.

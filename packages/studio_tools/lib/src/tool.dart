@@ -30,6 +30,12 @@ enum ToolCursor {
 /// commands, and exposes live preview geometry for the canvas overlay.
 /// Notifies listeners when its preview/status changes.
 abstract class Tool extends ChangeNotifier {
+  /// Normalized stylus pressure (0–1) for the current drag sample, set
+  /// by the shell before [dragStart]/[dragUpdate]; 1.0 for devices
+  /// without pressure. A field rather than a parameter so the ~10
+  /// tools that ignore pressure keep their signatures.
+  double pointerPressure = 1.0;
+
   /// Single tap/click.
   void tap(Point world) {}
 

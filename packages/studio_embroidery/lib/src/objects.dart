@@ -137,8 +137,9 @@ sealed class EmbroideryObject {
         if (name != null) 'name': name,
         if (!stroke.isDefault) 'stroke': stroke.toJson(),
         ...switch (this) {
-          RunningStitchObject(:final stitchLength) => {
-              'stitchLength': stitchLength
+          RunningStitchObject(:final stitchLength, :final widthProfile) => {
+              'stitchLength': stitchLength,
+              if (widthProfile != null) 'widthProfile': widthProfile,
             },
           SatinObject(:final width) => {'width': width},
           FillObject(:final spacing) => {'spacing': spacing},
@@ -181,6 +182,9 @@ sealed class EmbroideryObject {
           stroke: stroke,
           name: name,
           stitchLength: (json['stitchLength'] as num).toDouble(),
+          widthProfile: (json['widthProfile'] as List?)
+              ?.map((w) => (w as num).toDouble())
+              .toList(),
         ),
       'satin' => SatinObject(
           id: id,
@@ -225,10 +229,17 @@ final class RunningStitchObject extends EmbroideryObject {
     super.stroke,
     super.name,
     this.stitchLength = 2.5,
+    this.widthProfile,
   });
 
   /// Target stitch length in mm.
   final double stitchLength;
+
+  /// Per-node stroke width in mm from stylus pressure (ADR-038): one
+  /// entry per path node (`segments.length + 1`). Null = uniform
+  /// [StrokeProps.widthMm]. Rendering interpolates between nodes;
+  /// stitch generation ignores it until satin consumes width.
+  final List<double>? widthProfile;
 
   @override
   RunningStitchObject withPath(Path path) => RunningStitchObject(
@@ -236,7 +247,12 @@ final class RunningStitchObject extends EmbroideryObject {
       path: path,
       stroke: stroke,
       name: name,
-      stitchLength: stitchLength);
+      stitchLength: stitchLength,
+      // Node edits invalidate the node↔width mapping; transforms
+      // preserve it (ADR-038).
+      widthProfile: widthProfile?.length == path.segments.length + 1
+          ? widthProfile
+          : null);
 }
 
 // ponytail: satin/fill are declared so the object model is complete,

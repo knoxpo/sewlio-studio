@@ -16,7 +16,9 @@ dependencies:
     sdk: flutter
   flutter_tabler_icons: ^1.43.0
   lucide_icons_flutter: ^3.1.15
+  path_provider: ^2.1.6
   remix_icons_flutter: ^4.9.3
+  share_plus: ^13.2.0
   studio_ai:
     path: ../../packages/studio_ai
   studio_canvas:

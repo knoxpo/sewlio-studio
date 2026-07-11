@@ -90,18 +90,44 @@ final toolboxGroups = <ToolboxGroup>[
 /// The tool rail: renders [toolboxGroups] plus the persistent
 /// fill/stroke controls at the bottom.
 class ToolboxRail extends StatelessWidget {
-  const ToolboxRail({super.key, required this.model});
+  const ToolboxRail({
+    super.key,
+    required this.model,
+    this.touchMode = false,
+    this.floating = false,
+  });
 
   final WorkspaceViewModel model;
+
+  /// 48 dp tool targets (platform-requirements §14); rail widens to fit.
+  final bool touchMode;
+
+  /// Rendered as an overlay card over the canvas (tablet portrait)
+  /// instead of a docked edge column.
+  final bool floating;
+
+  double? get _minTarget => touchMode ? 48 : null;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44,
-      decoration: BoxDecoration(
-        color: AppTokens.panel,
-        border: Border(right: BorderSide(color: AppTokens.border)),
-      ),
+      width: touchMode ? 56 : 44,
+      decoration: floating
+          ? BoxDecoration(
+              color: AppTokens.panel,
+              border: Border.all(color: AppTokens.border),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: const [
+                BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 2)),
+              ],
+            )
+          : BoxDecoration(
+              color: AppTokens.panel,
+              border: Border(right: BorderSide(color: AppTokens.border)),
+            ),
       child: Column(
         children: [
           const SizedBox(height: 8),
@@ -128,6 +154,7 @@ class ToolboxRail extends StatelessWidget {
         doc: toolDocFor('Shapes'),
         child: StudioIconButton(
           key: const Key('tool-Shapes'),
+          minTarget: _minTarget,
           icon: shapeIcon(model.shapeTool.kind),
           tooltip: null,
           active: model.activeKind == ToolKind.shape,
@@ -148,6 +175,7 @@ class ToolboxRail extends StatelessWidget {
         doc: doc,
         child: StudioIconButton(
           key: Key('tool-${tool.label}'),
+          minTarget: _minTarget,
           icon: tool.icon,
           // The learning card replaces the tooltip when a doc exists.
           tooltip: doc != null
@@ -178,6 +206,7 @@ class ToolboxRail extends StatelessWidget {
       doc: doc,
       child: StudioIconButton(
         key: Key('tool-${current.label}'),
+        minTarget: _minTarget,
         icon: current.icon,
         tooltip: doc != null ? null : current.tooltip,
         active: groupActive,

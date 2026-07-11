@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -7,6 +10,7 @@ import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart' as g;
 
+import 'stylus_gesture.dart';
 import 'viewport.dart';
 
 /// Cursors the canvas paints itself (system cursor hidden): the pen
@@ -34,6 +38,14 @@ typedef CanvasDragStartCallback = bool Function(
   g.Point world, {
   required bool toggle,
   required bool extend,
+  double? pressure,
+});
+
+/// [pressure] is normalized stylus pressure (0–1), null for devices
+/// without pressure (mouse, touch, trackpad).
+typedef CanvasDragUpdateCallback = void Function(
+  g.Point world, {
+  double? pressure,
 });
 
 /// The design canvas: paints document objects through [viewport], pans
@@ -47,6 +59,7 @@ class CanvasView extends StatefulWidget {
     this.selectedIds = const {},
     this.selectionBounds,
     this.previewPaths = const [],
+    this.previewWidths,
     this.markers = const [],
     this.stitches,
     this.highlightStitches = const [],
@@ -58,8 +71,11 @@ class CanvasView extends StatefulWidget {
     this.boxTransform,
     this.cursorLabel,
     this.cursorLabelWorld,
+    this.liveGuide,
+    this.hideGuideId,
     this.onTapWorld,
     this.onDoubleTapWorld,
+    this.onLongPressWorld,
     this.onHoverWorld,
     this.onHoverExit,
     this.onDragStartWorld,
@@ -76,6 +92,10 @@ class CanvasView extends StatefulWidget {
 
   /// Live tool overlay geometry (rubber bands, ghosts).
   final List<g.Path> previewPaths;
+
+  /// Per-node widths in mm for the first preview path (in-progress
+  /// pressure stroke, ADR-038); null draws all previews as hairlines.
+  final List<double>? previewWidths;
 
   /// Anchor markers (node editing, pen points).
   final List<g.Point> markers;
@@ -116,8 +136,19 @@ class CanvasView extends StatefulWidget {
   final String? cursorLabel;
   final g.Point? cursorLabelWorld;
 
+  /// In-flight guide drag (create-from-ruler or reposition): drawn on
+  /// top of the document guides, while [hideGuideId] hides the stored
+  /// guide being moved so it doesn't show twice.
+  final Guide? liveGuide;
+  final Id? hideGuideId;
+
   final CanvasTapCallback? onTapWorld;
   final void Function(g.Point world)? onDoubleTapWorld;
+
+  /// Touch long-press (tablet context menu). Never fires for stylus
+  /// or mouse. The callback also receives the global screen position
+  /// so the shell can anchor a menu.
+  final void Function(g.Point world, Offset globalPosition)? onLongPressWorld;
 
   /// Pointer position in world mm (status bar readout).
   final void Function(g.Point world)? onHoverWorld;
@@ -129,7 +160,7 @@ class CanvasView extends StatefulWidget {
   /// When a drag callback claims the gesture (returns true), drag
   /// updates go to the tool; otherwise the canvas pans.
   final CanvasDragStartCallback? onDragStartWorld;
-  final void Function(g.Point world)? onDragUpdateWorld;
+  final CanvasDragUpdateCallback? onDragUpdateWorld;
   final void Function()? onDragEndWorld;
 
   @override
@@ -140,6 +171,121 @@ class _CanvasViewState extends State<CanvasView> {
   var _toolDrag = false;
   var _panning = false;
   double _lastScale = 1;
+
+  /// Active stylus contact, if any. While set, touch gestures are
+  /// suppressed (palm rejection) and the stylus is driven by
+  /// [_stylus] instead of the gesture arena.
+  int? _stylusPointer;
+  var _stylusToolDrag = false;
+  Offset? _stylusPanLast;
+
+  /// Touch pointers that landed while the stylus was down (the resting
+  /// palm). They stay rejected until they lift, even after stylus-up.
+  final _rejectedTouches = <int>{};
+
+  late final _stylus = StylusGestureHandler(
+    onTap: (position) => widget.onTapWorld?.call(
+      widget.viewport.screenToWorld(position),
+      toggle: _toggle,
+      extend: _extend,
+    ),
+    onDragStart: (position, pressure) {
+      _stylusToolDrag = widget.onDragStartWorld?.call(
+            widget.viewport.screenToWorld(position),
+            toggle: _toggle,
+            extend: _extend,
+            pressure: pressure,
+          ) ??
+          false;
+      _stylusPanLast = _stylusToolDrag ? null : position;
+      if (!_stylusToolDrag) setState(() => _panning = true);
+    },
+    onDragUpdate: (position, pressure) {
+      if (_stylusToolDrag) {
+        widget.onDragUpdateWorld?.call(
+          widget.viewport.screenToWorld(position),
+          pressure: pressure,
+        );
+        return;
+      }
+      widget.viewport.panBy(position - _stylusPanLast!);
+      _stylusPanLast = position;
+    },
+    onDragEnd: () {
+      if (_stylusToolDrag) widget.onDragEndWorld?.call();
+      _stylusToolDrag = false;
+      _stylusPanLast = null;
+      if (_panning) setState(() => _panning = false);
+    },
+  );
+
+  bool _isStylusKind(PointerDeviceKind kind) =>
+      kind == PointerDeviceKind.stylus ||
+      kind == PointerDeviceKind.invertedStylus;
+
+  /// Normalized 0–1 stylus pressure.
+  double _normalizedPressure(PointerEvent event) {
+    final range = event.pressureMax - event.pressureMin;
+    if (range <= 0) return 1.0;
+    return ((event.pressure - event.pressureMin) / range).clamp(0.0, 1.0);
+  }
+
+  /// Touch gestures are ignored while a stylus is in contact or palm
+  /// touches from a stroke are still down.
+  bool get _touchSuppressed =>
+      _stylusPointer != null || _rejectedTouches.isNotEmpty;
+
+  /// Device kind and position of the most recent pointer-down, so
+  /// gesture-arena callbacks can discriminate (long press) and anchor
+  /// drags where the pointer actually landed — the scale recognizer
+  /// only fires onScaleStart after its touch slop, which would offset
+  /// every drag origin (and miss thin targets like guides) by ~18 px.
+  PointerDeviceKind? _lastDownKind;
+  Offset? _lastDownLocal;
+
+  void _onPointerDown(PointerDownEvent event) {
+    _lastDownKind = event.kind;
+    _lastDownLocal = event.localPosition;
+    if (_isStylusKind(event.kind)) {
+      if (_stylusPointer != null) return; // second stylus: ignore
+      _stylusPointer = event.pointer;
+      _stylus.down(event.localPosition, _normalizedPressure(event));
+      return;
+    }
+    if (event.kind == PointerDeviceKind.touch && _stylusPointer != null) {
+      _rejectedTouches.add(event.pointer);
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (event.pointer == _stylusPointer) {
+      _stylus.move(event.localPosition, _normalizedPressure(event));
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    if (event.pointer == _stylusPointer) {
+      _stylusPointer = null;
+      _stylus.up(event.localPosition);
+    }
+    _releaseRejected(event.pointer);
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    if (event.pointer == _stylusPointer) {
+      _stylusPointer = null;
+      _stylus.cancel();
+    }
+    _releaseRejected(event.pointer);
+  }
+
+  /// Rejected palm touches are released a microtask later: the gesture
+  /// arena fires its callbacks after this Listener sees the up event,
+  /// and the suppression guard must still hold when they run.
+  void _releaseRejected(int pointer) {
+    if (!_rejectedTouches.contains(pointer)) return;
+    scheduleMicrotask(() => _rejectedTouches.remove(pointer));
+  }
 
   bool get _toggle =>
       HardwareKeyboard.instance.isMetaPressed ||
@@ -163,72 +309,120 @@ class _CanvasViewState extends State<CanvasView> {
         onHover: (event) => widget.onHoverWorld
             ?.call(viewport.screenToWorld(event.localPosition)),
         onExit: (_) => widget.onHoverExit?.call(),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapUp: (details) => widget.onTapWorld?.call(
-            viewport.screenToWorld(details.localPosition),
-            toggle: _toggle,
-            extend: _extend,
-          ),
-          onDoubleTapDown: widget.onDoubleTapWorld == null
-              ? null
-              : (details) => widget.onDoubleTapWorld!(
-                  viewport.screenToWorld(details.localPosition)),
-          onScaleStart: (details) {
-            _lastScale = 1;
-            _toolDrag = details.pointerCount == 1 &&
-                (widget.onDragStartWorld?.call(
-                      viewport.screenToWorld(details.localFocalPoint),
-                      toggle: _toggle,
-                      extend: _extend,
-                    ) ??
-                    false);
+        child: Listener(
+          onPointerDown: _onPointerDown,
+          onPointerMove: _onPointerMove,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: _onPointerCancel,
+          // Pencil/S Pen hover: MouseTracker feeds MouseRegion above on
+          // most platforms; this direct path covers the rest.
+          onPointerHover: (event) {
+            if (_isStylusKind(event.kind)) {
+              widget.onHoverWorld
+                  ?.call(viewport.screenToWorld(event.localPosition));
+            }
           },
-          onScaleUpdate: (details) {
-            if (_toolDrag) {
-              widget.onDragUpdateWorld
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            // Stylus contacts never enter the gesture arena — the
+            // Listener above drives them (low latency, live pressure).
+            supportedDevices: const {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.trackpad,
+              PointerDeviceKind.unknown,
+            },
+            onTapUp: (details) {
+              if (_touchSuppressed) return;
+              widget.onTapWorld?.call(
+                viewport.screenToWorld(details.localPosition),
+                toggle: _toggle,
+                extend: _extend,
+              );
+            },
+            onDoubleTapDown: widget.onDoubleTapWorld == null
+                ? null
+                : (details) => widget.onDoubleTapWorld!(
+                    viewport.screenToWorld(details.localPosition)),
+            onLongPressStart: widget.onLongPressWorld == null
+                ? null
+                : (details) {
+                    // Touch only: mouse right-clicks, stylus draws.
+                    if (_touchSuppressed ||
+                        _lastDownKind != PointerDeviceKind.touch) {
+                      return;
+                    }
+                    widget.onLongPressWorld!(
+                      viewport.screenToWorld(details.localPosition),
+                      details.globalPosition,
+                    );
+                  },
+            onScaleStart: (details) {
+              if (_touchSuppressed) return;
+              _lastScale = 1;
+              _toolDrag = details.pointerCount == 1 &&
+                  (widget.onDragStartWorld?.call(
+                        viewport.screenToWorld(
+                            _lastDownLocal ?? details.localFocalPoint),
+                        toggle: _toggle,
+                        extend: _extend,
+                      ) ??
+                      false);
+            },
+            onScaleUpdate: (details) {
+              if (_touchSuppressed) return;
+              if (_toolDrag) {
+                widget.onDragUpdateWorld
+                    ?.call(viewport.screenToWorld(details.localFocalPoint));
+                return;
+              }
+              if (!_panning) setState(() => _panning = true);
+              if (details.scale != 1) {
+                viewport.zoomAt(
+                    details.localFocalPoint, details.scale / _lastScale);
+                _lastScale = details.scale;
+              }
+              viewport.panBy(details.focalPointDelta);
+              // Pan/zoom changes what's under the (stationary) pointer:
+              // re-emit its world position so ruler cursor lines and the
+              // status readout track the content instead of going stale.
+              widget.onHoverWorld
                   ?.call(viewport.screenToWorld(details.localFocalPoint));
-              return;
-            }
-            if (!_panning) setState(() => _panning = true);
-            if (details.scale != 1) {
-              viewport.zoomAt(
-                  details.localFocalPoint, details.scale / _lastScale);
-              _lastScale = details.scale;
-            }
-            viewport.panBy(details.focalPointDelta);
-            // Pan/zoom changes what's under the (stationary) pointer:
-            // re-emit its world position so ruler cursor lines and the
-            // status readout track the content instead of going stale.
-            widget.onHoverWorld
-                ?.call(viewport.screenToWorld(details.localFocalPoint));
-          },
-          onScaleEnd: (_) {
-            if (_toolDrag) widget.onDragEndWorld?.call();
-            _toolDrag = false;
-            if (_panning) setState(() => _panning = false);
-          },
-          child: ListenableBuilder(
-            listenable: viewport,
-            builder: (context, _) => CustomPaint(
-              size: Size.infinite,
-              painter: _DesignPainter(
-                document: widget.document,
-                viewport: viewport,
-                selectedIds: widget.selectedIds,
-                selectionBounds: widget.selectionBounds,
-                previewPaths: widget.previewPaths,
-                markers: widget.markers,
-                stitches: widget.stitches,
-                highlightStitches: widget.highlightStitches,
-                showOutlines: widget.showOutlines,
-                showNeedleHoles: widget.showNeedleHoles,
-                paintedCursor: widget.paintedCursor,
-                paintedCursorWorld: widget.paintedCursorWorld,
-                boxTransform: widget.boxTransform,
-                cursorLabel: widget.cursorLabel,
-                cursorLabelWorld: widget.cursorLabelWorld,
-                colorScheme: Theme.of(context).colorScheme,
+            },
+            onScaleEnd: (_) {
+              // No suppression guard: a pan interrupted by a stylus
+              // landing must still reset its state here.
+              if (_toolDrag) widget.onDragEndWorld?.call();
+              _toolDrag = false;
+              if (_panning && !_stylus.isActive) {
+                setState(() => _panning = false);
+              }
+            },
+            child: ListenableBuilder(
+              listenable: viewport,
+              builder: (context, _) => CustomPaint(
+                size: Size.infinite,
+                painter: _DesignPainter(
+                  document: widget.document,
+                  viewport: viewport,
+                  selectedIds: widget.selectedIds,
+                  selectionBounds: widget.selectionBounds,
+                  previewPaths: widget.previewPaths,
+                  previewWidths: widget.previewWidths,
+                  markers: widget.markers,
+                  stitches: widget.stitches,
+                  highlightStitches: widget.highlightStitches,
+                  showOutlines: widget.showOutlines,
+                  showNeedleHoles: widget.showNeedleHoles,
+                  paintedCursor: widget.paintedCursor,
+                  paintedCursorWorld: widget.paintedCursorWorld,
+                  boxTransform: widget.boxTransform,
+                  cursorLabel: widget.cursorLabel,
+                  cursorLabelWorld: widget.cursorLabelWorld,
+                  liveGuide: widget.liveGuide,
+                  hideGuideId: widget.hideGuideId,
+                  colorScheme: Theme.of(context).colorScheme,
+                ),
               ),
             ),
           ),
@@ -245,6 +439,7 @@ class _DesignPainter extends CustomPainter {
     required this.selectedIds,
     required this.selectionBounds,
     required this.previewPaths,
+    required this.previewWidths,
     required this.markers,
     required this.stitches,
     required this.highlightStitches,
@@ -255,6 +450,8 @@ class _DesignPainter extends CustomPainter {
     required this.boxTransform,
     required this.cursorLabel,
     required this.cursorLabelWorld,
+    required this.liveGuide,
+    required this.hideGuideId,
     required this.colorScheme,
   });
 
@@ -263,6 +460,7 @@ class _DesignPainter extends CustomPainter {
   final Set<Id> selectedIds;
   final g.Bounds? selectionBounds;
   final List<g.Path> previewPaths;
+  final List<double>? previewWidths;
   final List<g.Point> markers;
   final StitchSequence? stitches;
   final List<StitchOp> highlightStitches;
@@ -273,6 +471,8 @@ class _DesignPainter extends CustomPainter {
   final g.Transform2? boxTransform;
   final String? cursorLabel;
   final g.Point? cursorLabelWorld;
+  final Guide? liveGuide;
+  final Id? hideGuideId;
   final ColorScheme colorScheme;
 
   static const defaultGuideColor = Color(0xFF26C6DA);
@@ -281,7 +481,6 @@ class _DesignPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     _paintGrid(canvas, size);
     _paintHoop(canvas);
-    _paintGuides(canvas, size);
 
     for (final object in document.flattenVisibleObjects()) {
       if (!showOutlines) {
@@ -314,6 +513,19 @@ class _DesignPainter extends CustomPainter {
             ? colorScheme.primary
             : Color(0xFF000000 |
                 int.parse(props.colorHex!.substring(1), radix: 16));
+      // Pressure stroke (ADR-038): per-node widths, one round-capped
+      // segment per node pair with the mean of its end widths.
+      if (object case RunningStitchObject(:final widthProfile?)) {
+        final points = object.path.toPolyline();
+        if (points.length == widthProfile.length) {
+          _paintVariableWidthPolyline(
+              canvas, points, widthProfile, stroke.color);
+          if (selectedIds.contains(object.id)) {
+            _paintObjectSelection(canvas, object.bounds());
+          }
+          continue;
+        }
+      }
       for (final contour in object.renderPaths) {
         final points = contour.toPolyline();
         if (points.isEmpty) continue;
@@ -344,6 +556,9 @@ class _DesignPainter extends CustomPainter {
 
     _paintStitches(canvas);
     _paintHighlightStitches(canvas);
+    // Guides sit above artwork and stitches (Illustrator convention) —
+    // they are alignment chrome, not content, and must stay visible.
+    _paintGuides(canvas, size);
 
     if (selectionBounds != null) {
       _paintSelectionBounds(canvas, selectionBounds!);
@@ -353,8 +568,17 @@ class _DesignPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
       ..color = colorScheme.primary;
-    for (final p in previewPaths) {
+    for (final (i, p) in previewPaths.indexed) {
       final points = p.toPolyline();
+      // In-progress pencil stroke with pressure: preview the variable
+      // width live instead of a hairline (ADR-038).
+      if (i == 0 &&
+          previewWidths != null &&
+          previewWidths!.length == points.length) {
+        _paintVariableWidthPolyline(
+            canvas, points, previewWidths!, colorScheme.primary);
+        continue;
+      }
       final path = Path()
         ..moveTo(viewport.worldToScreen(points.first).dx,
             viewport.worldToScreen(points.first).dy);
@@ -375,6 +599,22 @@ class _DesignPainter extends CustomPainter {
 
     _paintCursorGlyph(canvas);
     _paintCursorLabel(canvas);
+  }
+
+  /// One round-capped segment per node pair, width interpolated as the
+  /// mean of its end widths (mm, zoom-scaled, min 1px) — ADR-038.
+  void _paintVariableWidthPolyline(
+      Canvas canvas, List<g.Point> points, List<double> widths, Color color) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    for (var i = 0; i < points.length - 1; i++) {
+      paint.strokeWidth = ((widths[i] + widths[i + 1]) / 2 * viewport.zoom)
+          .clamp(1.0, double.infinity);
+      canvas.drawLine(viewport.worldToScreen(points[i]),
+          viewport.worldToScreen(points[i + 1]), paint);
+    }
   }
 
   /// Live transform feedback ("47.3°", "120% × 80%") in a small chip
@@ -697,7 +937,12 @@ class _DesignPainter extends CustomPainter {
   }
 
   void _paintGuides(Canvas canvas, Size size) {
-    for (final guide in document.guides) {
+    final guides = [
+      for (final guide in document.guides)
+        if (guide.id != hideGuideId) guide,
+      if (liveGuide != null) liveGuide!,
+    ];
+    for (final guide in guides) {
       final color = guide.colorHex == null
           ? defaultGuideColor
           : Color(

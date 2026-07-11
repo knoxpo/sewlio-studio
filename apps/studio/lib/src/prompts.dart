@@ -1,5 +1,8 @@
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'file_io.dart' as io;
 
 /// Native OS file dialogs (macOS/Windows/Linux via file_selector),
 /// filtered to one extension. The save dialog handles overwrite
@@ -11,6 +14,7 @@ import 'package:flutter/foundation.dart';
 XTypeGroup _typeGroup(String suffix) => XTypeGroup(
       label: '$suffix files',
       extensions: [suffix.substring(1)],
+      uniformTypeIdentifiers: const ['public.data'],
     );
 
 Future<String?> pickOpenPath({required String suffix}) async {
@@ -22,12 +26,20 @@ Future<String?> pickOpenPath({required String suffix}) async {
   return file?.path;
 }
 
+bool get _isMobile =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android);
+
 Future<String?> pickSavePath({
   required String suffix,
   String? suggestedName,
 }) async {
   if (kIsWeb) {
     return await _pickSavePathWeb(suffix, suggestedName);
+  }
+  if (_isMobile) {
+    return _mobileSavePath(suffix, suggestedName);
   }
 
   final location = await getSaveLocation(
@@ -37,6 +49,24 @@ Future<String?> pickSavePath({
   if (location == null) return null;
   final path = location.path;
   return path.endsWith(suffix) ? path : '$path$suffix';
+}
+
+/// Mobile has no save dialog (file_selector's getSaveLocation is
+/// unimplemented on iOS/Android): save straight into the app documents
+/// directory — user-visible in the iOS Files app via
+/// UIFileSharingEnabled — with a numeric suffix on collision. The shell
+/// offers the system share sheet afterwards for copies to Files/Drive.
+Future<String> _mobileSavePath(String suffix, String? suggestedName) async {
+  final dir = (await getApplicationDocumentsDirectory()).path;
+  var base = suggestedName ?? 'Untitled$suffix';
+  if (base.endsWith(suffix)) {
+    base = base.substring(0, base.length - suffix.length);
+  }
+  var path = '$dir/$base$suffix';
+  for (var n = 2; io.fileExists(path); n++) {
+    path = '$dir/$base ($n)$suffix';
+  }
+  return path;
 }
 
 // ===== Web-specific File System Access API =====

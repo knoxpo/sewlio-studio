@@ -463,14 +463,49 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// inserted into the active layer with the current stroke defaults.
   /// The new object becomes the selection (canvas ↔ layers stay in
   /// step; with the pen active its anchors show as points).
-  void addPath(g.Path path) {
+  ///
+  /// [pressures] (0–1 per path node, from the pencil's stylus trace)
+  /// become a width profile when the stroke style's pressure profile
+  /// is active (ADR-038).
+  void addPath(g.Path path, {List<double>? pressures}) {
     final object = RunningStitchObject(
         id: nextId(),
         path: path,
         stroke: strokeDefaults,
-        name: _defaultObjectName());
+        name: _defaultObjectName(),
+        widthProfile: _widthProfileFor(path, pressures));
     execute(AddObject(object, parent: activeParent));
     selection.replaceWith(DocumentNodeRef(DocumentNodeKind.object, object.id));
+  }
+
+  /// Pressure (0–1) → stroke width in mm. Zero pressure keeps a
+  /// visible floor rather than vanishing.
+  static const _minPressureWidthFactor = 0.15;
+
+  List<double>? _widthProfileFor(g.Path path, List<double>? pressures) {
+    if (pressures == null ||
+        strokeStyle.pressure != PressureProfile.pressure ||
+        pressures.length != path.segments.length + 1) {
+      return null;
+    }
+    return _pressureWidths(pressures);
+  }
+
+  List<double> _pressureWidths(List<double> pressures) => [
+        for (final p in pressures)
+          strokeStyle.widthMm *
+              (_minPressureWidthFactor + (1 - _minPressureWidthFactor) * p)
+      ];
+
+  /// Widths (mm) for the pencil's in-progress trace so the canvas
+  /// previews the pressure stroke live (ADR-038).
+  List<double>? get previewWidths {
+    if (strokeStyle.pressure != PressureProfile.pressure) return null;
+    if (tool case final PencilTool pencil) {
+      final pressures = pencil.previewPressures;
+      return pressures == null ? null : _pressureWidths(pressures);
+    }
+    return null;
   }
 
   /// Design-origin default name (ADR-036): the Shape tool stamps its
@@ -586,8 +621,13 @@ final class WorkspaceViewModel extends BarleyViewModel {
     g.Point world, {
     required bool toggle,
     required bool extend,
+    double? pressure,
   }) {
     _syncPointerContext();
+    // Grabbing a guide beats the tool: guides are thin, deliberate
+    // targets and repositioning them must work with any tool active.
+    if (_beginGuideDrag(world)) return true;
+    tool.pointerPressure = pressure ?? 1.0;
     if (tool case final SelectTool selectTool) {
       return selectTool.dragStartWithModifiers(
         world,
@@ -856,6 +896,16 @@ final class WorkspaceViewModel extends BarleyViewModel {
     notify();
   }
 
+  /// Whether the right dock shows on tablet form factors (collapsible
+  /// per platform-requirements §14; desktop ignores this — its dock is
+  /// permanent). View state, not document state.
+  var dockVisible = true;
+
+  void toggleDock() {
+    dockVisible = !dockVisible;
+    notify();
+  }
+
   /// Hoop preset picked in the hoop panel.
   void setMachine(MachineModel value) => updateHoop(
       hoop.copyWith(widthMm: value.hoopWidthMm, heightMm: value.hoopHeightMm));
@@ -922,6 +972,16 @@ final class WorkspaceViewModel extends BarleyViewModel {
   }
 
   void _refreshCursor(g.Point world) {
+    // Guide under the pointer: resize cursor is the grab affordance
+    // (matches Illustrator; also shown while dragging one).
+    final guide = _dragGuide != null ? liveGuide : guideNear(world);
+    if (guide != null) {
+      canvasCursor.value = guide.axis == GuideAxis.vertical
+          ? SystemMouseCursors.resizeLeftRight
+          : SystemMouseCursors.resizeUpDown;
+      paintedCursor.value = null;
+      return;
+    }
     final kind = tool.cursorAt(world);
     canvasCursor.value = _cursorMap[kind]!;
     paintedCursor.value = _paintedCursors[kind];
@@ -945,11 +1005,24 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   /// Drag updates route through here so modifier changes mid-drag
   /// (Shift for uniform/snap, Alt for center) take effect live.
-  void onCanvasDragUpdate(g.Point world) {
+  void onCanvasDragUpdate(g.Point world, {double? pressure}) {
     cursor.value = world;
     _syncPointerContext();
+    if (_dragGuide != null) {
+      _updateGuideDrag(world);
+      return;
+    }
+    tool.pointerPressure = pressure ?? 1.0;
     tool.dragUpdate(world);
     _refreshCursor(world);
+  }
+
+  void onCanvasDragEnd() {
+    if (_dragGuide != null) {
+      _endGuideDrag();
+      return;
+    }
+    tool.dragEnd();
   }
 
   // ----------------------------------------------------------------- guides
@@ -974,6 +1047,100 @@ final class WorkspaceViewModel extends BarleyViewModel {
       }
     }
     return null;
+  }
+
+  // Guide dragging (canvas reposition + Illustrator-style ruler pull).
+  // The live guide previews on the canvas; the document mutates once,
+  // on release, through a single undoable command.
+
+  /// In-flight guide preview drawn by the canvas, or null.
+  Guide? liveGuide;
+
+  /// Stored guide hidden while its preview is being dragged.
+  Id? get hiddenGuideId => _dragGuide?.id;
+
+  Guide? _dragGuide; // existing guide being repositioned
+  /// Guide under the pointer within a screen-space grab tolerance.
+  Guide? guideNear(g.Point world) {
+    final tolerance = 6 / viewport.zoom;
+    for (final guide in session.document.guides) {
+      final d = guide.axis == GuideAxis.vertical
+          ? (guide.positionMm - world.x).abs()
+          : (guide.positionMm - world.y).abs();
+      if (d <= tolerance) return guide;
+    }
+    return null;
+  }
+
+  bool _beginGuideDrag(g.Point world) {
+    final guide = guideNear(world);
+    if (guide == null) return false;
+    _dragGuide = guide;
+    liveGuide = guide;
+    notify();
+    return true;
+  }
+
+  void _updateGuideDrag(g.Point world) {
+    final dragged = liveGuide!;
+    liveGuide = dragged.copyWith(
+        positionMm: dragged.axis == GuideAxis.vertical ? world.x : world.y);
+    _lastGuideDragWorld = world;
+    notify();
+  }
+
+  g.Point? _lastGuideDragWorld;
+
+  void _endGuideDrag() {
+    final moved = liveGuide!;
+    final original = _dragGuide;
+    // Dragged off the canvas → remove (Illustrator convention).
+    final size = viewport.viewSize;
+    final screen = _lastGuideDragWorld == null
+        ? null
+        : viewport.worldToScreen(_lastGuideDragWorld!);
+    final offCanvas = size != null &&
+        screen != null &&
+        (screen.dx < 0 ||
+            screen.dy < 0 ||
+            screen.dx > size.width ||
+            screen.dy > size.height);
+    liveGuide = null;
+    _dragGuide = null;
+    _lastGuideDragWorld = null;
+    if (original != null) {
+      execute(offCanvas
+          ? RemoveGuide(original.id)
+          : UpdateGuide(original.copyWith(positionMm: moved.positionMm)));
+    } else if (!offCanvas) {
+      execute(AddGuide(
+          Guide(id: nextId(), axis: moved.axis, positionMm: moved.positionMm)));
+    }
+    notify();
+  }
+
+  /// Ruler pull-out (Illustrator): a drag from the ruler strip births a
+  /// guide parallel to it, previewed live until release.
+  void beginGuidePull(GuideAxis axis, double mm) {
+    liveGuide = Guide(id: const Id('guide-live'), axis: axis, positionMm: mm);
+    notify();
+  }
+
+  void updateGuidePull(double mm) {
+    final pulled = liveGuide;
+    if (pulled == null) return;
+    liveGuide = pulled.copyWith(positionMm: mm);
+    notify();
+  }
+
+  void endGuidePull({required bool commit}) {
+    final pulled = liveGuide;
+    liveGuide = null;
+    if (commit && pulled != null) {
+      execute(AddGuide(Guide(
+          id: nextId(), axis: pulled.axis, positionMm: pulled.positionMm)));
+    }
+    notify();
   }
 
   void addGuide(

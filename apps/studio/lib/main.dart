@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:studio_ai/studio_ai.dart';
 import 'package:studio_commands/studio_commands.dart';
 import 'package:studio_core/studio_core.dart';
@@ -14,10 +16,18 @@ import 'src/panels/panel_def.dart';
 import 'src/recents.dart';
 import 'src/tools/tool_contributions.dart';
 
-void main() {
+Future<void> main() async {
   // Tool-contributed dockable panels join the registry before the dock
   // builds its layout (ADR-037); plugin panels will append here too.
   panelRegistry.addAll(toolContributedPanels());
+  // iOS/Android: HOME is wrong or unset — anchor app state in the
+  // platform's application-support directory instead.
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android)) {
+    WidgetsFlutterBinding.ensureInitialized();
+    appStateBaseDirOverride = (await getApplicationSupportDirectory()).path;
+  }
   final recentsPath = appStatePath('recents.json');
   final dockPath = appStatePath('workspace_layout.json');
   runApp(StudioApp(

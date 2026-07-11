@@ -35,13 +35,20 @@ class _AppView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scaffold = Scaffold(
-      body: Column(children: [
-        _appHeader(context),
-        Divider(height: 1, color: AppTokens.border),
-        _tabStrip(context),
-        Divider(height: 1, color: AppTokens.border),
-        Expanded(child: _body()),
-      ]),
+      // Panel color behind the system insets so the status-bar strip
+      // reads as chrome, not a hole.
+      backgroundColor: AppTokens.panel,
+      // Keep UI clear of the status bar, notch, and home indicator on
+      // iOS/Android; zero insets on desktop, so layout is unchanged.
+      body: SafeArea(
+        child: Column(children: [
+          _appHeader(context),
+          Divider(height: 1, color: AppTokens.border),
+          _tabStrip(context),
+          Divider(height: 1, color: AppTokens.border),
+          Expanded(child: _body()),
+        ]),
+      ),
     );
     if (!useNativeMenus) return scaffold;
     // App-level native menu bar (macOS): File menus work from Home;
@@ -204,6 +211,8 @@ class _AppView extends StatelessWidget {
                   ],
                   child: const Text('View'),
                 ),
+                // Mirrors the native macOS "Panels" menu (FR-1204):
+                // same name, same entries, checkmark = visible.
                 SubmenuButton(
                   menuChildren: [
                     for (final def in panelRegistry)
@@ -215,12 +224,13 @@ class _AppView extends StatelessWidget {
                         onPressed: () => app.dock.togglePanel(def.id),
                         child: Text(def.title),
                       ),
+                    const Divider(height: 8),
                     MenuItemButton(
                       onPressed: app.dock.resetToDefault,
                       child: const Text('Reset Workspace'),
                     ),
                   ],
-                  child: const Text('Window'),
+                  child: const Text('Panels'),
                 ),
                 SubmenuButton(
                   menuChildren: [

@@ -129,7 +129,17 @@ Path spiralPath(Point center, double radius,
 
 /// Ramer–Douglas–Peucker polyline simplification (freehand pencil).
 List<Point> simplifyPolyline(List<Point> points, {double tolerance = 0.5}) {
-  if (points.length < 3) return List.of(points);
+  return [
+    for (final i in simplifyPolylineIndices(points, tolerance: tolerance))
+      points[i]
+  ];
+}
+
+/// [simplifyPolyline], but returning the kept indices so parallel
+/// per-point data (stylus pressure) decimates in lockstep (ADR-038).
+List<int> simplifyPolylineIndices(List<Point> points,
+    {double tolerance = 0.5}) {
+  if (points.length < 3) return [for (var i = 0; i < points.length; i++) i];
   double dist(Point p, Point a, Point b) {
     final ab = b - a;
     final len = ab.length;
@@ -160,6 +170,6 @@ List<Point> simplifyPolyline(List<Point> points, {double tolerance = 0.5}) {
   }
   return [
     for (var i = 0; i < points.length; i++)
-      if (keep[i]) points[i]
+      if (keep[i]) i
   ];
 }
