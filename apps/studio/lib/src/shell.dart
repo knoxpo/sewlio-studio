@@ -618,6 +618,9 @@ class EditorWorkspace extends StatelessWidget {
       selectedIds: model.showsTransformBox ? model.selectedObjectIds : const {},
       selectionBounds: model.showsTransformBox ? model.selectionBounds : null,
       previewPaths: model.tool.preview,
+      previewFillPaths: model.tool.previewFills,
+      selectionHighlights: model.tool.selectionHighlights,
+      previewFillColor: model.tool.previewFillColor,
       previewWidths: model.previewWidths,
       markers: model.canvasMarkers,
       // Design view is pure vector (Illustrator-like): stitch rendering

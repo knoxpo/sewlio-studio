@@ -59,8 +59,20 @@ abstract class Tool extends ChangeNotifier {
   /// Abort any in-progress interaction (tool switch, Escape).
   void cancel() {}
 
-  /// Live overlay geometry drawn by the canvas.
+  /// Live overlay geometry drawn by the canvas (stroked hairlines:
+  /// rubber bands, frames, caret).
   List<Path> get preview => const [];
+
+  /// Closed contours the canvas should FILL live (e.g. glyph interiors
+  /// while editing text) using [previewFillColor].
+  List<Path> get previewFills => const [];
+
+  /// Filled translucent highlight quads drawn behind the preview (text
+  /// selection block).
+  List<Path> get selectionHighlights => const [];
+
+  /// `#rrggbb` fill for [previewFills]; null = don't fill (skeleton).
+  String? get previewFillColor => null;
 
   /// Anchor markers drawn by the canvas (node editing).
   List<Point> get markers => const [];

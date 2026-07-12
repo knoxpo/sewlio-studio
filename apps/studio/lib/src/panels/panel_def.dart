@@ -6,6 +6,7 @@ import '../workspace/project_type_registry.dart';
 import '../workspace_view_model.dart';
 import '../shell.dart';
 import 'character_panel.dart';
+import 'color_panel.dart';
 import 'layers_panel.dart';
 import 'placeholder_panel.dart';
 import 'preview_panels.dart';
@@ -92,8 +93,12 @@ final panelRegistry = <PanelDef>[
   // Artwork structures; production/sequence panels are contributed
   // separately by domain modules and never merged with these.
   placeholderPanel('transform', 'Transform', iconFor('panel-transform')),
-  placeholderPanel('color-fill-stroke', 'Color / Fill / Stroke',
-      iconFor('panel-color-fill-stroke')),
+  PanelDef(
+    id: 'color-fill-stroke',
+    title: 'Color / Fill / Stroke',
+    icon: iconFor('panel-color-fill-stroke'),
+    builder: (context, model) => ColorFillStrokePanelContent(model: model),
+  ),
   placeholderPanel(
       'assets-reference', 'Assets / Reference', iconFor('panel-assets')),
   placeholderPanel(

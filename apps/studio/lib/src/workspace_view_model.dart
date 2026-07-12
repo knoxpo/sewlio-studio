@@ -208,7 +208,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   // Fill/stroke chips (toolbox). ponytail: stored as the upcoming
   // defaults — objects gain fill/stroke when the color system lands.
-  String fillColorHex = '#ffffff';
+  String fillColorHex = '#c8c8c8';
   String strokeColorHex = '#1c1c1e';
   bool strokeChipActive = false;
 
@@ -465,12 +465,12 @@ final class WorkspaceViewModel extends BarleyViewModel {
     notify();
   }
 
-  /// Fill chip color: remembered for new objects; re-fills the
-  /// selection when fill is enabled.
+  /// Fill chip color: remembered for new objects and applied to the
+  /// selection. Choosing a fill color turns fill ON (Illustrator/Affinity
+  /// behaviour) — it no longer requires the separate Use-fill toggle.
   void setFillColor(String hex) {
     fillColorHex = hex;
-    if (strokeStyle.useFill) setUseFill(true);
-    notify();
+    setUseFill(true);
   }
 
   /// Stroke chip color: applies to selection + defaults.

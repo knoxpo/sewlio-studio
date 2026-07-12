@@ -59,6 +59,9 @@ class CanvasView extends StatefulWidget {
     this.selectedIds = const {},
     this.selectionBounds,
     this.previewPaths = const [],
+    this.previewFillPaths = const [],
+    this.selectionHighlights = const [],
+    this.previewFillColor,
     this.previewWidths,
     this.markers = const [],
     this.stitches,
@@ -90,8 +93,18 @@ class CanvasView extends StatefulWidget {
   final Set<Id> selectedIds;
   final g.Bounds? selectionBounds;
 
-  /// Live tool overlay geometry (rubber bands, ghosts).
+  /// Live tool overlay geometry (rubber bands, ghosts) — stroked.
   final List<g.Path> previewPaths;
+
+  /// Closed contours filled live in [previewFillColor] (editing glyphs),
+  /// so live text renders solid like the committed object.
+  final List<g.Path> previewFillPaths;
+
+  /// Filled translucent quads drawn behind the preview (text selection).
+  final List<g.Path> selectionHighlights;
+
+  /// `#rrggbb` fill for [previewFillPaths]; null skips the fill.
+  final String? previewFillColor;
 
   /// Per-node widths in mm for the first preview path (in-progress
   /// pressure stroke, ADR-038); null draws all previews as hairlines.
@@ -408,6 +421,9 @@ class _CanvasViewState extends State<CanvasView> {
                   selectedIds: widget.selectedIds,
                   selectionBounds: widget.selectionBounds,
                   previewPaths: widget.previewPaths,
+                  previewFillPaths: widget.previewFillPaths,
+                  selectionHighlights: widget.selectionHighlights,
+                  previewFillColor: widget.previewFillColor,
                   previewWidths: widget.previewWidths,
                   markers: widget.markers,
                   stitches: widget.stitches,
@@ -439,6 +455,9 @@ class _DesignPainter extends CustomPainter {
     required this.selectedIds,
     required this.selectionBounds,
     required this.previewPaths,
+    required this.previewFillPaths,
+    required this.selectionHighlights,
+    required this.previewFillColor,
     required this.previewWidths,
     required this.markers,
     required this.stitches,
@@ -460,6 +479,9 @@ class _DesignPainter extends CustomPainter {
   final Set<Id> selectedIds;
   final g.Bounds? selectionBounds;
   final List<g.Path> previewPaths;
+  final List<g.Path> previewFillPaths;
+  final List<g.Path> selectionHighlights;
+  final String? previewFillColor;
   final List<double>? previewWidths;
   final List<g.Point> markers;
   final StitchSequence? stitches;
@@ -573,6 +595,32 @@ class _DesignPainter extends CustomPainter {
 
     if (selectionBounds != null) {
       _paintSelectionBounds(canvas, selectionBounds!);
+    }
+
+    // Live selection highlight: translucent filled blocks behind the
+    // preview glyphs (text selection reads as a block, not a border).
+    if (selectionHighlights.isNotEmpty) {
+      final highlight = Paint()
+        ..style = PaintingStyle.fill
+        ..color = colorScheme.primary.withValues(alpha: 0.3);
+      for (final rect in selectionHighlights) {
+        canvas.drawPath(_screenPath(rect), highlight);
+      }
+    }
+    // Live glyph fill: editing text renders solid like the committed
+    // object (even-odd so counters stay open).
+    if (previewFillColor != null && previewFillPaths.isNotEmpty) {
+      final fillPath = Path()..fillType = PathFillType.evenOdd;
+      for (final p in previewFillPaths) {
+        fillPath.addPath(_screenPath(p), Offset.zero);
+      }
+      canvas.drawPath(
+        fillPath,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = Color(0xFF000000 |
+              int.parse(previewFillColor!.substring(1), radix: 16)),
+      );
     }
 
     final overlay = Paint()
@@ -1049,6 +1097,21 @@ class _DesignPainter extends CustomPainter {
     }
   }
 
+  /// Flattens a world-space contour into a screen-space [Path].
+  Path _screenPath(g.Path contour) {
+    final points = contour.toPolyline();
+    final path = Path();
+    if (points.isEmpty) return path;
+    final first = viewport.worldToScreen(points.first);
+    path.moveTo(first.dx, first.dy);
+    for (final p in points.skip(1)) {
+      final o = viewport.worldToScreen(p);
+      path.lineTo(o.dx, o.dy);
+    }
+    if (contour.closed) path.close();
+    return path;
+  }
+
   @override
   bool shouldRepaint(_DesignPainter oldDelegate) =>
       oldDelegate.document.revision != document.revision ||
@@ -1056,6 +1119,9 @@ class _DesignPainter extends CustomPainter {
       !oldDelegate.selectedIds.containsAll(selectedIds) ||
       oldDelegate.selectionBounds != selectionBounds ||
       oldDelegate.previewPaths != previewPaths ||
+      oldDelegate.previewFillPaths != previewFillPaths ||
+      oldDelegate.selectionHighlights != selectionHighlights ||
+      oldDelegate.previewFillColor != previewFillColor ||
       oldDelegate.markers != markers ||
       oldDelegate.stitches != stitches ||
       oldDelegate.highlightStitches != highlightStitches ||

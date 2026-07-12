@@ -426,17 +426,19 @@ final class TextTool extends Tool {
 
   // ------------------------------------------------------------- preview
 
+  /// Stroked overlays only: the drag rubber band, the area-text frame,
+  /// and the insertion caret. Glyph fills and the selection block are
+  /// returned by [previewFills] / [selectionHighlights] so the canvas
+  /// fills them instead of stroking (solid text, blue selection block).
   @override
   List<Path> get preview {
     final paths = <Path>[];
-    // Frame rubber band while dragging.
     final from = _dragFrom, to = _dragTo;
     if (from != null && to != null) {
       paths.add(_rect(from, to));
     }
     final anchor = _anchor;
     if (anchor == null) return paths;
-    // Frame outline for area text.
     final frame = _frameWidthMm;
     if (frame != null) {
       final lines = wrapText(_text, font,
@@ -445,18 +447,6 @@ final class TextTool extends Tool {
       final topLeft = Point(anchor.x, anchor.y - sizeMm);
       paths.add(_rect(topLeft, Point(topLeft.x + frame, topLeft.y + height)));
     }
-    // Selection highlight: filled rects per line behind the glyphs/caret.
-    paths.addAll(_selectionRects(anchor));
-    paths.addAll(layoutText(
-      _text,
-      font,
-      origin: anchor,
-      sizeMm: sizeMm,
-      trackingMm: trackingMm,
-      lineHeight: lineHeight,
-      align: align,
-      frameWidthMm: _frameWidthMm,
-    ));
     // Insertion caret: vertical bar at the caret position. ponytail:
     // computed by laying out the prefix — near a wrap boundary in area
     // text the prefix may wrap differently than the full text, shifting
@@ -468,8 +458,8 @@ final class TextTool extends Tool {
       origin: anchor,
       sizeMm: sizeMm,
       trackingMm: trackingMm,
-      lineHeight: lineHeight,
       align: align,
+      lineHeight: lineHeight,
       frameWidthMm: _frameWidthMm,
     );
     paths.add(Path(
@@ -477,6 +467,34 @@ final class TextTool extends Tool {
       segments: [LineSegment(Point(caret.x, caret.y - sizeMm))],
     ));
     return paths;
+  }
+
+  /// Glyph contours to fill live, so editing text renders solid like the
+  /// committed object (not a stroked outline).
+  @override
+  List<Path> get previewFills {
+    final anchor = _anchor;
+    if (anchor == null) return const [];
+    return layoutText(
+      _text,
+      font,
+      origin: anchor,
+      sizeMm: sizeMm,
+      trackingMm: trackingMm,
+      lineHeight: lineHeight,
+      align: align,
+      frameWidthMm: _frameWidthMm,
+    );
+  }
+
+  @override
+  String? get previewFillColor => _stroke.fillHex;
+
+  @override
+  List<Path> get selectionHighlights {
+    final anchor = _anchor;
+    if (anchor == null) return const [];
+    return _selectionRects(anchor);
   }
 
   /// One filled rect per visual line spanning the selected runes, using

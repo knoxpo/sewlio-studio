@@ -226,6 +226,30 @@ class _ObjectProperties extends StatelessWidget {
           ),
         ],
         const Divider(height: 24),
+        Text('Color', style: TextStyle(color: AppTokens.textMuted)),
+        const SizedBox(height: 8),
+        Row(children: [
+          Text('Fill',
+              style: TextStyle(fontSize: 11, color: AppTokens.textMuted)),
+          const SizedBox(width: 8),
+          StudioColorSwatch(
+            key: const Key('prop-fill-swatch'),
+            color: object.stroke.fillHex,
+            onChanged: (hex) => onCommand(ReplaceObject(
+                object.withStroke(object.stroke.copyWith(fillHex: hex)))),
+          ),
+          const SizedBox(width: 16),
+          Text('Stroke',
+              style: TextStyle(fontSize: 11, color: AppTokens.textMuted)),
+          const SizedBox(width: 8),
+          StudioColorSwatch(
+            key: const Key('prop-stroke-swatch'),
+            color: object.stroke.colorHex,
+            onChanged: (hex) => onCommand(ReplaceObject(
+                object.withStroke(object.stroke.copyWith(colorHex: hex)))),
+          ),
+        ]),
+        const SizedBox(height: 12),
         Text('Stroke', style: TextStyle(color: AppTokens.textMuted)),
         const SizedBox(height: 8),
         _mmField(

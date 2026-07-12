@@ -29,7 +29,8 @@ void main() {
 
     tool.insert('HI');
     expect(tool.text, 'HI');
-    expect(tool.preview.length, greaterThan(1));
+    // Glyphs are filled (not stroked): they live in previewFills now.
+    expect(tool.previewFills, isNotEmpty);
     expect(created, isEmpty); // nothing committed while typing
 
     tool.commit();
@@ -329,6 +330,20 @@ void main() {
     tool.moveCaretByWord(-1, extend: true); // extend back to word start
     expect(tool.selectionStart, 3);
     expect(tool.selectionEnd, 5);
+  });
+
+  test('preview splits into stroked overlay, glyph fills, selection block', () {
+    tool.tap(Point.zero);
+    tool.insert('HI');
+    // Glyph contours are FILLED (not stroked) so live text reads solid.
+    expect(tool.previewFills, isNotEmpty);
+    expect(tool.previewFillColor, isNotNull);
+    // preview holds only the stroked overlay (caret here), not glyphs.
+    expect(tool.preview.length, lessThan(tool.previewFills.length));
+    // No selection yet → no highlight block.
+    expect(tool.selectionHighlights, isEmpty);
+    tool.selectAll();
+    expect(tool.selectionHighlights, isNotEmpty);
   });
 }
 
