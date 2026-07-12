@@ -171,13 +171,19 @@ class StrokePanelContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
+              const StudioSectionLabel('Color'),
+              const SizedBox(height: 6),
               StudioColorEditor(
                 key: _editorKey(model, 'stroke'),
                 initialHex: s.colorHex ?? model.strokeColorHex,
                 onChanged: (hex) =>
                     model.setStrokeColor(hex, mergeKey: 'panel-stroke'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
+              const Divider(height: 1),
+              const SizedBox(height: 10),
+              const StudioSectionLabel('Stroke'),
+              const SizedBox(height: 8),
               StudioFormRow(
                 label: 'Width',
                 child: StudioNumberField(
@@ -185,7 +191,7 @@ class StrokePanelContent extends StatelessWidget {
                   min: 0.05,
                   suffix: 'mm',
                   steppers: true,
-                  width: 96,
+                  width: 132,
                   onSubmitted: (v) => model.setStroke(
                       (p) => p.copyWith(widthMm: v),
                       mergeKey: 'stroke-w'),

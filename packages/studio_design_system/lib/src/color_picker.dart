@@ -18,12 +18,12 @@ const String studioTransparent = '#00000000';
 bool isTransparent(String? hex) => hex == studioTransparent;
 
 /// Compact Affinity-style colour picker: hue wheel + inner HSV triangle,
-/// an opacity slider, a first-class transparent swatch, and hex/RGB
-/// entry. Returns the chosen hex — `#rrggbb` when fully opaque,
+/// an opacity slider, a first-class transparent swatch, and hex / RGB /
+/// HSL / CMYK entry. Returns the chosen hex — `#rrggbb` when fully opaque,
 /// `#rrggbbaa` when partly transparent, [studioTransparent] for the
 /// transparent swatch — or null on cancel.
-// ponytail: HSV wheel only — HSL/CMYK entry waits for a real
-// color-managed pipeline; values here are display-space RGB.
+// ponytail: display-space RGB conversions (CMYK is naive, no profile) —
+// good enough until a real colour-managed pipeline lands.
 Future<String?> showStudioColorPicker({
   required BuildContext context,
   required String initialHex,
@@ -232,8 +232,70 @@ class _StudioColorEditorState extends State<StudioColorEditor> {
           const SizedBox(width: 8),
           _channelField('B', (_rgb.b * 255).round(), (v) => _setChannel(b: v)),
         ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          _channelField('H', _hsl.hue.round(), (v) => _setHsl(h: v.toDouble())),
+          const SizedBox(width: 8),
+          _channelField(
+              'S', (_hsl.saturation * 100).round(), (v) => _setHsl(s: v / 100)),
+          const SizedBox(width: 8),
+          _channelField(
+              'L', (_hsl.lightness * 100).round(), (v) => _setHsl(l: v / 100)),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          _channelField('C', _cmyk.$1, (v) => _setCmyk(c: v)),
+          const SizedBox(width: 8),
+          _channelField('M', _cmyk.$2, (v) => _setCmyk(m: v)),
+          const SizedBox(width: 8),
+          _channelField('Y', _cmyk.$3, (v) => _setCmyk(y: v)),
+          const SizedBox(width: 8),
+          _channelField('K', _cmyk.$4, (v) => _setCmyk(k: v)),
+        ]),
       ],
     );
+  }
+
+  HSLColor get _hsl => HSLColor.fromColor(_rgb);
+
+  /// Current colour as CMYK percentages (0–100).
+  (int, int, int, int) get _cmyk {
+    final r = _rgb.r, g = _rgb.g, b = _rgb.b;
+    final k = 1 - math.max(r, math.max(g, b));
+    if (k >= 1) return (0, 0, 0, 100);
+    final c = (1 - r - k) / (1 - k);
+    final m = (1 - g - k) / (1 - k);
+    final y = (1 - b - k) / (1 - k);
+    return (
+      (c * 100).round(),
+      (m * 100).round(),
+      (y * 100).round(),
+      (k * 100).round()
+    );
+  }
+
+  void _setHsl({double? h, double? s, double? l}) {
+    final cur = _hsl;
+    _setHsv(HSVColor.fromColor(HSLColor.fromAHSL(
+      1,
+      (h ?? cur.hue).clamp(0, 360),
+      (s ?? cur.saturation).clamp(0, 1),
+      (l ?? cur.lightness).clamp(0, 1),
+    ).toColor()));
+  }
+
+  void _setCmyk({int? c, int? m, int? y, int? k}) {
+    final cur = _cmyk;
+    final cc = (c ?? cur.$1).clamp(0, 100) / 100;
+    final mm = (m ?? cur.$2).clamp(0, 100) / 100;
+    final yy = (y ?? cur.$3).clamp(0, 100) / 100;
+    final kk = (k ?? cur.$4).clamp(0, 100) / 100;
+    _setHsv(HSVColor.fromColor(Color.fromARGB(
+      255,
+      (255 * (1 - cc) * (1 - kk)).round(),
+      (255 * (1 - mm) * (1 - kk)).round(),
+      (255 * (1 - yy) * (1 - kk)).round(),
+    )));
   }
 
   Widget _channelField(String label, int value, void Function(int) onChanged) {

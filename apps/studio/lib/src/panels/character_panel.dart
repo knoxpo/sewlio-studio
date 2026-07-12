@@ -217,8 +217,10 @@ class _CharacterPanelState extends State<CharacterPanel> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 92,
+            // Flexible so the size digits stay legible without overflowing
+            // a narrow panel; swatches keep their fixed size.
+            Expanded(
+              flex: 3,
               child: StudioNumberField(
                 key: const Key('char-field-sizeMm'),
                 value: shared.sizeMm ?? target.sizeMm,
@@ -235,8 +237,8 @@ class _CharacterPanelState extends State<CharacterPanel> {
               ),
             ),
             const SizedBox(width: 6),
-            SizedBox(
-              width: 92,
+            Expanded(
+              flex: 2,
               child: StudioDropdown<String>(
                 key: const Key('char-font-style'),
                 value: shared.styleName ?? styleNames.first,
@@ -246,7 +248,7 @@ class _CharacterPanelState extends State<CharacterPanel> {
                 onChanged: (s) => _apply(CharAttrs(styleName: s)),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 6),
             StudioColorSwatch(
               size: 20,
               color: mixed.contains('fillHex') ? null : shared.fillHex,
