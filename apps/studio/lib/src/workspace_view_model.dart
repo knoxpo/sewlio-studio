@@ -190,7 +190,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// Applies [mutate] to every selected object (one undoable
   /// ReplaceObject each) and mirrors the change into the defaults so
   /// the next drawn object matches.
-  void setStroke(StrokeProps Function(StrokeProps) mutate) {
+  void setStroke(StrokeProps Function(StrokeProps) mutate, {String? mergeKey}) {
     final d = mutate(strokeDefaults);
     strokeStyle
       ..widthMm = d.widthMm
@@ -201,7 +201,8 @@ final class WorkspaceViewModel extends BarleyViewModel {
     for (final id in selectedObjectIds) {
       final object = session.document.objectById(id);
       if (object != null) {
-        execute(ReplaceObject(object.withStroke(mutate(object.stroke))));
+        execute(ReplaceObject(object.withStroke(mutate(object.stroke))),
+            mergeKey: mergeKey);
       }
     }
     notify();
@@ -465,24 +466,27 @@ final class WorkspaceViewModel extends BarleyViewModel {
     if (recentColors.length > 12) recentColors.removeLast();
   }
 
-  void setFillColor(String hex) {
+  void setFillColor(String hex, {String? mergeKey}) {
     fillColorHex = hex;
     _pushRecent(hex);
     for (final id in selectedObjectIds) {
       final object = session.document.objectById(id);
       if (object != null) {
-        execute(ReplaceObject(
-            object.withStroke(object.stroke.copyWith(fillHex: hex))));
+        execute(
+            ReplaceObject(
+                object.withStroke(object.stroke.copyWith(fillHex: hex))),
+            mergeKey: mergeKey);
       }
     }
     notify();
   }
 
   /// Stroke color: applies to selection + defaults. A transparent color
-  /// means "no stroke".
-  void setStrokeColor(String hex) {
+  /// means "no stroke". Pass [mergeKey] to coalesce a live drag into one
+  /// undo entry.
+  void setStrokeColor(String hex, {String? mergeKey}) {
     _pushRecent(hex);
-    setStroke((p) => p.copyWith(colorHex: hex));
+    setStroke((p) => p.copyWith(colorHex: hex), mergeKey: mergeKey);
   }
 
   /// Applies a colour from the Color panel to whichever chip is active

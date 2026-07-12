@@ -126,7 +126,13 @@ class _SlashPainter extends CustomPainter {
   bool shouldRepaint(_SlashPainter old) => old.color != color;
 }
 
-/// FILL panel: the selection's fill colour (transparent = no fill).
+/// Key that reseeds an inline [StudioColorEditor] only when the selection
+/// changes (not on the editor's own live edits, which would reset a drag).
+Key _editorKey(WorkspaceViewModel model, String tag) =>
+    ValueKey('$tag-${model.primarySelection?.id.value ?? 'defaults'}');
+
+/// FILL panel: the full colour editor (wheel + opacity + RGB) bound to the
+/// selection's fill (transparent = no fill).
 class FillPanelContent extends StatelessWidget {
   const FillPanelContent({super.key, required this.model});
   final WorkspaceViewModel model;
@@ -135,30 +141,20 @@ class FillPanelContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: model,
-      builder: (context, _) {
-        final fill = model.activeStroke.fillHex ?? model.fillColorHex;
-        return Padding(
-          padding: const EdgeInsets.all(10),
-          child: StudioFormRow(
-            label: 'Fill',
-            child: Row(children: [
-              StudioColorSwatch(
-                key: const Key('color-fill-swatch'),
-                color: model.activeStroke.fillHex,
-                onChanged: model.setFillColor,
-              ),
-              const SizedBox(width: 8),
-              Text(fill == StrokeProps.transparent ? 'None' : fill,
-                  style: TextStyle(fontSize: 11, color: AppTokens.textMuted)),
-            ]),
-          ),
-        );
-      },
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.all(10),
+        child: StudioColorEditor(
+          key: _editorKey(model, 'fill'),
+          initialHex: model.activeStroke.fillHex ?? model.fillColorHex,
+          onChanged: (hex) => model.setFillColor(hex, mergeKey: 'panel-fill'),
+        ),
+      ),
     );
   }
 }
 
-/// STROKE panel: colour (transparent = no stroke), width, cap, join.
+/// STROKE panel: the full colour editor (transparent = no stroke) plus
+/// width and icon-toggle cap / join.
 class StrokePanelContent extends StatelessWidget {
   const StrokePanelContent({super.key, required this.model});
   final WorkspaceViewModel model;
@@ -169,21 +165,19 @@ class StrokePanelContent extends StatelessWidget {
       listenable: model,
       builder: (context, _) {
         final s = model.activeStroke;
-        return Padding(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              StudioFormRow(
-                label: 'Stroke',
-                child: StudioColorSwatch(
-                  key: const Key('color-stroke-swatch'),
-                  color: s.colorHex,
-                  onChanged: model.setStrokeColor,
-                ),
+              StudioColorEditor(
+                key: _editorKey(model, 'stroke'),
+                initialHex: s.colorHex ?? model.strokeColorHex,
+                onChanged: (hex) =>
+                    model.setStrokeColor(hex, mergeKey: 'panel-stroke'),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
               StudioFormRow(
                 label: 'Width',
                 child: StudioNumberField(
@@ -192,36 +186,47 @@ class StrokePanelContent extends StatelessWidget {
                   suffix: 'mm',
                   steppers: true,
                   width: 96,
-                  onSubmitted: (v) =>
-                      model.setStroke((p) => p.copyWith(widthMm: v)),
+                  onSubmitted: (v) => model.setStroke(
+                      (p) => p.copyWith(widthMm: v),
+                      mergeKey: 'stroke-w'),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               StudioFormRow(
                 label: 'Cap',
-                child: StudioDropdown<String>(
-                  value: s.cap,
-                  width: 96,
-                  items: const [
-                    ('butt', 'Butt'),
-                    ('round', 'Round'),
-                    ('square', 'Square'),
+                child: StudioToggleGroup<String>(
+                  onToggled: (v) => model.setStroke((p) => p.copyWith(cap: v)),
+                  items: [
+                    for (final (value, icon, tip) in const [
+                      ('butt', Icons.horizontal_rule, 'Butt'),
+                      ('round', Icons.circle, 'Round'),
+                      ('square', Icons.crop_square, 'Square'),
+                    ])
+                      StudioToggleItem(
+                          value: value,
+                          icon: icon,
+                          tooltip: tip,
+                          active: s.cap == value),
                   ],
-                  onChanged: (v) => model.setStroke((p) => p.copyWith(cap: v)),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               StudioFormRow(
                 label: 'Join',
-                child: StudioDropdown<String>(
-                  value: s.join,
-                  width: 96,
-                  items: const [
-                    ('miter', 'Mitre'),
-                    ('round', 'Round'),
-                    ('bevel', 'Bevel'),
+                child: StudioToggleGroup<String>(
+                  onToggled: (v) => model.setStroke((p) => p.copyWith(join: v)),
+                  items: [
+                    for (final (value, icon, tip) in const [
+                      ('miter', Icons.change_history, 'Mitre'),
+                      ('round', Icons.rounded_corner, 'Round'),
+                      ('bevel', Icons.hexagon_outlined, 'Bevel'),
+                    ])
+                      StudioToggleItem(
+                          value: value,
+                          icon: icon,
+                          tooltip: tip,
+                          active: s.join == value),
                   ],
-                  onChanged: (v) => model.setStroke((p) => p.copyWith(join: v)),
                 ),
               ),
             ],

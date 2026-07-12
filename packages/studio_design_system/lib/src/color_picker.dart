@@ -35,7 +35,7 @@ Future<String?> showStudioColorPicker({
     context: context,
     title: 'Pick Color',
     width: 264,
-    body: _ColorPickerBody(
+    body: StudioColorEditor(
       initialHex: initialHex,
       onChanged: (hex) => picked = hex,
     ),
@@ -85,17 +85,22 @@ String _formatHex(Color c, int alpha) {
   return '#$rgb${alpha.toRadixString(16).padLeft(2, '0')}';
 }
 
-class _ColorPickerBody extends StatefulWidget {
-  const _ColorPickerBody({required this.initialHex, required this.onChanged});
+/// The reusable colour-editing surface: hue wheel + HSV triangle, opacity
+/// slider, transparent swatch, hex/RGB entry. Used inside
+/// [showStudioColorPicker]'s dialog and embedded directly in panels
+/// (Fill/Stroke) for inline editing. Emits every change via [onChanged].
+class StudioColorEditor extends StatefulWidget {
+  const StudioColorEditor(
+      {super.key, required this.initialHex, required this.onChanged});
 
   final String initialHex;
   final ValueChanged<String> onChanged;
 
   @override
-  State<_ColorPickerBody> createState() => _ColorPickerBodyState();
+  State<StudioColorEditor> createState() => _StudioColorEditorState();
 }
 
-class _ColorPickerBodyState extends State<_ColorPickerBody> {
+class _StudioColorEditorState extends State<StudioColorEditor> {
   static const _wheelSize = Size.square(190);
 
   late HSVColor _hsv; // hue/sat/value; alpha tracked separately.
