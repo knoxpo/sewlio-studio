@@ -168,6 +168,12 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// Bound by the view each build: the Hoop tool opens Document Setup.
   void Function()? onOpenHoopSetup;
 
+  /// Bound by the shell: reveal a docked panel's tab when a tool with
+  /// `revealPanel` activates (ADR-044). The shell only selects the tab
+  /// if the panel is visible in a dock group — never un-hides it, so
+  /// user customisation wins.
+  void Function(String panelId)? onRevealPanel;
+
   /// Last-used tool per toolbox flyout group (slot memory).
   final toolGroupMemory = <String, ToolKind>{};
 
@@ -360,12 +366,27 @@ final class WorkspaceViewModel extends BarleyViewModel {
     _eventSub?.cancel();
     session = next;
     selection.select(null);
+    final textTool = TextTool(
+      nextId: nextId,
+      onCreateObject: (object) {
+        execute(
+            AddObject(object.withStroke(strokeDefaults), parent: activeParent));
+        selection
+            .replaceWith(DocumentNodeRef(DocumentNodeKind.object, object.id));
+      },
+      onReplaceObject: (object) =>
+          execute(ReplaceObject(_withPreservedRuns(object))),
+    );
+    // Run-aware in-place preview: styling applied from the panel or
+    // toolbar while editing shows immediately, not only after commit.
+    textTool.committedObject = () {
+      final id = textTool.editingId;
+      final object = id == null ? null : session.document.objectById(id);
+      return object is TextObject ? object : null;
+    };
+    textTool.faceResolver = (family, style) =>
+        FontLibrary.instance.cached(family, style: style) ?? textTool.font;
     tools = {
-      ToolKind.select: SelectTool(
-        document: session.document,
-        history: session.history,
-        selection: selection,
-      ),
       ToolKind.node: NodeTool(
         document: session.document,
         history: session.history,
@@ -380,16 +401,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
       ),
       ToolKind.pencil: PencilTool(onCreate: addPath),
       ToolKind.shape: ShapeTool(onCreate: addPath),
-      ToolKind.text: TextTool(
-        nextId: nextId,
-        onCreateObject: (object) {
-          execute(AddObject(object.withStroke(strokeDefaults),
-              parent: activeParent));
-          selection
-              .replaceWith(DocumentNodeRef(DocumentNodeKind.object, object.id));
-        },
-        onReplaceObject: (object) => execute(ReplaceObject(object)),
-      ),
+      ToolKind.text: textTool,
       ToolKind.pan: PanTool(),
       ToolKind.zoom: ZoomTool(onZoom: (world, magnify) {
         viewport.zoomAt(viewport.worldToScreen(world), magnify);
@@ -397,6 +409,10 @@ final class WorkspaceViewModel extends BarleyViewModel {
       }),
       ToolKind.hoop: HoopTool(onOpenSetup: () => onOpenHoopSetup?.call()),
       ToolKind.measure: MeasureTool(),
+      // Contribution-built tools (ADR-044) override the inline
+      // defaults above; tools migrate to createTool one at a time.
+      for (final c in toolContributions)
+        if (c.createTool != null) c.kind: c.createTool!(this),
     };
     for (final t in tools.values) {
       t.addListener(notify);
@@ -447,6 +463,9 @@ final class WorkspaceViewModel extends BarleyViewModel {
     // selected loads it for continuation — anchors editable, commit
     // replaces the object.
     if (kind == ToolKind.pen) _loadPenContinuation();
+    // Tool-declared panel reveal (ADR-044) — generic, no per-tool logic.
+    final reveal = toolContributionFor(kind)?.revealPanel;
+    if (reveal != null) onRevealPanel?.call(reveal);
     // Cursor reflects the new tool immediately, not on the next move.
     _syncPointerContext();
     _refreshCursor(cursor.value ?? g.Point.zero);
@@ -625,9 +644,11 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   /// Double-click: with the Select tool, a hit on a text object
   /// re-enters in-place text editing (ADR-028); otherwise the active
-  /// tool gets the event (pen finishes its path here).
+  /// tool gets the event (pen finishes its path here). Design content
+  /// is editable in design mode only — in Stitch/Simulation modes the
+  /// design is a read-only outline, so text editing never opens there.
   void onCanvasDoubleTap(g.Point world) {
-    if (activeKind == ToolKind.select) {
+    if (activeKind == ToolKind.select && mode == WorkspaceMode.design) {
       final hit = _textObjectAt(world);
       if (hit != null) {
         _beginTextEdit(hit);
@@ -807,23 +828,22 @@ final class WorkspaceViewModel extends BarleyViewModel {
           .then((_) => applyCharAttrs(patch, mergeKey: mergeKey));
       return;
     }
+    // A style patch (Bold/Italic run) lays out with that face — load it
+    // once, then re-apply (same deferred pattern as the family above).
+    final patchStyle = patch.styleName;
+    if (patchStyle != null &&
+        FontLibrary.instance.cached(family, style: patchStyle) == null) {
+      FontLibrary.instance
+          .load(family, style: patchStyle)
+          .then((_) => applyCharAttrs(patch, mergeKey: mergeKey));
+      return;
+    }
 
     final base =
         patch.fontFamily != null ? target.withFontFamily(family) : target;
     final updated = base.withRangeAttrs(range.start, range.end, patch);
-    final outlines = layoutText(
-      updated.text,
-      font,
-      origin: updated.anchor,
-      sizeMm: updated.sizeMm,
-      trackingMm: updated.trackingMm,
-      lineHeight: updated.lineHeight,
-      align: MonoTextAlign.values.asNameMap()[updated.alignment] ??
-          MonoTextAlign.left,
-      frameWidthMm: updated.frameWidthMm,
-      attrsOf: (offset) => updated.attrsAt(offset),
-    );
-    execute(ReplaceObject(updated.withOutlines(outlines)), mergeKey: mergeKey);
+    execute(ReplaceObject(updated.withOutlines(_layoutObject(updated, font))),
+        mergeKey: mergeKey);
 
     // While editing in place, the committed object is hidden and the live
     // preview is what's drawn — mirror whole-object typography onto the
@@ -836,6 +856,65 @@ final class WorkspaceViewModel extends BarleyViewModel {
         trackingMm: patch.trackingMm,
       );
     }
+  }
+
+  /// Carries a committed text object's style runs through a text-tool
+  /// commit (the tool is run-unaware) and re-lays out run-aware. Runs
+  /// only survive when the text itself is unchanged — an edited string
+  /// would misalign their rune offsets.
+  EmbroideryObject _withPreservedRuns(TextObject object) {
+    final old = session.document.objectById(object.id);
+    if (old is! TextObject || old.runs.isEmpty || old.text != object.text) {
+      return object;
+    }
+    final withRuns = object.withRuns(old.runs);
+    final font = FontLibrary.instance.cached(object.fontFamily);
+    return font == null
+        ? withRuns
+        : withRuns.withOutlines(_layoutObject(withRuns, font));
+  }
+
+  /// Run-aware outline layout for [object] (base [font] + per-run styled
+  /// faces). An unloaded styled face renders with the base font until
+  /// its load-and-reapply round-trip lands.
+  List<g.Path> _layoutObject(TextObject object, TextFont font) => layoutText(
+        object.text,
+        font,
+        origin: object.anchor,
+        sizeMm: object.sizeMm,
+        trackingMm: object.trackingMm,
+        lineHeight: object.lineHeight,
+        align: MonoTextAlign.values.asNameMap()[object.alignment] ??
+            MonoTextAlign.left,
+        frameWidthMm: object.frameWidthMm,
+        attrsOf: (offset) => object.attrsAt(offset),
+        fontOf: (offset) {
+          final attrs = object.attrsAt(offset);
+          final runFamily = attrs.fontFamily ?? object.fontFamily;
+          final runStyle = attrs.styleName ?? 'Regular';
+          return FontLibrary.instance.cached(runFamily, style: runStyle) ??
+              font;
+        },
+      );
+
+  /// Paragraph alignment: applies to the live Text tool (editing/new
+  /// text) and to the targeted committed object (undoable re-layout).
+  void setTextAlignment(MonoTextAlign align) {
+    _textTool.align = align;
+    final target = characterTarget;
+    if (target == null) {
+      notify();
+      return;
+    }
+    final font = FontLibrary.instance.cached(target.fontFamily);
+    if (font == null) {
+      FontLibrary.instance
+          .load(target.fontFamily)
+          .then((_) => setTextAlignment(align));
+      return;
+    }
+    final updated = target.withAlignment(align.name);
+    execute(ReplaceObject(updated.withOutlines(_layoutObject(updated, font))));
   }
 
   /// The merged attributes over the active range, plus the set of fields
@@ -1079,7 +1158,16 @@ final class WorkspaceViewModel extends BarleyViewModel {
     final group = _shortcuts[event.logicalKey];
     if (group == null) return KeyEventResult.ignored;
     final index = group.indexOf(activeKind);
-    selectTool(index < 0 ? group.first : group[(index + 1) % group.length]);
+    final next = index < 0 ? group.first : group[(index + 1) % group.length];
+    // Design-content tools exist only in design mode — in Stitch/
+    // Simulation the design is a read-only outline. Navigation and
+    // selection shortcuts stay live everywhere.
+    if (mode != WorkspaceMode.design &&
+        !const {ToolKind.select, ToolKind.pan, ToolKind.zoom}
+            .contains(next)) {
+      return KeyEventResult.ignored;
+    }
+    selectTool(next);
     return KeyEventResult.handled;
   }
 

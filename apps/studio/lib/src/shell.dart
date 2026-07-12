@@ -41,6 +41,10 @@ class EditorWorkspace extends StatelessWidget {
   Widget build(BuildContext context) {
     // Reassigned every build so the closure captures the live context.
     model.onOpenHoopSetup = () => showDocumentSetup(context, model);
+    // Tool-declared panel reveal (ADR-044): selectTab no-ops for hidden
+    // panels, so a panel the user closed stays closed.
+    model.onRevealPanel =
+        (id) => app.dockFor(model.mode, model.projectType).selectTab(id);
     if (model.mode == WorkspaceMode.domain) return _domainWorkspace(context);
     if (model.mode == WorkspaceMode.simulation) {
       return _simulationWorkspace(context);

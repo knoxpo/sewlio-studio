@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 
 import '../form_factor.dart';
-import '../panels/panel_def.dart';
+import '../panels/panel_registry.dart';
 import '../workspace_view_model.dart';
 import 'dock_controller.dart';
 import 'dock_layout.dart';

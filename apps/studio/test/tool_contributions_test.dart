@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:studio/src/panels/panel_registry.dart';
 import 'package:studio/src/toolbox.dart';
 import 'package:studio/src/tools/tool_contributions.dart';
 import 'package:studio/src/workspace_view_model.dart';
@@ -50,5 +51,17 @@ void main() {
       if (c.shortcutKey == null) continue;
       expect(map[c.shortcutKey], c.shortcutCycle ?? [c.kind]);
     }
+  });
+
+  test('contributed panel ids are unique across the whole registry', () {
+    final ids = [for (final p in panelRegistry) p.id];
+    expect(ids.toSet(), hasLength(ids.length));
+  });
+
+  test('select tool owns the transform panel (ADR-044 reference)', () {
+    final select = toolContributionById('core.select');
+    expect([for (final p in select.panels) p.id], contains('transform'));
+    expect(select.createTool, isNotNull);
+    expect(panelById('transform').title, 'Transform');
   });
 }

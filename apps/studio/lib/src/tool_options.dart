@@ -1,65 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_tools/studio_tools.dart';
 
-import 'font_library.dart';
-import 'stroke_style.dart';
+import 'tools/tool_contributions.dart';
 import 'workspace_view_model.dart';
 
-/// Icon + label for each shape kind (rail flyout + options bar).
-IconData shapeIcon(ShapeKind kind) => switch (kind) {
-      ShapeKind.rectangle => TablerIcons.rectangle,
-      ShapeKind.square => TablerIcons.square,
-      ShapeKind.roundedRectangle => TablerIcons.square_rounded,
-      ShapeKind.circle => TablerIcons.circle,
-      ShapeKind.ellipse => TablerIcons.oval,
-      ShapeKind.triangle => TablerIcons.triangle,
-      ShapeKind.pentagon => TablerIcons.pentagon,
-      ShapeKind.hexagon => TablerIcons.hexagon,
-      ShapeKind.polygon => TablerIcons.polygon,
-      ShapeKind.star => TablerIcons.star,
-      ShapeKind.diamond => TablerIcons.diamond,
-      ShapeKind.trapezoid => TablerIcons.lasso_polygon,
-      ShapeKind.squareStar => TablerIcons.north_star,
-      ShapeKind.arrow => TablerIcons.arrow_big_right,
-      ShapeKind.pie => TablerIcons.chart_pie,
-      ShapeKind.segment => TablerIcons.circle_half_2,
-      ShapeKind.crescent => TablerIcons.moon,
-      ShapeKind.cog => TablerIcons.settings,
-      ShapeKind.heart => TablerIcons.heart,
-      ShapeKind.teardrop => TablerIcons.droplet,
-      ShapeKind.cloud => TablerIcons.cloud,
-      ShapeKind.spiral => TablerIcons.spiral,
-    };
-
-String shapeLabel(ShapeKind kind) => switch (kind) {
-      ShapeKind.rectangle => 'Rectangle',
-      ShapeKind.square => 'Square',
-      ShapeKind.roundedRectangle => 'Rounded Rectangle',
-      ShapeKind.circle => 'Circle',
-      ShapeKind.ellipse => 'Ellipse',
-      ShapeKind.triangle => 'Triangle',
-      ShapeKind.pentagon => 'Pentagon',
-      ShapeKind.hexagon => 'Hexagon',
-      ShapeKind.polygon => 'Polygon (N sides)',
-      ShapeKind.star => 'Star',
-      ShapeKind.diamond => 'Diamond',
-      ShapeKind.trapezoid => 'Trapezoid',
-      ShapeKind.squareStar => 'Square Star',
-      ShapeKind.arrow => 'Arrow',
-      ShapeKind.pie => 'Pie',
-      ShapeKind.segment => 'Segment',
-      ShapeKind.crescent => 'Crescent',
-      ShapeKind.cog => 'Cog',
-      ShapeKind.heart => 'Heart',
-      ShapeKind.teardrop => 'Teardrop',
-      ShapeKind.cloud => 'Cloud',
-      ShapeKind.spiral => 'Spiral',
-    };
-
 /// Illustrator-style control bar: contextual options for the active
-/// tool, shown above the canvas.
+/// tool, shown above the canvas. The content comes from the active
+/// tool's contribution (`optionsBuilder`, ADR-044) — this widget owns
+/// only the chrome and renders whatever the tool builds.
 class ToolOptionsBar extends StatelessWidget {
   const ToolOptionsBar({
     super.key,
@@ -79,20 +28,23 @@ class ToolOptionsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = switch (tool) {
-      ShapeTool shape => _shapeOptions(context, shape),
-      TextTool text => _textOptions(text),
-      PenTool pen => _penOptions(context, pen),
-      PencilTool pencil => [
-          _numberField('Smoothing', pencil.toleranceMm, suffix: 'mm', min: 0.05,
-              (v) {
-            pencil.toleranceMm = v;
-            onChanged();
-          }),
-        ],
-      _ => const <Widget>[],
-    };
-    if (options.isEmpty) return const SizedBox.shrink();
+    final contribution =
+        model == null ? null : toolContributionFor(model!.activeKind);
+    if (contribution == null) return const SizedBox.shrink();
+    final built =
+        contribution.optionsBuilder?.call(context, tool, onChanged, model) ??
+            const <Widget>[];
+    // The bar is always present so tool switches never reflow the
+    // canvas: every tool leads with its name, then its options (the
+    // status bar already carries the usage hint).
+    final options = <Widget>[
+      Text(contribution.label,
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTokens.textPrimary)),
+      ...built,
+    ];
     return Container(
       height: 34,
       // Fill the whole strip and keep content left-aligned — the bar
@@ -122,306 +74,5 @@ class ToolOptionsBar extends StatelessWidget {
         ]),
       ),
     );
-  }
-
-  // -------------------------------------------------------------- pen tool
-
-  List<Widget> _penOptions(BuildContext context, PenTool pen) {
-    return [
-      // Drawing mode strip (Smart mode arrives with curve fitting).
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        for (final (mode, icon, label) in const [
-          (PenMode.pen, TablerIcons.ballpen, 'Pen mode — straight segments'),
-          (
-            PenMode.smart,
-            TablerIcons.wand,
-            'Smart mode — smooth curve through your points'
-          ),
-          (
-            PenMode.polygon,
-            TablerIcons.polygon,
-            'Polygon mode — always closes the shape'
-          ),
-          (PenMode.line, TablerIcons.line, 'Line mode — one two-point segment'),
-        ])
-          StudioIconButton(
-            icon: icon,
-            tooltip: label,
-            active: pen.mode == mode,
-            onPressed: () {
-              pen.mode = mode;
-              onChanged();
-            },
-          ),
-      ]),
-      ..._fillStrokeOptions(context),
-    ];
-  }
-
-  // ------------------------------------------------------------- text tool
-
-  /// Style variants wait for family grouping (nameID 1/2) + a shaping
-  /// engine; families list every installed TrueType face today.
-  static const textFontStyles = ['Regular'];
-
-  List<Widget> _textOptions(TextTool text) {
-    return [
-      // Font family (system fonts, scanned once) + style slot.
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        FutureBuilder<List<String>>(
-          future: FontLibrary.instance.families(),
-          builder: (context, snapshot) {
-            final families = snapshot.data ?? const [FontLibrary.builtinFamily];
-            return StudioDropdown<String>(
-              value: families.contains(text.font.family)
-                  ? text.font.family
-                  : FontLibrary.builtinFamily,
-              width: 160,
-              items: [for (final f in families) (f, f)],
-              onChanged: (family) async {
-                text.font = await FontLibrary.instance.load(family);
-                onChanged();
-              },
-            );
-          },
-        ),
-        const SizedBox(width: 6),
-        StudioDropdown<String>(
-          value: textFontStyles.first,
-          width: 84,
-          items: [for (final s in textFontStyles) (s, s)],
-          onChanged: (_) => onChanged(),
-        ),
-      ]),
-      // Typography numbers.
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        _numberField('Size', text.sizeMm, suffix: 'mm', min: 1, (v) {
-          text.sizeMm = v;
-          onChanged();
-        }),
-        const SizedBox(width: 8),
-        _numberField('Tracking', text.trackingMm, suffix: 'mm', min: -5, (v) {
-          text.trackingMm = v;
-          onChanged();
-        }),
-        const SizedBox(width: 8),
-        _numberField('Leading ×', text.lineHeight, min: 0.5, max: 4, (v) {
-          text.lineHeight = v;
-          onChanged();
-        }),
-      ]),
-      // Paragraph alignment (justify variants wait for a glyph engine
-      // with per-word metrics).
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        for (final (align, icon, label) in [
-          (MonoTextAlign.left, TablerIcons.align_left, 'Align Left'),
-          (MonoTextAlign.center, TablerIcons.align_center, 'Align Center'),
-          (MonoTextAlign.right, TablerIcons.align_right, 'Align Right'),
-        ])
-          StudioIconButton(
-            icon: icon,
-            tooltip: label,
-            active: text.align == align,
-            onPressed: () {
-              text.align = align;
-              onChanged();
-            },
-          ),
-        const StudioIconButton(
-          icon: TablerIcons.align_justified,
-          tooltip: 'Justify — requires font engine',
-        ),
-      ]),
-      // Text style + color slots: monoline is single-weight stroke
-      // lettering, so these enable when TTF glyphs / the fill-stroke
-      // system land. Disabled, not hidden — the workflow is visible.
-      Row(mainAxisSize: MainAxisSize.min, children: const [
-        StudioIconButton(
-            icon: TablerIcons.bold, tooltip: 'Bold — requires font engine'),
-        StudioIconButton(
-            icon: TablerIcons.italic, tooltip: 'Italic — requires font engine'),
-        StudioIconButton(
-            icon: TablerIcons.underline,
-            tooltip: 'Underline — requires font engine'),
-        StudioIconButton(
-            icon: TablerIcons.strikethrough,
-            tooltip: 'Strikethrough — requires font engine'),
-        StudioIconButton(
-            icon: TablerIcons.palette,
-            tooltip: 'Text color — arrives with the fill/stroke system'),
-      ]),
-    ];
-  }
-
-  /// Fill/stroke controls shared by drawing-tool bars (Affinity-style):
-  /// fill + stroke color chips, stroke width, stroke settings dialog,
-  /// and the use-fill toggle.
-  List<Widget> _fillStrokeOptions(BuildContext context) {
-    final m = model;
-    if (m == null) return const [];
-    return [
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        _colorChip(
-          context,
-          tooltip: 'Fill color',
-          // Summary of the selection's style, else the defaults.
-          hex: m.activeStroke.fillHex ?? m.fillColorHex,
-          filled: true,
-          onPicked: m.setFillColor,
-        ),
-        const SizedBox(width: 6),
-        _colorChip(
-          context,
-          tooltip: 'Stroke color',
-          hex: m.activeStroke.colorHex ?? m.strokeColorHex,
-          filled: false,
-          onPicked: m.setStrokeColor,
-        ),
-      ]),
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        _numberField('Width', m.strokeStyle.widthMm, suffix: 'mm', min: 0.05,
-            (v) {
-          m.strokeStyle.widthMm = v;
-          onChanged();
-        }),
-        const SizedBox(width: 8),
-        StudioButton(
-          label: 'Stroke…',
-          onPressed: () => showStrokeDialog(context, m),
-        ),
-      ]),
-    ];
-  }
-
-  /// Parses `#rrggbb` / `#rrggbbaa`; null for transparent (alpha 00).
-  Color? _chipColor(String hex) {
-    if (isTransparent(hex)) return null;
-    final h = hex.replaceFirst('#', '');
-    if (h.length == 8) {
-      final v = int.parse(h, radix: 16); // rrggbbaa
-      return Color(((v & 0xff) << 24) | ((v >> 8) & 0xffffff));
-    }
-    return Color(0xFF000000 | int.parse(h, radix: 16));
-  }
-
-  Widget _colorChip(
-    BuildContext context, {
-    required String tooltip,
-    required String hex,
-    required bool filled,
-    required void Function(String hex) onPicked,
-  }) {
-    // null when transparent (alpha 00) — chip shows empty/none.
-    final color = _chipColor(hex);
-    return Tooltip(
-      message: tooltip,
-      waitDuration: const Duration(milliseconds: 400),
-      child: InkWell(
-        onTap: () async {
-          final picked =
-              await showStudioColorPicker(context: context, initialHex: hex);
-          if (picked != null) {
-            onPicked(picked);
-            onChanged();
-          }
-        },
-        child: Container(
-          width: 18,
-          height: 18,
-          decoration: BoxDecoration(
-            color: filled ? color : null,
-            border: Border.all(color: AppTokens.border),
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: filled
-              ? null
-              : Center(
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                          color: color ?? AppTokens.textMuted, width: 3),
-                    ),
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _shapeOptions(BuildContext context, ShapeTool shape) {
-    return [
-      // Affinity-style: the bar names the current shape, carries the
-      // fill/stroke controls, then the shape's own settings; picking a
-      // different shape happens in the floating shape palette.
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(shapeIcon(shape.kind), size: 15, color: AppTokens.primary),
-        const SizedBox(width: 6),
-        Text(shapeLabel(shape.kind),
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTokens.textPrimary)),
-      ]),
-      ..._fillStrokeOptions(context),
-      if (shape.kind == ShapeKind.polygon)
-        _numberField('Sides', shape.sides.toDouble(), min: 3, integer: true,
-            (v) {
-          shape.sides = v.round();
-          onChanged();
-        }),
-      if (shape.kind == ShapeKind.star) ...[
-        _numberField('Points', shape.starPoints.toDouble(),
-            min: 3, integer: true, (v) {
-          shape.starPoints = v.round();
-          onChanged();
-        }),
-        _numberField('Inner %', shape.starInnerRatio * 100, min: 5, max: 95,
-            (v) {
-          shape.starInnerRatio = v / 100;
-          onChanged();
-        }),
-      ],
-      if (shape.kind == ShapeKind.roundedRectangle)
-        _numberField('Radius', shape.cornerRadiusMm, suffix: 'mm', min: 0.1,
-            (v) {
-          shape.cornerRadiusMm = v;
-          onChanged();
-        }),
-      if (shape.kind == ShapeKind.spiral)
-        _numberField('Turns', shape.spiralTurns, min: 0.5, (v) {
-          shape.spiralTurns = v;
-          onChanged();
-        }),
-    ];
-  }
-
-  /// Compact labeled number field with − / + steppers.
-  Widget _numberField(
-    String label,
-    double value,
-    void Function(double) submit, {
-    String? suffix,
-    double min = 0,
-    double? max,
-    bool integer = false,
-  }) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Text('$label ',
-          style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
-      StudioNumberField(
-        value: value,
-        min: min,
-        max: max,
-        integer: integer,
-        decimals: 1,
-        suffix: suffix,
-        steppers: true,
-        width: suffix == null ? 84 : 104,
-        textAlign: TextAlign.center,
-        onSubmitted: submit,
-      ),
-    ]);
   }
 }

@@ -4,7 +4,7 @@ import 'package:studio_design_system/studio_design_system.dart';
 
 import 'tool_card.dart';
 import 'tool_docs.dart';
-import 'tool_options.dart';
+import 'tools/shape/shape_options.dart';
 import 'tools/tool_contributions.dart';
 import 'workspace_view_model.dart';
 

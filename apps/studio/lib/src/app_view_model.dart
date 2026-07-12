@@ -5,7 +5,7 @@ import 'package:studio_document/studio_document.dart';
 import '../main.dart';
 import 'dock/dock_controller.dart';
 import 'file_io.dart';
-import 'panels/panel_def.dart';
+import 'panels/panel_registry.dart';
 import 'recents.dart';
 import 'workspace/project_type.dart';
 import 'workspace/project_type_registry.dart';

@@ -20,34 +20,80 @@ class FontLibrary extends ChangeNotifier {
 
   static const builtinFamily = 'Monoline';
 
-  Future<Map<String, String>>? _scan;
-  Map<String, String> _paths = const {};
+  Future<Map<String, Map<String, String>>>? _scan;
+  Map<String, Map<String, String>> _paths = const {};
   final _cache = <String, TextFont>{};
   final _previewReady = <String>{};
   final _previewLoading = <String>{};
 
+  /// Whether the system scan has landed ([stylesFor] is authoritative
+  /// only after it has).
+  bool get scanned => _paths.isNotEmpty;
+
   /// Family display names: built-in first, system fonts sorted.
+  /// Notifies listeners the first time the scan lands so style-aware
+  /// UI built before it can refresh.
   Future<List<String>> families() async {
+    final first = !scanned;
     final system = await (_scan ??= scanSystemFontFamilies());
     _paths = system;
+    if (first && scanned) notifyListeners();
     return [builtinFamily, ...system.keys.toList()..sort()];
   }
 
-  /// The already-loaded font for [family], or null if not yet cached.
-  /// Synchronous — for UI that needs font capabilities during build; a
-  /// null result means "trigger [load] and rebuild".
-  TextFont? cached(String family) =>
-      family == builtinFamily ? const MonolineTextFont() : _cache[family];
+  static const _styleOrder = [
+    'Regular', 'Normal', // synonyms first
+    'Bold',
+    'Italic', 'Oblique',
+    'Bold Italic', 'Bold Oblique',
+  ];
 
-  /// Loads (and caches) the font for [family]; falls back to the
-  /// built-in monoline font when the file can't be parsed.
-  Future<TextFont> load(String family) async {
+  /// Style names available for [family] (Regular/Bold/Italic/… faces
+  /// grouped by the scan), common styles first. Synchronous — before
+  /// the scan completes it reports the single default style.
+  List<String> stylesFor(String family) {
+    final styles = _paths[family]?.keys.toList();
+    if (styles == null || styles.isEmpty) return const ['Regular'];
+    // Common styles first, remaining variants (Black, Book, Light, …)
+    // alphabetical.
+    styles.sort((a, b) {
+      final ia = _styleOrder.indexOf(a), ib = _styleOrder.indexOf(b);
+      final ra = ia < 0 ? _styleOrder.length : ia;
+      final rb = ib < 0 ? _styleOrder.length : ib;
+      return ra != rb ? ra.compareTo(rb) : a.compareTo(b);
+    });
+    return styles;
+  }
+
+  /// The face path for ([family], [style]), falling back to Regular
+  /// then any face of the family.
+  String? _pathFor(String family, String style) {
+    final styles = _paths[family];
+    if (styles == null || styles.isEmpty) return null;
+    return styles[style] ?? styles['Regular'] ?? styles.values.first;
+  }
+
+  /// The already-loaded face for [family] + [style], or null if that
+  /// exact face is not yet cached. Synchronous — for UI that needs font
+  /// capabilities during build; a null result means "trigger [load] and
+  /// rebuild" (callers pick their own fallback face meanwhile).
+  TextFont? cached(String family, {String style = 'Regular'}) =>
+      family == builtinFamily
+          ? const MonolineTextFont()
+          : _cache['$family/$style'];
+
+  /// Loads (and caches) the font face for [family] + [style]; falls
+  /// back to the family's Regular face, then to the built-in monoline
+  /// font when nothing can be parsed.
+  Future<TextFont> load(String family, {String style = 'Regular'}) async {
     if (family == builtinFamily) return const MonolineTextFont();
-    final cached = _cache[family];
+    final key = '$family/$style';
+    final cached = _cache[key];
     if (cached != null) return cached;
-    final path = (await (_scan ??= scanSystemFontFamilies()))[family];
+    _paths = await (_scan ??= scanSystemFontFamilies());
+    final path = _pathFor(family, style);
     final font = path == null ? null : await loadFontFile(path);
-    return _cache[family] = font ?? const MonolineTextFont();
+    return _cache[key] = font ?? const MonolineTextFont();
   }
 
   /// Whether [family] is registered with Flutter and can be rendered by a
@@ -65,7 +111,7 @@ class FontLibrary extends ChangeNotifier {
         _previewLoading.contains(family)) {
       return;
     }
-    final path = _paths[family];
+    final path = _pathFor(family, 'Regular');
     if (path == null) return;
     _previewLoading.add(family);
     () async {

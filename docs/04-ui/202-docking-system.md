@@ -145,10 +145,16 @@ Implemented in `apps/studio/lib/src/dock/` and `apps/studio/lib/src/panels/`
 
 ## As built
 
-- **Panel registry** — `panels/panel_def.dart`: `PanelDef { id, title,
-  icon, minHeight, builder }` in a plain `panelRegistry` list. Adding a
-  panel is one list entry; builders wire content widgets to the
-  `WorkspaceViewModel` (content stays stateless-props and headless-testable).
+- **Panel registry** — `panels/panel_def.dart` holds the `PanelDef {
+  id, title, icon, minHeight, builder }` contract;
+  `panels/panel_registry.dart` holds the `panelRegistry` list, which
+  aggregates built-in panels plus tool-contributed panels
+  (`ToolContribution.panels`, ADR-037/044) at declaration — production
+  and tests see the same list with no startup wiring. Adding a panel is
+  one list entry (built-in/feature) or one contribution field (tool);
+  builders wire content widgets to the `WorkspaceViewModel` (content
+  stays stateless-props and headless-testable). Domain/simulation
+  panels register on `DomainUiModule`, not this list.
 - **Layout model** — `dock/dock_layout.dart`: `DockLayout { width,
   groups, hidden }`, `DockGroup { panelIds, activeId, flex, collapsed }`.
   `normalize()` self-repairs against the registry (unknown ids dropped,

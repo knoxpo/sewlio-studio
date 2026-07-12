@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_tools/studio_tools.dart';
 
-import 'tool_options.dart';
 import 'toolbox.dart';
+import 'tools/shape/shape_options.dart';
 import 'workspace_view_model.dart';
 
 /// The six canvas-edge hotspots a floating palette can dock on.

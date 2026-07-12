@@ -12,15 +12,11 @@ import 'src/app_shell.dart';
 import 'src/app_view_model.dart';
 import 'src/dock/dock_controller.dart';
 import 'src/file_io.dart';
-import 'src/panels/panel_def.dart';
+import 'src/panels/panel_registry.dart';
 import 'src/recents.dart';
-import 'src/tools/tool_contributions.dart';
 import 'src/workspace_view_model.dart';
 
 Future<void> main() async {
-  // Tool-contributed dockable panels join the registry before the dock
-  // builds its layout (ADR-037); plugin panels will append here too.
-  panelRegistry.addAll(toolContributedPanels());
   // iOS/Android: HOME is wrong or unset — anchor app state in the
   // platform's application-support directory instead.
   if (!kIsWeb &&

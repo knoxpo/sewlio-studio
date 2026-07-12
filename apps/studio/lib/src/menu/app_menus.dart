@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../app_shell.dart';
 import '../app_view_model.dart';
-import '../panels/panel_def.dart';
+import '../panels/panel_registry.dart';
 import '../shell.dart';
 import '../workspace_view_model.dart';
 import 'app_menu.dart';

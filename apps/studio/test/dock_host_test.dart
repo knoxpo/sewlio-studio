@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
 import 'package:studio/src/dock/dock_controller.dart';
-import 'package:studio/src/panels/panel_def.dart';
+import 'package:studio/src/panels/panel_registry.dart';
 
 Future<DockController> pumpEditor(WidgetTester tester) async {
   // Widget tests default to Android → touch-sized dock chrome, which

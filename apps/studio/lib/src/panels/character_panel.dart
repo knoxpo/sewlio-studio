@@ -7,6 +7,7 @@ import 'package:studio_geometry/studio_geometry.dart' as g;
 import 'package:studio_tools/studio_tools.dart';
 
 import '../font_library.dart';
+import '../tools/text/font_family_dropdown.dart';
 import '../workspace_view_model.dart';
 
 /// Professional character/typography panel (Affinity-Designer-style):
@@ -72,15 +73,6 @@ class _CharacterPanelState extends State<CharacterPanel> {
     if (mounted) setState(() {});
   }
 
-  /// Font family to render a picker item's own label in: registers the
-  /// face on first sight and returns it once ready (else null → default
-  /// UI font until the async load completes and rebuilds).
-  String? _previewFamily(String family) {
-    if (family == FontLibrary.builtinFamily) return null;
-    FontLibrary.instance.ensurePreview(family);
-    return FontLibrary.instance.isPreviewReady(family) ? family : null;
-  }
-
   // Shown (disabled) when nothing is selected, so the panel keeps its
   // full shape instead of collapsing to an empty message.
   static final _placeholder = TextObject(
@@ -110,6 +102,12 @@ class _CharacterPanelState extends State<CharacterPanel> {
         if (!disabled && font == null && _loadingFamily != target.fontFamily) {
           _loadingFamily = target.fontFamily;
           FontLibrary.instance.load(target.fontFamily).then((_) {
+            if (mounted) setState(() {});
+          });
+        }
+        // Style names come from the system scan — rebuild when it lands.
+        if (!FontLibrary.instance.scanned) {
+          FontLibrary.instance.families().then((_) {
             if (mounted) setState(() {});
           });
         }
@@ -169,7 +167,10 @@ class _CharacterPanelState extends State<CharacterPanel> {
 
   Widget _core(
       TextObject target, CharAttrs shared, Set<String> mixed, TextFont? font) {
-    final styleNames = font?.styleNames ?? const ['Regular'];
+    // Family-level styles (Bold/Italic faces) come from the library's
+    // scan grouping, not the single cached face.
+    final styleNames = FontLibrary.instance
+        .stylesFor(shared.fontFamily ?? target.fontFamily);
     final styles = _model.session.document.characterStyles;
     final hasStyle = shared.styleId != null;
 
@@ -192,22 +193,11 @@ class _CharacterPanelState extends State<CharacterPanel> {
             const SizedBox(width: 6),
             Expanded(
               flex: 2,
-              child: FutureBuilder<List<String>>(
-                future: FontLibrary.instance.families(),
-                builder: (context, snapshot) {
-                  final families =
-                      snapshot.data ?? const [FontLibrary.builtinFamily];
-                  final value = shared.fontFamily ?? target.fontFamily;
-                  return StudioSearchableDropdown<String>(
-                    key: const Key('char-font-family'),
-                    value: families.contains(value) ? value : null,
-                    hint: mixed.contains('fontFamily') ? 'Mixed' : value,
-                    width: double.infinity,
-                    items: [for (final f in families) (f, f)],
-                    itemFontFamily: _previewFamily,
-                    onChanged: (f) => _apply(CharAttrs(fontFamily: f)),
-                  );
-                },
+              child: FontFamilyDropdown(
+                key: const Key('char-font-family'),
+                value: shared.fontFamily ?? target.fontFamily,
+                mixed: mixed.contains('fontFamily'),
+                onChanged: (f) => _apply(CharAttrs(fontFamily: f)),
               ),
             ),
           ],

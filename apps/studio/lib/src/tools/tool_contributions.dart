@@ -6,6 +6,13 @@ import 'package:studio_tools/studio_tools.dart';
 import '../panels/panel_def.dart';
 import '../shape_palette.dart';
 import '../workspace_view_model.dart';
+import 'hoop/hoop_options.dart';
+import 'pen/pen_options.dart';
+import 'pencil/pencil_options.dart';
+import 'select/select_contribution.dart';
+import 'shape/shape_options.dart';
+import 'text/text_options.dart';
+import 'view/view_options.dart';
 
 /// Floating quick-options palette a tool shows while active (UI-410):
 /// compact secondary controls (shape variants, presets, modes).
@@ -40,6 +47,9 @@ final class ToolContribution {
     this.shortcutCycle,
     this.quickOptions,
     this.panels = const [],
+    this.createTool,
+    this.optionsBuilder,
+    this.revealPanel,
   });
 
   /// Namespaced identity: `core.*` for built-ins, `<plugin>.*` later.
@@ -58,20 +68,29 @@ final class ToolContribution {
   /// Dockable panels this tool registers (same treatment as built-in
   /// panels: docking, tabbing, persistence, Window menu).
   final List<PanelDef> panels;
+
+  /// Builds the tool's interaction core (ADR-044). When set, it
+  /// overrides the view model's inline default — tools migrate here
+  /// one at a time.
+  final Tool Function(WorkspaceViewModel vm)? createTool;
+
+  /// Contextual options-bar content while this tool is active
+  /// (ADR-044) — ToolOptionsBar renders whatever this builds; no
+  /// options bar when null.
+  final List<Widget> Function(BuildContext context, Tool tool,
+      VoidCallback onChanged, WorkspaceViewModel? model)? optionsBuilder;
+
+  /// Panel whose tab is brought forward when this tool activates
+  /// (ADR-044). Only selects the tab of a panel already visible in a
+  /// dock group — a panel the user closed stays closed.
+  final String? revealPanel;
 }
 
 /// Built-in tools, single source of truth: the toolbox layout, the
 /// shortcut map, quick-options palettes, and panel registration all
 /// derive from this list.
 final toolContributions = <ToolContribution>[
-  const ToolContribution(
-    id: 'core.select',
-    kind: ToolKind.select,
-    label: 'Move',
-    icon: TablerIcons.pointer,
-    shortcutKey: LogicalKeyboardKey.keyV,
-    shortcutLabel: 'V',
-  ),
+  selectContribution,
   const ToolContribution(
     id: 'core.node',
     kind: ToolKind.node,
@@ -87,6 +106,7 @@ final toolContributions = <ToolContribution>[
     icon: TablerIcons.frame,
     shortcutKey: LogicalKeyboardKey.keyD,
     shortcutLabel: 'D',
+    optionsBuilder: hoopOptions,
   ),
   const ToolContribution(
     id: 'core.pen',
@@ -97,6 +117,7 @@ final toolContributions = <ToolContribution>[
     shortcutLabel: 'P',
     // Affinity-style: P cycles the drawing tools.
     shortcutCycle: [ToolKind.pen, ToolKind.pencil],
+    optionsBuilder: penOptions,
   ),
   const ToolContribution(
     id: 'core.pencil',
@@ -105,6 +126,7 @@ final toolContributions = <ToolContribution>[
     icon: TablerIcons.pencil,
     shortcutKey: LogicalKeyboardKey.keyB,
     shortcutLabel: 'B',
+    optionsBuilder: pencilOptions,
   ),
   ToolContribution(
     id: 'core.shape',
@@ -119,6 +141,7 @@ final toolContributions = <ToolContribution>[
       gripKey: const Key('shape-palette-grip'),
       builder: (context, model) => ShapePaletteGrid(model: model),
     ),
+    optionsBuilder: shapeOptions,
   ),
   const ToolContribution(
     id: 'core.text',
@@ -127,6 +150,8 @@ final toolContributions = <ToolContribution>[
     icon: TablerIcons.typography,
     shortcutKey: LogicalKeyboardKey.keyT,
     shortcutLabel: 'T',
+    optionsBuilder: textOptions,
+    revealPanel: 'character',
   ),
   const ToolContribution(
     id: 'core.measure',
@@ -143,6 +168,7 @@ final toolContributions = <ToolContribution>[
     icon: TablerIcons.hand_stop,
     shortcutKey: LogicalKeyboardKey.keyH,
     shortcutLabel: 'H',
+    optionsBuilder: viewOptions,
   ),
   const ToolContribution(
     id: 'core.zoom',
@@ -151,6 +177,7 @@ final toolContributions = <ToolContribution>[
     icon: TablerIcons.zoom_in,
     shortcutKey: LogicalKeyboardKey.keyZ,
     shortcutLabel: 'Z',
+    optionsBuilder: viewOptions,
   ),
 ];
 
