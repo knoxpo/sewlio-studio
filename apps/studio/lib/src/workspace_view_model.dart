@@ -721,6 +721,14 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   TextTool get _textTool => tools[ToolKind.text]! as TextTool;
 
+  /// The text object currently in in-place editing, hidden from the
+  /// vector pass so its committed geometry doesn't double up with the
+  /// live preview (null when not editing text).
+  Id? get editingTextId {
+    final tool = _textTool;
+    return tool.editing ? tool.editingId : null;
+  }
+
   /// The text object the Character panel targets: the one being edited on
   /// canvas, else the primary selection when it is a text object.
   TextObject? get characterTarget {
@@ -787,6 +795,18 @@ final class WorkspaceViewModel extends BarleyViewModel {
       attrsOf: (offset) => updated.attrsAt(offset),
     );
     execute(ReplaceObject(updated.withOutlines(outlines)), mergeKey: mergeKey);
+
+    // While editing in place, the committed object is hidden and the live
+    // preview is what's drawn — mirror whole-object typography onto the
+    // tool so the preview updates immediately (no old+new ghost).
+    final tool = _textTool;
+    if (tool.editing && tool.editingId == target.id) {
+      tool.setTypography(
+        font: patch.fontFamily != null ? font : null,
+        sizeMm: patch.sizeMm,
+        trackingMm: patch.trackingMm,
+      );
+    }
   }
 
   /// The merged attributes over the active range, plus the set of fields

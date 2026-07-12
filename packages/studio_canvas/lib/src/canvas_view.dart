@@ -62,6 +62,7 @@ class CanvasView extends StatefulWidget {
     this.previewFillPaths = const [],
     this.selectionHighlights = const [],
     this.previewFillColor,
+    this.hiddenObjectId,
     this.previewWidths,
     this.markers = const [],
     this.stitches,
@@ -105,6 +106,10 @@ class CanvasView extends StatefulWidget {
 
   /// `#rrggbb` fill for [previewFillPaths]; null skips the fill.
   final String? previewFillColor;
+
+  /// Object hidden from the vector pass — the text object being edited,
+  /// so its committed geometry doesn't double up with the live preview.
+  final Id? hiddenObjectId;
 
   /// Per-node widths in mm for the first preview path (in-progress
   /// pressure stroke, ADR-038); null draws all previews as hairlines.
@@ -424,6 +429,7 @@ class _CanvasViewState extends State<CanvasView> {
                   previewFillPaths: widget.previewFillPaths,
                   selectionHighlights: widget.selectionHighlights,
                   previewFillColor: widget.previewFillColor,
+                  hiddenObjectId: widget.hiddenObjectId,
                   previewWidths: widget.previewWidths,
                   markers: widget.markers,
                   stitches: widget.stitches,
@@ -458,6 +464,7 @@ class _DesignPainter extends CustomPainter {
     required this.previewFillPaths,
     required this.selectionHighlights,
     required this.previewFillColor,
+    required this.hiddenObjectId,
     required this.previewWidths,
     required this.markers,
     required this.stitches,
@@ -482,6 +489,7 @@ class _DesignPainter extends CustomPainter {
   final List<g.Path> previewFillPaths;
   final List<g.Path> selectionHighlights;
   final String? previewFillColor;
+  final Id? hiddenObjectId;
   final List<double>? previewWidths;
   final List<g.Point> markers;
   final StitchSequence? stitches;
@@ -505,6 +513,9 @@ class _DesignPainter extends CustomPainter {
     _paintHoop(canvas);
 
     for (final object in document.flattenVisibleObjects()) {
+      // The text object being edited is drawn by the live preview
+      // instead — skip its committed geometry so they don't double up.
+      if (object.id == hiddenObjectId) continue;
       if (!showOutlines) {
         // Outlines hidden: skip geometry but keep selection visuals so
         // the object stays discoverable/editable.
@@ -1122,6 +1133,7 @@ class _DesignPainter extends CustomPainter {
       oldDelegate.previewFillPaths != previewFillPaths ||
       oldDelegate.selectionHighlights != selectionHighlights ||
       oldDelegate.previewFillColor != previewFillColor ||
+      oldDelegate.hiddenObjectId != hiddenObjectId ||
       oldDelegate.markers != markers ||
       oldDelegate.stitches != stitches ||
       oldDelegate.highlightStitches != highlightStitches ||

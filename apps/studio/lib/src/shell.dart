@@ -621,6 +621,7 @@ class EditorWorkspace extends StatelessWidget {
       previewFillPaths: model.tool.previewFills,
       selectionHighlights: model.tool.selectionHighlights,
       previewFillColor: model.tool.previewFillColor,
+      hiddenObjectId: model.editingTextId,
       previewWidths: model.previewWidths,
       markers: model.canvasMarkers,
       // Design view is pure vector (Illustrator-like): stitch rendering

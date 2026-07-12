@@ -377,6 +377,15 @@ final class TextTool extends Tool {
       StrokeProps(fillHex: '#111111', colorHex: '#111111');
   StrokeProps _stroke = _defaultTextStroke;
 
+  /// Mirrors whole-object typography changes (from the Character panel)
+  /// onto the live editing state so the preview updates immediately.
+  void setTypography({TextFont? font, double? sizeMm, double? trackingMm}) {
+    if (font != null) this.font = font;
+    if (sizeMm != null) this.sizeMm = sizeMm;
+    if (trackingMm != null) this.trackingMm = trackingMm;
+    notifyListeners();
+  }
+
   /// Commits the buffer as one editable TextObject with cached glyph
   /// outlines, and leaves editing mode.
   void commit() {
