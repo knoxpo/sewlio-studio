@@ -89,9 +89,14 @@ class _StudioNumberFieldState extends State<StudioNumberField> {
   Offset _scrubAccum = Offset.zero;
   bool _scrubbing = false;
 
-  String _format(double v) => widget.integer
-      ? v.round().toString()
-      : v.toStringAsFixed(widget.decimals);
+  String _format(double v) {
+    final s = widget.integer
+        ? v.round().toString()
+        : v.toStringAsFixed(widget.decimals);
+    // Zero is not negative: a value that rounds to 0 shows unsigned, never
+    // "-0" / "-0.0" (e.g. stepping down from 0.1 past zero, or -0.04 → 0.0).
+    return double.parse(s) == 0 ? s.replaceFirst('-', '') : s;
+  }
 
   double get _step =>
       widget.step ?? (widget.integer || _value.abs() >= 10 ? 1.0 : 0.1);

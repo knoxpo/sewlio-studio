@@ -89,6 +89,17 @@ void main() {
     expect(find.text('0.30'), findsOneWidget);
   });
 
+  testWidgets('a value that rounds to zero never shows a minus sign',
+      (tester) async {
+    await tester.pumpWidget(_host(StudioNumberField(
+      value: -0.04, // rounds to 0.0 at one decimal
+      decimals: 1,
+      onSubmitted: _noop,
+    )));
+    expect(find.text('0.0'), findsOneWidget);
+    expect(find.text('-0.0'), findsNothing);
+  });
+
   testWidgets('external value change updates text when unfocused',
       (tester) async {
     await tester.pumpWidget(_host(StudioNumberField(

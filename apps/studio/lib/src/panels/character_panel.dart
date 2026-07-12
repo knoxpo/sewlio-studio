@@ -460,15 +460,20 @@ class _CharacterPanelState extends State<CharacterPanel> {
     );
   }
 
-  /// One transform grid cell: a compact leading glyph-label + control.
-  Widget _cell(String glyph, Widget field) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(width: 26, child: Text(glyph, style: _glyph)),
-            Expanded(child: field),
-          ],
+  /// One transform grid cell: a compact leading glyph-label + control,
+  /// wrapped in a [tooltip] so hovering the row names the control.
+  Widget _cell(String glyph, Widget field, {required String tooltip}) =>
+      Tooltip(
+        message: tooltip,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(width: 26, child: Text(glyph, style: _glyph)),
+              Expanded(child: field),
+            ],
+          ),
         ),
       );
 
@@ -488,6 +493,7 @@ class _CharacterPanelState extends State<CharacterPanel> {
           onSubmitted: (v) =>
               _apply(spec.patch(v / spec.mul), mergeKey: 'char-${spec.key}'),
         ),
+        tooltip: spec.label,
       );
 
   Widget _disabledCell(String glyph, String value, String tooltip) => _cell(
@@ -496,26 +502,27 @@ class _CharacterPanelState extends State<CharacterPanel> {
           tooltip,
           StudioTextField(initialValue: value, enabled: false),
         ),
+        tooltip: tooltip,
       );
 
   // Schema-driven transform fields keyed for the grid above. hScale/vScale
   // store a fraction but show a percentage, so they carry a ×100 display
   // multiplier (written back /100).
   static final _specs = <String, _NumSpec>{
-    'trackingMm': _NumSpec('trackingMm', 'mm', (a) => a.trackingMm,
+    'trackingMm': _NumSpec('trackingMm', 'Tracking', 'mm', (a) => a.trackingMm,
         (v) => CharAttrs(trackingMm: v)),
-    'baselineShiftMm': _NumSpec('baselineShiftMm', 'mm',
+    'baselineShiftMm': _NumSpec('baselineShiftMm', 'Baseline shift', 'mm',
         (a) => a.baselineShiftMm, (v) => CharAttrs(baselineShiftMm: v)),
-    'hScale': _NumSpec(
-        'hScale', '%', (a) => a.hScale, (v) => CharAttrs(hScale: v),
+    'hScale': _NumSpec('hScale', 'Horizontal scale', '%', (a) => a.hScale,
+        (v) => CharAttrs(hScale: v),
         mul: 100, rawDefault: 1, min: 1),
-    'vScale': _NumSpec(
-        'vScale', '%', (a) => a.vScale, (v) => CharAttrs(vScale: v),
+    'vScale': _NumSpec('vScale', 'Vertical scale', '%', (a) => a.vScale,
+        (v) => CharAttrs(vScale: v),
         mul: 100, rawDefault: 1, min: 1),
     'skewDeg': _NumSpec(
-        'skewDeg', '°', (a) => a.skewDeg, (v) => CharAttrs(skewDeg: v)),
-    'rotationDeg': _NumSpec('rotationDeg', '°', (a) => a.rotationDeg,
-        (v) => CharAttrs(rotationDeg: v)),
+        'skewDeg', 'Skew', '°', (a) => a.skewDeg, (v) => CharAttrs(skewDeg: v)),
+    'rotationDeg': _NumSpec('rotationDeg', 'Rotation', '°',
+        (a) => a.rotationDeg, (v) => CharAttrs(rotationDeg: v)),
   };
 
   // --------------------------------------------------------------- language
@@ -802,10 +809,13 @@ class _CharacterPanelState extends State<CharacterPanel> {
 /// ([mul]) for fraction→percent fields, the raw (stored) default, a min
 /// clamp, and the getter/patch that bind it to [CharAttrs].
 class _NumSpec {
-  const _NumSpec(this.key, this.suffix, this.get, this.patch,
+  const _NumSpec(this.key, this.label, this.suffix, this.get, this.patch,
       {this.mul = 1, this.rawDefault = 0, this.min = double.negativeInfinity});
 
   final String key;
+
+  /// Human-readable name shown as the control's hover tooltip.
+  final String label;
   final String suffix;
   final double mul;
   final double rawDefault;

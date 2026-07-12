@@ -139,6 +139,25 @@ void main() {
         reason: 'frame-per-tap burst');
   });
 
+  testWidgets('position & transform controls have hover tooltips',
+      (tester) async {
+    final vm = WorkspaceViewModel(session: StudioSession());
+    vm.execute(AddObject(_text('hi'), parent: null));
+    vm.selectRef(const DocumentNodeRef(DocumentNodeKind.object, Id('t1')));
+    await _pumpPanel(tester, vm);
+
+    for (final label in const [
+      'Tracking',
+      'Baseline shift',
+      'Horizontal scale',
+      'Vertical scale',
+      'Skew',
+      'Rotation',
+    ]) {
+      expect(find.byTooltip(label), findsOneWidget, reason: 'tooltip: $label');
+    }
+  });
+
   testWidgets('mixed size across runs shows a mixed field', (tester) async {
     final vm = WorkspaceViewModel(session: StudioSession());
     // Two characters with different sizes → 'sizeMm' is mixed over the
