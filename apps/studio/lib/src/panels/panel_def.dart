@@ -94,10 +94,22 @@ final panelRegistry = <PanelDef>[
   // separately by domain modules and never merged with these.
   placeholderPanel('transform', 'Transform', iconFor('panel-transform')),
   PanelDef(
-    id: 'color-fill-stroke',
-    title: 'Color / Fill / Stroke',
-    icon: iconFor('panel-color-fill-stroke'),
-    builder: (context, model) => ColorFillStrokePanelContent(model: model),
+    id: 'color',
+    title: 'Color',
+    icon: Icons.palette_outlined,
+    builder: (context, model) => ColorPanelContent(model: model),
+  ),
+  PanelDef(
+    id: 'fill',
+    title: 'Fill',
+    icon: Icons.format_color_fill_outlined,
+    builder: (context, model) => FillPanelContent(model: model),
+  ),
+  PanelDef(
+    id: 'stroke',
+    title: 'Stroke',
+    icon: Icons.border_color_outlined,
+    builder: (context, model) => StrokePanelContent(model: model),
   ),
   placeholderPanel(
       'assets-reference', 'Assets / Reference', iconFor('panel-assets')),
@@ -125,7 +137,9 @@ List<String> get designPanelIds => defaultPanelIds;
 final designPanelRows = <List<String>>[
   [
     'properties',
-    'color-fill-stroke',
+    'color',
+    'fill',
+    'stroke',
     'character',
     'align-arrange',
     'paragraph'

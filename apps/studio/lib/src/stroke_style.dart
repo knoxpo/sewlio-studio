@@ -15,9 +15,6 @@ import 'workspace_view_model.dart';
 final class StrokeStyle {
   StrokePaintStyle paintStyle = StrokePaintStyle.solid;
 
-  /// New closed objects get filled with the fill chip's color. On by
-  /// default so drawn shapes read as solid vectors (Illustrator-like).
-  bool useFill = true;
   double widthMm = 0.4;
   LineCapStyle cap = LineCapStyle.round;
   LineJoinStyle join = LineJoinStyle.round;

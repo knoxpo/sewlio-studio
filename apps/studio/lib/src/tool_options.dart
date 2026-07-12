@@ -264,7 +264,8 @@ class ToolOptionsBar extends StatelessWidget {
         _colorChip(
           context,
           tooltip: 'Fill color',
-          hex: m.fillColorHex,
+          // Summary of the selection's style, else the defaults.
+          hex: m.activeStroke.fillHex ?? m.fillColorHex,
           filled: true,
           onPicked: m.setFillColor,
         ),
@@ -272,7 +273,7 @@ class ToolOptionsBar extends StatelessWidget {
         _colorChip(
           context,
           tooltip: 'Stroke color',
-          hex: m.strokeColorHex,
+          hex: m.activeStroke.colorHex ?? m.strokeColorHex,
           filled: false,
           onPicked: m.setStrokeColor,
         ),
@@ -287,16 +288,6 @@ class ToolOptionsBar extends StatelessWidget {
         StudioButton(
           label: 'Stroke…',
           onPressed: () => showStrokeDialog(context, m),
-        ),
-        const SizedBox(width: 8),
-        StudioIconButton(
-          icon: TablerIcons.bucket_droplet,
-          tooltip: 'Use fill — fill closed shapes with the fill chip color',
-          active: m.strokeStyle.useFill,
-          onPressed: () {
-            m.setUseFill(!m.strokeStyle.useFill);
-            onChanged();
-          },
         ),
       ]),
     ];

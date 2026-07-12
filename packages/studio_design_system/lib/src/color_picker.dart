@@ -5,8 +5,18 @@ import 'dialog.dart';
 import 'text_field.dart';
 import 'tokens.dart';
 
+/// Sentinel hex for a transparent colour (alpha 00): "no fill" / "no
+/// stroke". A first-class colour, distinct from null (unset/inherit).
+/// Renderers treat this as absent; [StudioColorSwatch] shows the
+/// "none" slash for it.
+const String studioTransparent = '#00000000';
+
+/// Whether [hex] is the transparent sentinel.
+bool isTransparent(String? hex) => hex == studioTransparent;
+
 /// Compact desktop color picker: saturation/value square, hue slider,
-/// hex and RGB entry. Returns the chosen `#rrggbb` hex, or null.
+/// hex and RGB entry. Returns the chosen `#rrggbb` hex,
+/// [studioTransparent] for None, or null on cancel.
 // ponytail: HSV only — HSL/CMYK entry waits for a real color-managed
 // pipeline; values here are display-space RGB.
 Future<String?> showStudioColorPicker({
@@ -25,6 +35,14 @@ Future<String?> showStudioColorPicker({
       onChanged: (hex) => picked = hex,
     ),
     actions: [
+      Builder(
+        builder: (context) => StudioButton(
+          key: const Key('color-picker-none'),
+          label: 'None',
+          variant: StudioButtonVariant.ghost,
+          onPressed: () => Navigator.pop(context, studioTransparent),
+        ),
+      ),
       Builder(
         builder: (context) => StudioButton(
           label: 'Cancel',

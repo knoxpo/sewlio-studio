@@ -178,7 +178,8 @@ final class WorkspaceViewModel extends BarleyViewModel {
         join: strokeStyle.join.name,
         miterLimit: strokeStyle.miterLimit,
         colorHex: strokeColorHex,
-        fillHex: strokeStyle.useFill ? fillColorHex : null,
+        // Transparent fill color = no fill; there is no separate toggle.
+        fillHex: fillColorHex,
       );
 
   /// Stroke shown by the Stroke popup: the primary selection's when
@@ -450,32 +451,44 @@ final class WorkspaceViewModel extends BarleyViewModel {
     ]);
   }
 
-  /// Pen bar "Use fill": fills new closed objects with the fill chip
-  /// color; with a selection it fills / unfills the selected objects.
-  void setUseFill(bool value) {
-    strokeStyle.useFill = value;
+  /// Fill color: remembered for new objects and applied to the selection.
+  /// A transparent color ([StrokeProps.transparent]) means "no fill" —
+  /// there is no separate enable toggle (Affinity-style).
+  /// Most-recently-used colours (newest first), for the Color panel.
+  final recentColors = <String>[];
+
+  void _pushRecent(String hex) {
+    if (hex == StrokeProps.transparent) return;
+    recentColors
+      ..remove(hex)
+      ..insert(0, hex);
+    if (recentColors.length > 12) recentColors.removeLast();
+  }
+
+  void setFillColor(String hex) {
+    fillColorHex = hex;
+    _pushRecent(hex);
     for (final id in selectedObjectIds) {
       final object = session.document.objectById(id);
       if (object != null) {
-        execute(ReplaceObject(object.withStroke(value
-            ? object.stroke.copyWith(fillHex: fillColorHex)
-            : object.stroke.copyWith(clearFill: true))));
+        execute(ReplaceObject(
+            object.withStroke(object.stroke.copyWith(fillHex: hex))));
       }
     }
     notify();
   }
 
-  /// Fill chip color: remembered for new objects and applied to the
-  /// selection. Choosing a fill color turns fill ON (Illustrator/Affinity
-  /// behaviour) — it no longer requires the separate Use-fill toggle.
-  void setFillColor(String hex) {
-    fillColorHex = hex;
-    setUseFill(true);
+  /// Stroke color: applies to selection + defaults. A transparent color
+  /// means "no stroke".
+  void setStrokeColor(String hex) {
+    _pushRecent(hex);
+    setStroke((p) => p.copyWith(colorHex: hex));
   }
 
-  /// Stroke chip color: applies to selection + defaults.
-  void setStrokeColor(String hex) =>
-      setStroke((p) => p.copyWith(colorHex: hex));
+  /// Applies a colour from the Color panel to whichever chip is active
+  /// (stroke if [strokeChipActive], else fill).
+  void applyActiveColor(String hex) =>
+      strokeChipActive ? setStrokeColor(hex) : setFillColor(hex);
 
   /// Floating tool-palette placements per toolbox group (view state):
   /// snapped to one of the canvas-edge hotspots, or free within the

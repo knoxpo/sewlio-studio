@@ -26,7 +26,9 @@ void main() {
       [
         [
           'properties',
-          'color-fill-stroke',
+          'color',
+          'fill',
+          'stroke',
           'character',
           'align-arrange',
           'paragraph'

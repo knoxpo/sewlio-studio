@@ -551,8 +551,10 @@ class _DesignPainter extends CustomPainter {
       if (object case RunningStitchObject(:final widthProfile?)) {
         final points = object.path.toPolyline();
         if (points.length == widthProfile.length) {
-          _paintVariableWidthPolyline(
-              canvas, points, widthProfile, stroke.color);
+          if (props.hasStroke) {
+            _paintVariableWidthPolyline(
+                canvas, points, widthProfile, stroke.color);
+          }
           if (selectedIds.contains(object.id)) {
             _paintObjectSelection(canvas, object.bounds());
           }
@@ -576,11 +578,11 @@ class _DesignPainter extends CustomPainter {
         }
         if (contour.closed) path.close();
         screenPaths.add(path);
-        if (contour.closed && props.fillHex != null) {
+        if (contour.closed && props.hasFill) {
           fillPath.addPath(path, Offset.zero);
         }
       }
-      if (props.fillHex != null) {
+      if (props.hasFill) {
         canvas.drawPath(
           fillPath,
           Paint()
@@ -589,8 +591,11 @@ class _DesignPainter extends CustomPainter {
                 0xFF000000 | int.parse(props.fillHex!.substring(1), radix: 16)),
         );
       }
-      for (final path in screenPaths) {
-        canvas.drawPath(path, stroke);
+      // Transparent stroke = no stroke.
+      if (props.hasStroke) {
+        for (final path in screenPaths) {
+          canvas.drawPath(path, stroke);
+        }
       }
 
       if (selectedIds.contains(object.id)) {

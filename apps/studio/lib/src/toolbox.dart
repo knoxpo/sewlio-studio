@@ -140,10 +140,13 @@ class ToolboxRail extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(children: [
                 for (final group in groups ?? toolboxGroups) _slot(group),
+                // Color chips sit with the tools (below the last tool),
+                // not pinned at the rail bottom.
+                const SizedBox(height: 8),
+                _FillStrokeChips(model: model),
               ]),
             ),
           ),
-          _FillStrokeChips(model: model),
           const SizedBox(height: 8),
         ],
       ),
@@ -255,15 +258,22 @@ class _FillStrokeChips extends StatelessWidget {
 
   final WorkspaceViewModel model;
 
-  Color _color(String hex) =>
-      Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
+  /// Parsed colour, or null for transparent (rendered as an empty chip).
+  Color? _color(String hex) => isTransparent(hex)
+      ? null
+      : Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
+
+  // Summary of the selection's style (else defaults) — updates live on
+  // selection change and inspector edits.
+  String get _fillHex => model.activeStroke.fillHex ?? model.fillColorHex;
+  String get _strokeHex => model.activeStroke.colorHex ?? model.strokeColorHex;
 
   Future<void> _edit(BuildContext context, {required bool stroke}) async {
     model.strokeChipActive = stroke;
     model.notify();
     final hex = await showStudioColorPicker(
       context: context,
-      initialHex: stroke ? model.strokeColorHex : model.fillColorHex,
+      initialHex: stroke ? _strokeHex : _fillHex,
     );
     if (hex == null) return;
     stroke ? model.setStrokeColor(hex) : model.setFillColor(hex);
@@ -298,7 +308,8 @@ class _FillStrokeChips extends StatelessWidget {
                     height: 12,
                     decoration: BoxDecoration(
                       border: Border.all(
-                          color: _color(model.strokeColorHex), width: 3),
+                          color: _color(_strokeHex) ?? AppTokens.textMuted,
+                          width: 3),
                     ),
                   ),
                 ),
@@ -316,7 +327,7 @@ class _FillStrokeChips extends StatelessWidget {
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: _color(model.fillColorHex),
+                  color: _color(_fillHex) ?? AppTokens.field,
                   border: Border.all(
                       color: !active ? AppTokens.primary : AppTokens.border,
                       width: !active ? 2 : 1),

@@ -25,13 +25,25 @@ final class StrokeProps {
   final String join;
   final double miterLimit;
 
-  /// `#rrggbb`; null = theme default.
+  /// `#rrggbb` stroke color; null = theme default; [transparent] = no
+  /// stroke.
   final String? colorHex;
 
-  /// Closed-contour fill color (`#rrggbb`); null = no fill.
+  /// Closed-contour fill color (`#rrggbb`); null or [transparent] = no
+  /// fill.
   final String? fillHex;
 
   static const defaults = StrokeProps();
+
+  /// Sentinel hex (alpha 00) meaning "no fill" / "no stroke" — a
+  /// first-class transparent colour distinct from null (inherit).
+  static const transparent = '#00000000';
+
+  /// Whether a visible fill should be painted.
+  bool get hasFill => fillHex != null && fillHex != transparent;
+
+  /// Whether a visible stroke should be painted.
+  bool get hasStroke => colorHex != transparent;
 
   bool get isDefault =>
       widthMm == defaults.widthMm &&

@@ -46,4 +46,16 @@ void main() {
     expect(
         object.transformedBy(Transform2.translation(1, 1)).stroke.widthMm, 2);
   });
+
+  test('transparent color means no fill / no stroke', () {
+    const t = StrokeProps.transparent;
+    expect(const StrokeProps(fillHex: '#ff0000').hasFill, isTrue);
+    expect(const StrokeProps(fillHex: null).hasFill, isFalse);
+    expect(const StrokeProps(fillHex: t).hasFill, isFalse);
+    // Stroke: a real color or null (theme default) paints; transparent
+    // does not.
+    expect(const StrokeProps(colorHex: '#000000').hasStroke, isTrue);
+    expect(const StrokeProps(colorHex: null).hasStroke, isTrue);
+    expect(const StrokeProps(colorHex: t).hasStroke, isFalse);
+  });
 }
