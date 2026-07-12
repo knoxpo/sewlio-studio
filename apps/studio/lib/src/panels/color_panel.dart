@@ -141,7 +141,7 @@ class FillPanelContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: model,
-      builder: (context, _) => Padding(
+      builder: (context, _) => SingleChildScrollView(
         padding: const EdgeInsets.all(10),
         child: StudioColorEditor(
           key: _editorKey(model, 'fill'),
