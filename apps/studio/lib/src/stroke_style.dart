@@ -95,315 +95,345 @@ enum PressureProfile {
   final String label;
 }
 
-/// Stroke popup (Affinity Stroke panel layout). With a selection it
-/// edits the selected objects (undoable ReplaceObject per change) and
-/// keeps the tool defaults in sync; with nothing selected it edits the
-/// defaults for new objects. Width/cap/join/mitre/color are rendered
-/// live on the canvas; align/order/arrowheads/pressure are defaults
-/// for systems that arrive later (dash designer, arrow rendering).
+/// The complete stroke feature set (Affinity Stroke panel layout) —
+/// paint style, width, cap/join/mitre, alignment, order, arrowheads,
+/// and pressure — shared by the Stroke dialog (toolbar Stroke… button)
+/// and the Stroke panel so the two surfaces can never drift. With a
+/// selection it edits the selected objects (undoable ReplaceObject per
+/// change) and keeps the tool defaults in sync; with nothing selected
+/// it edits the defaults for new objects. Width/cap/join/mitre/color
+/// render live on the canvas; align/order/arrowheads/pressure are
+/// defaults for systems that arrive later (dash designer, arrows).
+class StrokeSettings extends StatelessWidget {
+  const StrokeSettings({super.key, required this.model});
+
+  final WorkspaceViewModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    final stroke = model.strokeStyle;
+    void update(void Function() change) {
+      change();
+      model.notify();
+    }
+
+    void setProps(StrokeProps Function(StrokeProps) mutate) =>
+        update(() => model.setStroke(mutate));
+
+    final active = model.activeStroke;
+
+    Widget label(String text) => SizedBox(
+          width: 44,
+          child: Text(text,
+              style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+        );
+
+    Widget row(String text, Widget child, {Widget? trailing}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            label(text),
+            child,
+            if (trailing != null) ...[const Spacer(), trailing],
+          ]),
+        );
+
+    Widget glyphChoice(
+      List<(String, StrokeGlyphKind, String)> options,
+      String value,
+      void Function(String) pick,
+    ) {
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        for (final (option, glyph, tip) in options)
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: StrokeGlyphButton(
+              glyph: glyph,
+              tooltip: tip,
+              selected: option == value,
+              onTap: () => pick(option),
+            ),
+          ),
+      ]);
+    }
+
+    Widget arrowheadRow(
+      String text,
+      ArrowheadStyle value,
+      double scale,
+      void Function(ArrowheadStyle) pickStyle,
+      void Function(double) pickScale,
+    ) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            label(text),
+            // Flexible so the row fits the narrow docked Stroke panel
+            // as well as the 330px dialog.
+            Expanded(
+              child: StudioDropdown<ArrowheadStyle>(
+                value: value,
+                width: double.infinity,
+                items: [for (final a in ArrowheadStyle.values) (a, a.label)],
+                onChanged: (v) => update(() => pickStyle(v)),
+              ),
+            ),
+            const SizedBox(width: 6),
+            StudioNumberField(
+              value: scale,
+              min: 10,
+              max: 1000,
+              decimals: 0,
+              suffix: '%',
+              width: 66,
+              onSubmitted: (v) => update(() => pickScale(v)),
+            ),
+          ]),
+        );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Compact color row: the swatch opens the color picker.
+        row(
+          'Color',
+          StudioColorSwatch(
+            color: active.colorHex ?? model.strokeColorHex,
+            onChanged: model.setStrokeColor,
+          ),
+        ),
+        row(
+          'Style',
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            for (final (option, icon, tip, enabled) in [
+              (
+                StrokePaintStyle.none,
+                TablerIcons.circle_off,
+                'No stroke',
+                true
+              ),
+              (
+                StrokePaintStyle.solid,
+                TablerIcons.minus,
+                'Solid line',
+                true
+              ),
+              (
+                StrokePaintStyle.dashed,
+                TablerIcons.line_dashed,
+                'Dashed — arrives with the dash designer',
+                false
+              ),
+              (
+                StrokePaintStyle.brush,
+                TablerIcons.brush,
+                'Brush — arrives with the brush engine',
+                false
+              ),
+            ])
+              StudioIconButton(
+                icon: icon,
+                tooltip: tip,
+                active: stroke.paintStyle == option,
+                onPressed: enabled
+                    ? () => update(() => stroke.paintStyle = option)
+                    : null,
+              ),
+          ]),
+        ),
+        Divider(height: 14, color: AppTokens.border),
+        row(
+          'Width',
+          Expanded(
+            child: StudioSlider(
+              value: active.widthMm.clamp(0.05, 10),
+              min: 0.05,
+              max: 10,
+              onChanged: (v) => setProps((p) => p.copyWith(widthMm: v)),
+            ),
+          ),
+          trailing: StudioNumberField(
+            value: active.widthMm,
+            min: 0.05,
+            decimals: 2,
+            suffix: 'mm',
+            width: 78,
+            onSubmitted: (v) => setProps((p) => p.copyWith(widthMm: v)),
+          ),
+        ),
+        row(
+          'Cap',
+          glyphChoice(const [
+            ('butt', StrokeGlyphKind.capButt, 'Butt cap'),
+            ('round', StrokeGlyphKind.capRound, 'Round cap'),
+            ('square', StrokeGlyphKind.capSquare, 'Square cap'),
+          ], active.cap, (v) => setProps((p) => p.copyWith(cap: v))),
+        ),
+        row(
+          'Join',
+          glyphChoice(const [
+            ('miter', StrokeGlyphKind.joinMiter, 'Mitre join'),
+            ('round', StrokeGlyphKind.joinRound, 'Round join'),
+            ('bevel', StrokeGlyphKind.joinBevel, 'Bevel join'),
+          ], active.join, (v) => setProps((p) => p.copyWith(join: v))),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text('Mitre ',
+                style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+            IgnorePointer(
+              ignoring: active.join != 'miter',
+              child: Opacity(
+                opacity: active.join == 'miter' ? 1 : 0.4,
+                child: StudioNumberField(
+                  value: active.miterLimit,
+                  min: 1,
+                  decimals: 1,
+                  width: 58,
+                  onSubmitted: (v) =>
+                      setProps((p) => p.copyWith(miterLimit: v)),
+                ),
+              ),
+            ),
+          ]),
+        ),
+        row(
+          'Align',
+          glyphChoice(const [
+            (
+              'center',
+              StrokeGlyphKind.alignCenter,
+              'Align stroke to center'
+            ),
+            (
+              'inside',
+              StrokeGlyphKind.alignInside,
+              'Align stroke to inside'
+            ),
+            (
+              'outside',
+              StrokeGlyphKind.alignOutside,
+              'Align stroke to outside'
+            ),
+          ], stroke.align.name, (v) {
+            update(() => stroke.align =
+                StrokeAlignStyle.values.asNameMap()[v] ??
+                    StrokeAlignStyle.center);
+          }),
+        ),
+        Divider(height: 14, color: AppTokens.border),
+        row(
+          'Order',
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            StudioIconButton(
+              icon: TablerIcons.stack_front,
+              tooltip: 'Draw stroke in front',
+              active: !stroke.drawBehind,
+              onPressed: () => update(() => stroke.drawBehind = false),
+            ),
+            StudioIconButton(
+              icon: TablerIcons.stack_back,
+              tooltip: 'Draw stroke behind',
+              active: stroke.drawBehind,
+              onPressed: () => update(() => stroke.drawBehind = true),
+            ),
+          ]),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            StudioSwitch(
+              value: stroke.scaleWithObject,
+              onChanged: (v) => update(() => stroke.scaleWithObject = v),
+            ),
+            Text(' Scale with object',
+                style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+          ]),
+        ),
+        Divider(height: 14, color: AppTokens.border),
+        // Start/End with a bracket-style link control on the right
+        // (reference design): the chain visibly spans both rows.
+        Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          Expanded(
+            child: Column(children: [
+              arrowheadRow('Start', stroke.startArrow, stroke.startScale,
+                  (v) => stroke.startArrow = v, (v) {
+                stroke.startScale = v;
+                if (stroke.scalesLinked) stroke.endScale = v;
+              }),
+              arrowheadRow('End', stroke.endArrow, stroke.endScale,
+                  (v) => stroke.endArrow = v, (v) {
+                stroke.endScale = v;
+                if (stroke.scalesLinked) stroke.startScale = v;
+              }),
+            ]),
+          ),
+          _LinkBracket(
+            linked: stroke.scalesLinked,
+            onToggle: () =>
+                update(() => stroke.scalesLinked = !stroke.scalesLinked),
+          ),
+        ]),
+        Row(children: [
+          label(''),
+          StrokeGlyphButton(
+            glyph: StrokeGlyphKind.arrowAtEnd,
+            tooltip: 'Arrowhead extends past the line end',
+            selected: stroke.arrowPlacement == ArrowPlacement.atLineEnd,
+            onTap: () => update(
+                () => stroke.arrowPlacement = ArrowPlacement.atLineEnd),
+          ),
+          const SizedBox(width: 4),
+          StrokeGlyphButton(
+            glyph: StrokeGlyphKind.arrowWithin,
+            tooltip: 'Arrowhead stays within the line length',
+            selected: stroke.arrowPlacement == ArrowPlacement.withinLine,
+            onTap: () => update(
+                () => stroke.arrowPlacement = ArrowPlacement.withinLine),
+          ),
+          const Spacer(),
+          StudioIconButton(
+            icon: TablerIcons.arrows_left_right,
+            tooltip: 'Swap arrowheads',
+            onPressed: () => update(stroke.swapArrowheads),
+          ),
+          StudioIconButton(
+            icon: TablerIcons.trash,
+            tooltip: 'Remove arrowheads',
+            onPressed: () => update(stroke.clearArrowheads),
+          ),
+        ]),
+        Divider(height: 14, color: AppTokens.border),
+        Row(children: [
+          StudioButton(
+            label: 'Properties…',
+            onPressed: () => _showStrokeProperties(context, model),
+          ),
+          const SizedBox(width: 8),
+          Text('Pressure ',
+              style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+          // Flexible so the row fits the docked panel and the dialog.
+          Expanded(
+            child: StudioDropdown<PressureProfile>(
+              value: stroke.pressure,
+              width: double.infinity,
+              items: [for (final p in PressureProfile.values) (p, p.label)],
+              onChanged: (v) => update(() => stroke.pressure = v),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+}
+
+/// Stroke popup (Affinity Stroke panel layout): the shared
+/// [StrokeSettings] in a floating dialog.
 Future<void> showStrokeDialog(
     BuildContext context, WorkspaceViewModel model) async {
-  final stroke = model.strokeStyle;
   await showStudioDialog<void>(
     context: context,
     title: 'Stroke',
     width: 330,
     floating: true,
-    body: StatefulBuilder(
-      builder: (context, setDialogState) {
-        void update(void Function() change) {
-          setDialogState(change);
-          model.notify();
-        }
-
-        void setProps(StrokeProps Function(StrokeProps) mutate) =>
-            update(() => model.setStroke(mutate));
-
-        final active = model.activeStroke;
-
-        Widget label(String text) => SizedBox(
-              width: 44,
-              child: Text(text,
-                  style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
-            );
-
-        Widget row(String text, Widget child, {Widget? trailing}) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(children: [
-                label(text),
-                child,
-                if (trailing != null) ...[const Spacer(), trailing],
-              ]),
-            );
-
-        Widget glyphChoice(
-          List<(String, StrokeGlyphKind, String)> options,
-          String value,
-          void Function(String) pick,
-        ) {
-          return Row(mainAxisSize: MainAxisSize.min, children: [
-            for (final (option, glyph, tip) in options)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: StrokeGlyphButton(
-                  glyph: glyph,
-                  tooltip: tip,
-                  selected: option == value,
-                  onTap: () => pick(option),
-                ),
-              ),
-          ]);
-        }
-
-        Widget arrowheadRow(
-          String text,
-          ArrowheadStyle value,
-          double scale,
-          void Function(ArrowheadStyle) pickStyle,
-          void Function(double) pickScale,
-        ) =>
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(children: [
-                label(text),
-                StudioDropdown<ArrowheadStyle>(
-                  value: value,
-                  width: 118,
-                  items: [for (final a in ArrowheadStyle.values) (a, a.label)],
-                  onChanged: (v) => update(() => pickStyle(v)),
-                ),
-                const SizedBox(width: 6),
-                StudioNumberField(
-                  value: scale,
-                  min: 10,
-                  max: 1000,
-                  decimals: 0,
-                  suffix: '%',
-                  width: 66,
-                  onSubmitted: (v) => update(() => pickScale(v)),
-                ),
-              ]),
-            );
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            row(
-              'Style',
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                for (final (option, icon, tip, enabled) in [
-                  (
-                    StrokePaintStyle.none,
-                    TablerIcons.circle_off,
-                    'No stroke',
-                    true
-                  ),
-                  (
-                    StrokePaintStyle.solid,
-                    TablerIcons.minus,
-                    'Solid line',
-                    true
-                  ),
-                  (
-                    StrokePaintStyle.dashed,
-                    TablerIcons.line_dashed,
-                    'Dashed — arrives with the dash designer',
-                    false
-                  ),
-                  (
-                    StrokePaintStyle.brush,
-                    TablerIcons.brush,
-                    'Brush — arrives with the brush engine',
-                    false
-                  ),
-                ])
-                  StudioIconButton(
-                    icon: icon,
-                    tooltip: tip,
-                    active: stroke.paintStyle == option,
-                    onPressed: enabled
-                        ? () => update(() => stroke.paintStyle = option)
-                        : null,
-                  ),
-              ]),
-            ),
-            Divider(height: 14, color: AppTokens.border),
-            row(
-              'Width',
-              Expanded(
-                child: StudioSlider(
-                  value: active.widthMm.clamp(0.05, 10),
-                  min: 0.05,
-                  max: 10,
-                  onChanged: (v) => setProps((p) => p.copyWith(widthMm: v)),
-                ),
-              ),
-              trailing: StudioNumberField(
-                value: active.widthMm,
-                min: 0.05,
-                decimals: 2,
-                suffix: 'mm',
-                width: 78,
-                onSubmitted: (v) => setProps((p) => p.copyWith(widthMm: v)),
-              ),
-            ),
-            row(
-              'Cap',
-              glyphChoice(const [
-                ('butt', StrokeGlyphKind.capButt, 'Butt cap'),
-                ('round', StrokeGlyphKind.capRound, 'Round cap'),
-                ('square', StrokeGlyphKind.capSquare, 'Square cap'),
-              ], active.cap, (v) => setProps((p) => p.copyWith(cap: v))),
-            ),
-            row(
-              'Join',
-              glyphChoice(const [
-                ('miter', StrokeGlyphKind.joinMiter, 'Mitre join'),
-                ('round', StrokeGlyphKind.joinRound, 'Round join'),
-                ('bevel', StrokeGlyphKind.joinBevel, 'Bevel join'),
-              ], active.join, (v) => setProps((p) => p.copyWith(join: v))),
-              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text('Mitre ',
-                    style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
-                IgnorePointer(
-                  ignoring: active.join != 'miter',
-                  child: Opacity(
-                    opacity: active.join == 'miter' ? 1 : 0.4,
-                    child: StudioNumberField(
-                      value: active.miterLimit,
-                      min: 1,
-                      decimals: 1,
-                      width: 58,
-                      onSubmitted: (v) =>
-                          setProps((p) => p.copyWith(miterLimit: v)),
-                    ),
-                  ),
-                ),
-              ]),
-            ),
-            row(
-              'Align',
-              glyphChoice(const [
-                (
-                  'center',
-                  StrokeGlyphKind.alignCenter,
-                  'Align stroke to center'
-                ),
-                (
-                  'inside',
-                  StrokeGlyphKind.alignInside,
-                  'Align stroke to inside'
-                ),
-                (
-                  'outside',
-                  StrokeGlyphKind.alignOutside,
-                  'Align stroke to outside'
-                ),
-              ], stroke.align.name, (v) {
-                update(() => stroke.align =
-                    StrokeAlignStyle.values.asNameMap()[v] ??
-                        StrokeAlignStyle.center);
-              }),
-            ),
-            Divider(height: 14, color: AppTokens.border),
-            row(
-              'Order',
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                StudioIconButton(
-                  icon: TablerIcons.stack_front,
-                  tooltip: 'Draw stroke in front',
-                  active: !stroke.drawBehind,
-                  onPressed: () => update(() => stroke.drawBehind = false),
-                ),
-                StudioIconButton(
-                  icon: TablerIcons.stack_back,
-                  tooltip: 'Draw stroke behind',
-                  active: stroke.drawBehind,
-                  onPressed: () => update(() => stroke.drawBehind = true),
-                ),
-              ]),
-              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                StudioSwitch(
-                  value: stroke.scaleWithObject,
-                  onChanged: (v) => update(() => stroke.scaleWithObject = v),
-                ),
-                Text(' Scale with object',
-                    style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
-              ]),
-            ),
-            Divider(height: 14, color: AppTokens.border),
-            // Start/End with a bracket-style link control on the right
-            // (reference design): the chain visibly spans both rows.
-            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Expanded(
-                child: Column(children: [
-                  arrowheadRow('Start', stroke.startArrow, stroke.startScale,
-                      (v) => stroke.startArrow = v, (v) {
-                    stroke.startScale = v;
-                    if (stroke.scalesLinked) stroke.endScale = v;
-                  }),
-                  arrowheadRow('End', stroke.endArrow, stroke.endScale,
-                      (v) => stroke.endArrow = v, (v) {
-                    stroke.endScale = v;
-                    if (stroke.scalesLinked) stroke.startScale = v;
-                  }),
-                ]),
-              ),
-              _LinkBracket(
-                linked: stroke.scalesLinked,
-                onToggle: () =>
-                    update(() => stroke.scalesLinked = !stroke.scalesLinked),
-              ),
-            ]),
-            Row(children: [
-              label(''),
-              StrokeGlyphButton(
-                glyph: StrokeGlyphKind.arrowAtEnd,
-                tooltip: 'Arrowhead extends past the line end',
-                selected: stroke.arrowPlacement == ArrowPlacement.atLineEnd,
-                onTap: () => update(
-                    () => stroke.arrowPlacement = ArrowPlacement.atLineEnd),
-              ),
-              const SizedBox(width: 4),
-              StrokeGlyphButton(
-                glyph: StrokeGlyphKind.arrowWithin,
-                tooltip: 'Arrowhead stays within the line length',
-                selected: stroke.arrowPlacement == ArrowPlacement.withinLine,
-                onTap: () => update(
-                    () => stroke.arrowPlacement = ArrowPlacement.withinLine),
-              ),
-              const Spacer(),
-              StudioIconButton(
-                icon: TablerIcons.arrows_left_right,
-                tooltip: 'Swap arrowheads',
-                onPressed: () => update(stroke.swapArrowheads),
-              ),
-              StudioIconButton(
-                icon: TablerIcons.trash,
-                tooltip: 'Remove arrowheads',
-                onPressed: () => update(stroke.clearArrowheads),
-              ),
-            ]),
-            Divider(height: 14, color: AppTokens.border),
-            Row(children: [
-              StudioButton(
-                label: 'Properties…',
-                onPressed: () => _showStrokeProperties(context, model),
-              ),
-              const Spacer(),
-              Text('Pressure ',
-                  style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
-              StudioDropdown<PressureProfile>(
-                value: stroke.pressure,
-                width: 118,
-                items: [for (final p in PressureProfile.values) (p, p.label)],
-                onChanged: (v) => update(() => stroke.pressure = v),
-              ),
-            ]),
-          ],
-        );
-      },
+    body: ListenableBuilder(
+      listenable: model,
+      builder: (context, _) => StrokeSettings(model: model),
     ),
   );
 }

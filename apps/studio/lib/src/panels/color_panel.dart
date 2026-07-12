@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
 
+import '../stroke_style.dart';
 import '../workspace_view_model.dart';
 
 /// Parses `#rrggbb` / `#rrggbbaa` into a Color (alpha last).
@@ -164,79 +165,13 @@ class StrokePanelContent extends StatelessWidget {
     return ListenableBuilder(
       listenable: model,
       builder: (context, _) {
-        final s = model.activeStroke;
+        // The full stroke feature set — same widget the toolbar's
+        // Stroke… dialog shows (color swatch opens the picker), so the
+        // two surfaces never drift. The full inline editor lives in the
+        // Color/Fill panels.
         return SingleChildScrollView(
           padding: const EdgeInsets.all(10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const StudioSectionLabel('Color'),
-              const SizedBox(height: 6),
-              StudioColorEditor(
-                key: _editorKey(model, 'stroke'),
-                initialHex: s.colorHex ?? model.strokeColorHex,
-                onChanged: (hex) =>
-                    model.setStrokeColor(hex, mergeKey: 'panel-stroke'),
-              ),
-              const SizedBox(height: 14),
-              const Divider(height: 1),
-              const SizedBox(height: 10),
-              const StudioSectionLabel('Stroke'),
-              const SizedBox(height: 8),
-              StudioFormRow(
-                label: 'Width',
-                child: StudioNumberField(
-                  value: s.widthMm,
-                  min: 0.05,
-                  suffix: 'mm',
-                  steppers: true,
-                  width: 132,
-                  onSubmitted: (v) => model.setStroke(
-                      (p) => p.copyWith(widthMm: v),
-                      mergeKey: 'stroke-w'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              StudioFormRow(
-                label: 'Cap',
-                child: StudioToggleGroup<String>(
-                  onToggled: (v) => model.setStroke((p) => p.copyWith(cap: v)),
-                  items: [
-                    for (final (value, icon, tip) in const [
-                      ('butt', Icons.horizontal_rule, 'Butt'),
-                      ('round', Icons.circle, 'Round'),
-                      ('square', Icons.crop_square, 'Square'),
-                    ])
-                      StudioToggleItem(
-                          value: value,
-                          icon: icon,
-                          tooltip: tip,
-                          active: s.cap == value),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              StudioFormRow(
-                label: 'Join',
-                child: StudioToggleGroup<String>(
-                  onToggled: (v) => model.setStroke((p) => p.copyWith(join: v)),
-                  items: [
-                    for (final (value, icon, tip) in const [
-                      ('miter', Icons.change_history, 'Mitre'),
-                      ('round', Icons.rounded_corner, 'Round'),
-                      ('bevel', Icons.hexagon_outlined, 'Bevel'),
-                    ])
-                      StudioToggleItem(
-                          value: value,
-                          icon: icon,
-                          tooltip: tip,
-                          active: s.join == value),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          child: StrokeSettings(model: model),
         );
       },
     );

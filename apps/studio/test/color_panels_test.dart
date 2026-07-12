@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
 import 'package:studio/src/panels/color_panel.dart';
+import 'package:studio/src/stroke_style.dart';
 import 'package:studio/src/workspace_view_model.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
@@ -40,16 +41,27 @@ void main() {
     expect(find.byType(StudioColorEditor), findsOneWidget);
   });
 
-  testWidgets('Stroke panel: inline editor + icon cap/join toggles',
+  testWidgets('Stroke panel: compact color swatch + full StrokeSettings set',
       (tester) async {
     final vm = buildVm();
     await _pump(tester, StrokePanelContent(model: vm));
-    expect(find.byType(StudioColorEditor), findsOneWidget);
-    // Cap + Join are icon toggle groups (two groups).
-    expect(find.byType(StudioToggleGroup<String>), findsNWidgets(2));
+    // Compact swatch (opens the picker), not the full inline editor —
+    // that lives in the Color/Fill panels.
+    expect(find.byType(StudioColorEditor), findsNothing);
+    expect(find.byType(StudioColorSwatch), findsOneWidget);
+    // The panel embeds the same widget as the toolbar's Stroke… dialog.
+    expect(find.byType(StrokeSettings), findsOneWidget);
+    // Full feature set present: width slider, mitre, arrowheads,
+    // pressure — not just width/cap/join.
+    expect(find.byType(StudioSlider), findsOneWidget);
+    expect(find.textContaining('Mitre'), findsOneWidget);
+    expect(find.text('Start'), findsOneWidget);
+    expect(find.text('End'), findsOneWidget);
+    expect(find.textContaining('Pressure'), findsWidgets);
 
-    // Tapping the 'square' cap icon updates the stroke.
-    await tester.tap(find.byIcon(Icons.crop_square));
+    // Tapping the 'Square cap' glyph updates the selected object.
+    await tester.ensureVisible(find.byTooltip('Square cap'));
+    await tester.tap(find.byTooltip('Square cap'));
     await tester.pump();
     final id = vm.session.document.objects.keys.first;
     expect(vm.session.document.objectById(id)!.stroke.cap, 'square');
