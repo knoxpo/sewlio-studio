@@ -34,7 +34,7 @@ void main() {
           'paragraph'
         ],
         ['layers', 'assets-reference', 'path-operations'],
-        ['hoop', 'transform', 'stitch-simulation'],
+        ['hoop', 'transform'],
       ],
     );
     // First tab of each row is active.

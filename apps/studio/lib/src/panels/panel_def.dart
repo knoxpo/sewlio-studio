@@ -81,13 +81,6 @@ final panelRegistry = <PanelDef>[
       onEdit: () => showDocumentSetup(context, model),
     ),
   ),
-  PanelDef(
-    id: 'stitch-simulation',
-    title: 'Stitch Simulation',
-    icon: iconFor('sim-play'),
-    minHeight: 220,
-    builder: (context, model) => SimulationSection(sequence: model.sequence),
-  ),
   // Design-view placeholder panels — universal (not embroidery-specific),
   // filled in as each feature lands. 'stitches'/'layers' above are the
   // Artwork structures; production/sequence panels are contributed
@@ -145,7 +138,7 @@ final designPanelRows = <List<String>>[
     'paragraph'
   ],
   ['layers', 'assets-reference', 'path-operations'],
-  ['hoop', 'transform', 'stitch-simulation'],
+  ['hoop', 'transform'],
 ];
 
 /// Panel lookup for the dock host: built-ins/tool panels first, then

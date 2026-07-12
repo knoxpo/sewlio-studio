@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:studio_commands/studio_commands.dart';
 import 'package:studio_core/studio_core.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_document/studio_document.dart';
@@ -8,9 +9,10 @@ import 'package:studio_tools/studio_tools.dart';
 import '../font_library.dart';
 import 'object_visuals.dart';
 
-/// Stitches panel: per-object stitch counts with expandable per-glyph
-/// inspection rows for text objects. Stateless-props; hosted by the
-/// dock via the panel registry.
+/// Stitch Layers panel: the document's stitch layers as a tree, each
+/// holding its stitch objects (per-object counts, expandable per-glyph
+/// inspection rows for text). Stateless-props; hosted by the dock via
+/// the panel registry.
 class StitchesPanelContent extends StatefulWidget {
   const StitchesPanelContent({
     super.key,
@@ -18,6 +20,7 @@ class StitchesPanelContent extends StatefulWidget {
     required this.selectedRefs,
     required this.onSelect,
     required this.onMoveNode,
+    required this.onCommand,
     this.stitchHighlight,
     this.onHighlightGlyph,
   });
@@ -31,6 +34,10 @@ class StitchesPanelContent extends StatefulWidget {
   /// execution order IS document order, so preview/simulation follow.
   final void Function(DocumentNodeRef ref,
       {HierarchyParentRef? parent, int? index}) onMoveNode;
+
+  /// Layer visibility/lock toggles dispatch the same commands the design
+  /// Layers panel uses.
+  final void Function(Command command) onCommand;
 
   /// Glyph-inspection highlight: the highlighted text object's outline
   /// range, and the callback that sets/clears it. View state only —
@@ -46,6 +53,9 @@ class StitchesPanelContent extends StatefulWidget {
 class _StitchesPanelContentState extends State<StitchesPanelContent> {
   /// Text objects with their per-glyph stitch rows expanded.
   final _expandedGlyphs = <Id>{};
+
+  /// Stitch layers currently collapsed (expanded is the default).
+  final _collapsedLayers = <Id>{};
 
   /// Reorder-drag hover state: the row targeted and which side.
   Id? _dropTarget;
@@ -76,14 +86,49 @@ class _StitchesPanelContentState extends State<StitchesPanelContent> {
     return length;
   }
 
+  /// Visible objects owned by [layer], in execution (document) order —
+  /// recurses through groups. Hidden objects (or those under a hidden
+  /// group/layer) drop out: the panel lists only what will stitch.
+  List<EmbroideryObject> _layerObjects(LayerNode layer) {
+    final ref = DocumentNodeRef(DocumentNodeKind.layer, layer.id);
+    return [
+      for (final id in widget.document.subtreeObjectIds(ref))
+        if (widget.document.isObjectVisible(id))
+          if (widget.document.objectById(id) case final object?) object,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final visibleObjects = widget.document.flattenVisibleObjects();
-    final entries = [for (final o in visibleObjects) (o, _ops(o))];
+    final layers = widget.document.layers;
+    // Flat (object, ops) list across all layers for the summary and the
+    // global execution index (execution order IS document order).
+    final allObjects = [for (final l in layers) ..._layerObjects(l)];
+    final entries = [for (final o in allObjects) (o, _ops(o))];
     final total = entries.fold<int>(0, (sum, e) => sum + (e.$2?.length ?? 0));
     final threadMm = entries.fold<double>(
         0, (sum, e) => sum + (e.$2 == null ? 0 : _threadLengthMm(e.$2!)));
     final colors = {for (final (o, _) in entries) threadColor(o)}.length;
+
+    final rows = <Widget>[];
+    var index = 0;
+    for (final layer in layers) {
+      final collapsed = _collapsedLayers.contains(layer.id);
+      rows.add(_layerRow(layer, collapsed: collapsed));
+      if (collapsed) {
+        index += _layerObjects(layer).length;
+        continue;
+      }
+      for (final object in _layerObjects(layer)) {
+        final ops = _ops(object);
+        rows.add(_stitchObjectRow(index, object, ops?.length));
+        if (object is TextObject && _expandedGlyphs.contains(object.id)) {
+          rows.add(_glyphRows(object));
+        }
+        index++;
+      }
+    }
+
     return Column(
       children: [
         Padding(
@@ -99,13 +144,7 @@ class _StitchesPanelContentState extends State<StitchesPanelContent> {
         ),
         const Divider(height: 1),
         Expanded(
-          child: ListView(children: [
-            for (final (index, (object, ops)) in entries.indexed) ...[
-              _stitchObjectRow(index, object, ops?.length),
-              if (object is TextObject && _expandedGlyphs.contains(object.id))
-                _glyphRows(object),
-            ],
-          ]),
+          child: allObjects.isEmpty ? _emptyState() : ListView(children: rows),
         ),
         _summary(
           objects: entries.length,
@@ -114,6 +153,72 @@ class _StitchesPanelContentState extends State<StitchesPanelContent> {
           threadMm: threadMm,
         ),
       ],
+    );
+  }
+
+  Widget _emptyState() => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'No stitches yet.\nAdd objects to a layer to begin.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppTokens.textMuted, fontSize: 11.5),
+          ),
+        ),
+      );
+
+  /// Collapsible stitch-layer header: chevron, name, visibility, lock.
+  Widget _layerRow(LayerNode layer, {required bool collapsed}) {
+    final ref = DocumentNodeRef(DocumentNodeKind.layer, layer.id);
+    return InkWell(
+      onTap: () => setState(() {
+        collapsed
+            ? _collapsedLayers.remove(layer.id)
+            : _collapsedLayers.add(layer.id);
+      }),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(6, 6, 10, 6),
+        decoration: BoxDecoration(
+          color: AppTokens.background,
+          border: Border(bottom: BorderSide(color: AppTokens.border)),
+        ),
+        child: Row(
+          children: [
+            Icon(collapsed ? Icons.chevron_right : Icons.expand_more,
+                size: 16, color: AppTokens.textMuted),
+            const SizedBox(width: 2),
+            Expanded(
+              child: Text(
+                layer.name,
+                style: TextStyle(
+                  color: AppTokens.textPrimary,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            InkWell(
+              onTap: () =>
+                  widget.onCommand(SetNodeVisible(ref, !layer.visible)),
+              child: Icon(
+                layer.visible ? Icons.visibility : Icons.visibility_off,
+                size: 15,
+                color: AppTokens.textMuted,
+              ),
+            ),
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: () => widget.onCommand(SetNodeLocked(ref, !layer.locked)),
+              child: Icon(
+                layer.locked ? Icons.lock : Icons.lock_open,
+                size: 15,
+                color: AppTokens.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -255,7 +360,7 @@ class _StitchesPanelContentState extends State<StitchesPanelContent> {
     return InkWell(
       onTap: () => widget.onSelect(ref),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 5, 10, 5),
+        padding: const EdgeInsets.fromLTRB(20, 5, 10, 5),
         decoration: BoxDecoration(
           color: selected ? AppTokens.surfaceHigh : null,
           // Constant-width borders: accent left, reorder lines top/bottom.

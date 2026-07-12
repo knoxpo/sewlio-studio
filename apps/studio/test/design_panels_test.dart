@@ -27,13 +27,10 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
-    // Stitch Simulation panel: docked on demand.
-    await tester
-        .ensureVisible(find.byKey(const Key('dock-tab-stitch-simulation')));
-    await tester.tap(find.byKey(const Key('dock-tab-stitch-simulation')));
-    await tester.pump();
-    expect(find.byType(SimulationSection), findsOneWidget);
-    expect(find.text('Play'), findsOneWidget);
+    // Stitch Simulation is no longer a Design panel — it moved to the
+    // Stitch view (see domain_workspace_test).
+    expect(
+        find.byKey(const Key('dock-tab-stitch-simulation')), findsNothing);
     debugDefaultTargetPlatformOverride = null;
   });
 }

@@ -27,9 +27,12 @@ void main() {
     expect(find.byKey(const Key('tool-Satin Column')), findsOneWidget);
 
     // Module panels docked (Production structure, not Artwork).
-    expect(find.byKey(const Key('dock-tab-stitch-objects')), findsOneWidget);
+    expect(find.byKey(const Key('dock-tab-stitch-layers')), findsOneWidget);
     expect(
         find.byKey(const Key('dock-tab-sequence-color-film')), findsOneWidget);
+    // Stitch Simulation now docks in the Stitch view, not Design.
+    expect(
+        find.byKey(const Key('dock-tab-stitch-simulation')), findsOneWidget);
     // Design layers panel does NOT leak into the domain dock.
     expect(find.byKey(const Key('dock-tab-layers')), findsNothing);
   });

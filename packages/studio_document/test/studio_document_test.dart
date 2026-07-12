@@ -166,6 +166,26 @@ void main() {
       expect(doc.flattenVisibleObjects(), isEmpty);
     });
 
+    test('layerKindOfObject reports the owning layer kind', () {
+      history.execute(const AddObject(RunningStitchObject(
+        id: Id('a'),
+        path: Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]),
+      ))); // default layer is design
+      history.execute(AddLayer(
+          LayerNode(id: const Id('sl'), name: 'Stitches', kind: LayerKind.stitch)));
+      history.execute(const AddObject(
+        RunningStitchObject(
+          id: Id('b'),
+          path: Path(start: Point(0, 0), segments: [LineSegment(Point(5, 0))]),
+        ),
+        parent: HierarchyParentRef(DocumentNodeKind.layer, Id('sl')),
+      ));
+
+      expect(doc.layerKindOfObject(const Id('a')), LayerKind.design);
+      expect(doc.layerKindOfObject(const Id('b')), LayerKind.stitch);
+      expect(doc.layerKindOfObject(const Id('missing')), isNull);
+    });
+
     test('batch transform over mixed selection applies once to descendants',
         () {
       history.execute(const AddObject(RunningStitchObject(

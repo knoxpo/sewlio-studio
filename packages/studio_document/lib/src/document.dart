@@ -294,6 +294,20 @@ final class Document {
     return true;
   }
 
+  /// The kind of the layer owning [id], or null if unparented. Used to
+  /// keep design (base) objects selectable but not transformable in the
+  /// Stitch view.
+  LayerKind? layerKindOfObject(Id id) {
+    var parent = parentOf(DocumentNodeRef(DocumentNodeKind.object, id));
+    while (parent != null) {
+      if (parent.kind == DocumentNodeKind.layer) {
+        return layerById(parent.id)?.kind;
+      }
+      parent = parentOf(parent.asNodeRef);
+    }
+    return null;
+  }
+
   bool isObjectLocked(Id id) {
     if (objectState(id).locked) return true;
     var parent = parentOf(DocumentNodeRef(DocumentNodeKind.object, id));

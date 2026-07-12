@@ -49,6 +49,13 @@ final class SelectTool extends Tool {
   bool uniformModifier = false;
   bool centerModifier = false;
 
+  /// Stitch mode: design (base) layers stay selectable but cannot be
+  /// moved, resized, or rotated — they are the outline you stitch over.
+  bool restrictToBase = false;
+
+  bool _transformable(Id id) => !(restrictToBase &&
+      document.layerKindOfObject(id) == LayerKind.design);
+
   Point? _dragStart;
   Point _dragCurrent = Point.zero;
   _SelectDragMode? _dragMode;
@@ -138,6 +145,8 @@ final class SelectTool extends Tool {
   TransformHandle? handleAt(Point world) {
     final b = selectionBounds;
     if (b == null) return null;
+    // No resize/rotate grips when the selection includes a base object.
+    if (_selectedObjectIds.any((id) => !_transformable(id))) return null;
     final tolerance = handleHitPx / pxPerMm;
     for (final handle in TransformHandle.values) {
       if (world.distanceTo(_handlePoint(b, handle)) <= tolerance) {
@@ -171,7 +180,9 @@ final class SelectTool extends Tool {
       return true;
     }
     final hit = hitTest(world);
-    if (hit != null && _selectedObjectIds.contains(hit.id)) {
+    if (hit != null &&
+        _selectedObjectIds.contains(hit.id) &&
+        _transformable(hit.id)) {
       _dragMode = _SelectDragMode.move;
       notifyListeners();
       return true;

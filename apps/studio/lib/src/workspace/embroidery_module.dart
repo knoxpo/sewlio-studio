@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../panels/panel_def.dart';
 import '../panels/placeholder_panel.dart';
+import '../panels/preview_panels.dart';
 import '../panels/stitches_panel.dart';
 import '../toolbox.dart';
 import '../workspace_view_model.dart';
@@ -144,17 +145,25 @@ final _quickActions = <QuickActionDef>[
 /// separate from the design-side Artwork/Layers panels.
 final _stitchPanels = [
   PanelDef(
-    id: 'stitch-objects',
-    title: 'Stitch Objects',
+    id: 'stitch-layers',
+    title: 'Stitch Layers',
     icon: iconFor('panel-stitch-objects'),
     builder: (context, model) => StitchesPanelContent(
       document: model.session.document,
       selectedRefs: model.selection.selectedRefs,
       onSelect: model.selectRef,
       onMoveNode: model.moveNode,
+      onCommand: model.execute,
       stitchHighlight: model.stitchHighlight,
       onHighlightGlyph: model.setStitchHighlight,
     ),
+  ),
+  PanelDef(
+    id: 'stitch-simulation',
+    title: 'Stitch Simulation',
+    icon: iconFor('sim-play'),
+    minHeight: 220,
+    builder: (context, model) => SimulationSection(sequence: model.sequence),
   ),
   placeholderPanel('sequence-color-film', 'Sequence / Color Film',
       iconFor('panel-sequence')),

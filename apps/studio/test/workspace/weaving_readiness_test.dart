@@ -38,7 +38,7 @@ void main() {
     expect(find.byKey(const Key('dock-tab-warp-setup')), findsOneWidget);
     expect(find.byKey(const Key('dock-tab-weft-sequence')), findsOneWidget);
     // No embroidery contributions leak in.
-    expect(find.byKey(const Key('dock-tab-stitch-objects')), findsNothing);
+    expect(find.byKey(const Key('dock-tab-stitch-layers')), findsNothing);
   });
 
   test('weaving is a planned module, kept out of New Project', () async {

@@ -162,4 +162,55 @@ void main() {
     history.undo();
     expect(history.canUndo, isFalse);
   });
+
+  group('restrictToBase (Stitch mode)', () {
+    // A second object on a stitch layer, so the base guard is per-object.
+    const stitchLayerId = Id('sl');
+    const stitchSquare = Path(
+      start: Point(40, 40),
+      segments: [
+        LineSegment(Point(50, 40)),
+        LineSegment(Point(50, 50)),
+        LineSegment(Point(40, 50)),
+      ],
+      closed: true,
+    );
+
+    setUp(() {
+      history.execute(AddLayer(
+          LayerNode(id: stitchLayerId, name: 'Stitches', kind: LayerKind.stitch)));
+      history.execute(const AddObject(
+        RunningStitchObject(id: Id('obj-2'), path: stitchSquare),
+        parent: HierarchyParentRef(DocumentNodeKind.layer, stitchLayerId),
+      ));
+      tool.restrictToBase = true;
+    });
+
+    test('design-layer (base) object stays selectable but cannot move', () {
+      // Selectable: tap still hits it.
+      tool.tap(const Point(15, 15));
+      expect(tool.selection.selected, const Id('obj-1'));
+      // No transform grips for a base object.
+      expect(tool.handleAt(const Point(20, 20)), isNull);
+      // Drag on it does not move it (falls through to marquee).
+      final undosBefore = history.canUndo;
+      expect(tool.dragStart(const Point(15, 15)), isTrue);
+      tool.dragUpdate(const Point(25, 25));
+      tool.dragEnd();
+      expect(document.objectById(const Id('obj-1'))!.path.start,
+          const Point(10, 10));
+      expect(history.canUndo, undosBefore); // no new TransformSelection
+    });
+
+    test('stitch-layer object still moves under restrictToBase', () {
+      tool.tap(const Point(45, 45));
+      expect(tool.selection.selected, const Id('obj-2'));
+      expect(tool.handleAt(const Point(50, 50)), isNotNull);
+      expect(tool.dragStart(const Point(45, 45)), isTrue);
+      tool.dragUpdate(const Point(48, 45));
+      tool.dragEnd();
+      expect(document.objectById(const Id('obj-2'))!.path.start,
+          const Point(43, 40));
+    });
+  });
 }

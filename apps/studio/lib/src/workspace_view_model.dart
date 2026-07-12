@@ -118,6 +118,10 @@ final class WorkspaceViewModel extends BarleyViewModel {
   void setMode(WorkspaceMode value) {
     if (mode == value) return;
     mode = value;
+    // Each mode defaults to Move: the previous tool may not exist in the
+    // new mode's toolbox, so keeping it active shows a phantom selection.
+    tools[activeKind]?.cancel();
+    activeKind = ToolKind.select;
     notify();
   }
 
@@ -262,7 +266,15 @@ final class WorkspaceViewModel extends BarleyViewModel {
 
   /// Selection visuals are tool-appropriate: the transform box (frame,
   /// resize handles, rotation grip) belongs to the Select tool only.
-  bool get showsTransformBox => activeKind == ToolKind.select;
+  /// In Stitch mode, base (design-layer) objects are selectable but not
+  /// transformable — no transform box for them.
+  bool get selectionTransformable =>
+      mode != WorkspaceMode.domain ||
+      selectedObjectIds.every((id) =>
+          session.document.layerKindOfObject(id) != LayerKind.design);
+
+  bool get showsTransformBox =>
+      activeKind == ToolKind.select && selectionTransformable;
 
   /// In-progress drag transform: the canvas draws the transform box
   /// through it so the box moves/scales/rotates with the object.
@@ -1200,6 +1212,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
       select.pxPerMm = viewport.zoom;
       select.uniformModifier = shift;
       select.centerModifier = alt;
+      select.restrictToBase = mode == WorkspaceMode.domain;
     }
     if (tools[ToolKind.zoom] case final ZoomTool zoom) {
       zoom.outModifier = alt;

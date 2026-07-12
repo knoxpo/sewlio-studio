@@ -25,9 +25,10 @@ void main() {
     expect(find.text('Properties'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
-    // Hoop + Stitch Simulation moved from the bottom strip into the dock.
+    // Hoop moved from the bottom strip into the dock; Stitch Simulation
+    // now lives in the Stitch view, not the Design dock.
     expect(find.byKey(const Key('dock-tab-hoop')), findsOneWidget);
-    expect(find.byKey(const Key('dock-tab-stitch-simulation')), findsOneWidget);
+    expect(find.byKey(const Key('dock-tab-stitch-simulation')), findsNothing);
     expect(find.textContaining('Select:'), findsOneWidget); // status bar
   });
 
