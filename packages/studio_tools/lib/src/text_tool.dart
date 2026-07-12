@@ -292,6 +292,7 @@ final class TextTool extends Tool {
   int offsetAtPoint(Point world) {
     final anchor = _anchor;
     if (anchor == null) return _caret;
+    final (attrsOf, fontOf) = _runResolvers;
     final metrics = layoutLineMetrics(
       _text,
       font,
@@ -301,6 +302,8 @@ final class TextTool extends Tool {
       lineHeight: lineHeight,
       align: align,
       frameWidthMm: _frameWidthMm,
+      attrsOf: attrsOf,
+      fontOf: fontOf,
     );
     if (metrics.isEmpty) return 0;
     var line = metrics.first;
@@ -365,8 +368,62 @@ final class TextTool extends Tool {
     _caret = object.text.runes.length;
     _selectionAnchor = _caret;
     _editingId = object.id;
+    _original = object;
     _stroke = object.stroke;
     notifyListeners();
+  }
+
+  /// The committed object as it was when editing began — commit skips
+  /// the replace when nothing changed, so entering and leaving edit
+  /// mode never dirties the document or touches its style runs.
+  TextObject? _original;
+
+  // ------------------------------------------------- run-aware preview
+
+  /// Wired by the shell: the live committed object being edited, so the
+  /// in-place preview reflects its style runs (decorations, styled
+  /// faces) as the panel/toolbar edit them.
+  TextObject? Function()? committedObject;
+
+  /// Wired by the shell: resolves a (family, style) pair to a loaded
+  /// face for styled-run preview.
+  TextFont Function(String family, String style)? faceResolver;
+
+  /// Run resolvers for the live preview — non-null only while the
+  /// buffer text still matches the committed text (typing shifts rune
+  /// offsets, so the preview falls back to plain layout until commit).
+  (CharAttrs Function(int)?, TextFont Function(int)?) get _runResolvers {
+    final object = committedObject?.call();
+    if (object == null ||
+        object.id != _editingId ||
+        object.text != _text ||
+        object.runs.isEmpty) {
+      return (null, null);
+    }
+    final resolve = faceResolver;
+    return (
+      object.attrsAt,
+      resolve == null
+          ? null
+          : (offset) {
+              final attrs = object.attrsAt(offset);
+              return resolve(attrs.fontFamily ?? object.fontFamily,
+                  attrs.styleName ?? 'Regular');
+            }
+    );
+  }
+
+  bool get _unchanged {
+    final o = _original;
+    return o != null &&
+        _text == o.text &&
+        font.family == o.fontFamily &&
+        sizeMm == o.sizeMm &&
+        trackingMm == o.trackingMm &&
+        lineHeight == o.lineHeight &&
+        align.name == o.alignment &&
+        _frameWidthMm == o.frameWidthMm &&
+        _anchor == o.anchor;
   }
 
   // New text renders as solid glyphs by default (ADR-042): a fill plus a
@@ -390,7 +447,7 @@ final class TextTool extends Tool {
   /// outlines, and leaves editing mode.
   void commit() {
     final anchor = _anchor;
-    if (anchor != null && _text.trim().isNotEmpty) {
+    if (anchor != null && _text.trim().isNotEmpty && !_unchanged) {
       final object = TextObject(
         id: _editingId ?? nextId(),
         path: Path(start: anchor),
@@ -421,6 +478,7 @@ final class TextTool extends Tool {
     _caret = 0;
     _selectionAnchor = 0;
     _editingId = null;
+    _original = null;
     notifyListeners();
   }
 
@@ -484,6 +542,7 @@ final class TextTool extends Tool {
   List<Path> get previewFills {
     final anchor = _anchor;
     if (anchor == null) return const [];
+    final (attrsOf, fontOf) = _runResolvers;
     return layoutText(
       _text,
       font,
@@ -493,6 +552,8 @@ final class TextTool extends Tool {
       lineHeight: lineHeight,
       align: align,
       frameWidthMm: _frameWidthMm,
+      attrsOf: attrsOf,
+      fontOf: fontOf,
     );
   }
 
@@ -510,6 +571,7 @@ final class TextTool extends Tool {
   /// the same layout metrics as the glyphs.
   List<Path> _selectionRects(Point anchor) {
     if (!hasSelection) return const [];
+    final (attrsOf, fontOf) = _runResolvers;
     final metrics = layoutLineMetrics(
       _text,
       font,
@@ -519,6 +581,8 @@ final class TextTool extends Tool {
       lineHeight: lineHeight,
       align: align,
       frameWidthMm: _frameWidthMm,
+      attrsOf: attrsOf,
+      fontOf: fontOf,
     );
     final start = selectionStart, end = selectionEnd;
     final rects = <Path>[];

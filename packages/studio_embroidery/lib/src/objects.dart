@@ -444,6 +444,14 @@ final class TextObject extends EmbroideryObject {
   // until then family is whole-object.
   TextObject withFontFamily(String fontFamily) => _with(fontFamily: fontFamily);
 
+  /// Paragraph alignment ('left'/'center'/'right'/'justify') — an
+  /// object-level layout property, like the family above.
+  TextObject withAlignment(String alignment) => _with(alignment: alignment);
+
+  /// Replaces the style runs wholesale (carrying runs through a
+  /// run-unaware text-tool commit).
+  TextObject withRuns(List<StyleRun> runs) => _with(runs: runs);
+
   Point get anchor => path.start;
 
   @override
@@ -479,7 +487,8 @@ final class TextObject extends EmbroideryObject {
           {Path? path,
           List<Path>? outlines,
           List<StyleRun>? runs,
-          String? fontFamily}) =>
+          String? fontFamily,
+          String? alignment}) =>
       TextObject(
         id: id,
         path: path ?? this.path,
@@ -490,7 +499,7 @@ final class TextObject extends EmbroideryObject {
         sizeMm: sizeMm,
         trackingMm: trackingMm,
         lineHeight: lineHeight,
-        alignment: alignment,
+        alignment: alignment ?? this.alignment,
         frameWidthMm: frameWidthMm,
         stitchLength: stitchLength,
         outlines: outlines ?? this.outlines,

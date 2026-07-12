@@ -4,8 +4,10 @@ import 'package:studio_embroidery/studio_embroidery.dart';
 import 'package:studio_geometry/studio_geometry.dart';
 
 /// Horizontal alignment of laid-out text (about the origin for point
-/// text, within the frame for area text).
-enum MonoTextAlign { left, center, right }
+/// text, within the frame for area text). [justify] pads word gaps to
+/// fill the frame (area text; the last line of each paragraph, and
+/// point text, fall back to left).
+enum MonoTextAlign { left, center, right, justify }
 
 /// A vector font the Text tool can lay out: per-rune advances and
 /// outline/stroke paths. Implementations: the built-in monoline stroke
@@ -88,11 +90,19 @@ double _runeTracking(
         CharAttrs Function(int)? attrsOf, int offset, double trackingMm) =>
     attrsOf == null ? trackingMm : (attrsOf(offset).trackingMm ?? trackingMm);
 
+/// Per-rune face resolution (ADR-040 styled runs): [fontOf], when
+/// given, returns the face for an absolute rune offset (bold/italic
+/// spans); null falls back to the base font everywhere.
+TextFont _fontAt(TextFont base, TextFont Function(int)? fontOf, int offset) =>
+    fontOf?.call(offset) ?? base;
+
 double _glyphsWidth(List<_Glyph> glyphs, TextFont font, double sizeMm,
-    double trackingMm, CharAttrs Function(int)? attrsOf) {
+    double trackingMm, CharAttrs Function(int)? attrsOf,
+    [TextFont Function(int)? fontOf]) {
   var width = 0.0;
   for (final (offset, rune) in glyphs) {
-    width += font.advanceMm(rune, _runeSize(attrsOf, offset, sizeMm)) +
+    width += _fontAt(font, fontOf, offset)
+            .advanceMm(rune, _runeSize(attrsOf, offset, sizeMm)) +
         _runeTracking(attrsOf, offset, trackingMm);
   }
   return width;
@@ -108,6 +118,7 @@ List<_Line> _wrapLines(
   required double trackingMm,
   double? frameWidthMm,
   CharAttrs Function(int)? attrsOf,
+  TextFont Function(int)? fontOf,
 }) {
   final paragraphs = <_Line>[];
   var para = <_Glyph>[];
@@ -148,7 +159,7 @@ List<_Line> _wrapLines(
     for (var i = 0; i < words.length; i++) {
       final candidate =
           line.isEmpty ? [...words[i]] : [...line, spaces[i - 1], ...words[i]];
-      if (_glyphsWidth(candidate, font, sizeMm, trackingMm, attrsOf) <=
+      if (_glyphsWidth(candidate, font, sizeMm, trackingMm, attrsOf, fontOf) <=
               frameWidthMm ||
           line.isEmpty) {
         if (line.isEmpty && words[i].isNotEmpty) {
@@ -197,14 +208,45 @@ double _lineOffsetX(
     double sizeMm,
     double trackingMm,
     double? frameWidthMm,
-    CharAttrs Function(int)? attrsOf) {
-  final width = _glyphsWidth(line.glyphs, font, sizeMm, trackingMm, attrsOf);
+    CharAttrs Function(int)? attrsOf,
+    [TextFont Function(int)? fontOf]) {
+  final width =
+      _glyphsWidth(line.glyphs, font, sizeMm, trackingMm, attrsOf, fontOf);
   final field = frameWidthMm ?? 0;
   return switch (align) {
-    MonoTextAlign.left => 0,
+    MonoTextAlign.left || MonoTextAlign.justify => 0,
     MonoTextAlign.center => (field - width) / 2,
     MonoTextAlign.right => field - width,
   };
+}
+
+/// Extra advance added after every space on a justified line so the
+/// line fills the frame. Zero for non-justify, point text, lines
+/// without spaces, and the last line of a paragraph.
+double _justifyExtraPerSpace(
+    String text,
+    _Line line,
+    TextFont font,
+    MonoTextAlign align,
+    double sizeMm,
+    double trackingMm,
+    double? frameWidthMm,
+    CharAttrs Function(int)? attrsOf,
+    [TextFont Function(int)? fontOf]) {
+  if (align != MonoTextAlign.justify || frameWidthMm == null) return 0;
+  final glyphs = line.glyphs;
+  if (glyphs.isEmpty) return 0;
+  // Paragraph-final line: the rune after the line's last glyph is a
+  // newline or the end of text (a wrapped line is followed by the
+  // dropped space instead).
+  final runes = text.runes.toList();
+  final next = glyphs.last.$1 + 1;
+  if (next >= runes.length || runes[next] == 0x0A) return 0;
+  final spaces = glyphs.where((g) => g.$2 == 0x20).length;
+  if (spaces == 0) return 0;
+  final width = _glyphsWidth(glyphs, font, sizeMm, trackingMm, attrsOf, fontOf);
+  final extra = (frameWidthMm - width) / spaces;
+  return extra > 0 ? extra : 0;
 }
 
 // ponytail: Transform2 has no shear factory; build the 2x3 shear matrix
@@ -243,12 +285,44 @@ Transform2? _glyphTransform(CharAttrs attrs, double px, double py) {
       Transform2.translation(-px, -py);
 }
 
+/// Vertical placement of each decoration line, as baseline-relative
+/// offsets in fractions of the rune size (Y-down world: positive is
+/// below the baseline). Double variants carry two offsets.
+// ponytail: solid bars only — TextDecorationStyle dash/dot/wave arrives
+// when the stitch generators can honor it.
+const _decorationOffsets = <TextDecorationLine, List<double>>{
+  TextDecorationLine.underline: [0.15],
+  TextDecorationLine.doubleUnderline: [0.10, 0.24],
+  TextDecorationLine.overline: [-0.80],
+  TextDecorationLine.strikethrough: [-0.30],
+  TextDecorationLine.doubleStrikethrough: [-0.22, -0.38],
+};
+
+/// Bar thickness as a fraction of the rune size. Decorations are thin
+/// CLOSED rectangles, not line segments: text renders through the fill
+/// pipeline (solid glyphs, ADR-042), and a zero-area line fills to
+/// nothing — a rect fills, strokes, and stitches like a glyph contour.
+const _decorationThickness = 0.07;
+
+Path _decorationBar(double x0, double x1, double y, double size,
+    double? thicknessMm) {
+  final half = (thicknessMm ?? size * _decorationThickness) / 2;
+  return Path(start: Point(x0, y - half), closed: true, segments: [
+    LineSegment(Point(x1, y - half)),
+    LineSegment(Point(x1, y + half)),
+    LineSegment(Point(x0, y + half)),
+  ]);
+}
+
 /// Lays [text] out as stitchable paths. [origin] is the first
 /// baseline's left (or the frame's left for area text); '\n' starts a
 /// new line; [lineHeight] is the baseline distance as a multiple of
 /// [sizeMm]. When [attrsOf] is given, each rune's size/tracking and a
 /// per-glyph affine (baseline shift, scale, skew, rotation) come from its
-/// resolved attributes.
+/// resolved attributes, and decoration lines (underline, strikethrough,
+/// overline and their double variants) are emitted as horizontal stroke
+/// paths APPENDED AFTER all glyph paths — [glyphOutlineGroups] consumers
+/// partition the prefix and ignore the tail.
 List<Path> layoutText(
   String text,
   TextFont font, {
@@ -259,34 +333,65 @@ List<Path> layoutText(
   MonoTextAlign align = MonoTextAlign.left,
   double? frameWidthMm,
   CharAttrs Function(int runeOffset)? attrsOf,
+  TextFont Function(int runeOffset)? fontOf,
 }) {
   final paths = <Path>[];
+  final decorations = <Path>[];
   final lines = _wrapLines(text, font,
       sizeMm: sizeMm,
       trackingMm: trackingMm,
       frameWidthMm: frameWidthMm,
-      attrsOf: attrsOf);
+      attrsOf: attrsOf,
+      fontOf: fontOf);
   for (final (index, line) in lines.indexed) {
     final baselineY = origin.y + index * lineHeight * sizeMm;
     var penX = origin.x +
-        _lineOffsetX(
-            line, font, align, sizeMm, trackingMm, frameWidthMm, attrsOf);
+        _lineOffsetX(line, font, align, sizeMm, trackingMm, frameWidthMm,
+            attrsOf, fontOf);
+    final justifyExtra = _justifyExtraPerSpace(text, line, font, align, sizeMm,
+        trackingMm, frameWidthMm, attrsOf, fontOf);
+    // Open decoration spans: kind → (startX, rune size, thickness).
+    final spans = <TextDecorationLine, (double, double, double?)>{};
+    void close(TextDecorationLine kind, double endX) {
+      final (startX, size, thickness) = spans.remove(kind)!;
+      if (endX <= startX) return;
+      for (final f in _decorationOffsets[kind]!) {
+        decorations.add(_decorationBar(
+            startX, endX, baselineY + f * size, size, thickness));
+      }
+    }
+
     for (final (offset, rune) in line.glyphs) {
       final size = _runeSize(attrsOf, offset, sizeMm);
-      final glyphPaths = font.glyphPaths(rune, Point(penX, baselineY), size);
+      final attrs = attrsOf?.call(offset);
+      final active = attrs?.decorations?.lines ?? const <TextDecorationLine>{};
+      for (final kind in TextDecorationLine.values) {
+        if (active.contains(kind)) {
+          spans.putIfAbsent(
+              kind, () => (penX, size, attrs?.decorations?.thicknessMm));
+        } else if (spans.containsKey(kind)) {
+          close(kind, penX);
+        }
+      }
+      final face = _fontAt(font, fontOf, offset);
+      final glyphPaths = face.glyphPaths(rune, Point(penX, baselineY), size);
       if (attrsOf == null) {
         paths.addAll(glyphPaths);
       } else {
-        final t = _glyphTransform(attrsOf(offset), penX, baselineY);
+        final t = _glyphTransform(attrs!, penX, baselineY);
         paths.addAll(t == null
             ? glyphPaths
             : [for (final p in glyphPaths) p.transformed(t)]);
       }
-      penX += font.advanceMm(rune, size) +
-          _runeTracking(attrsOf, offset, trackingMm);
+      penX += face.advanceMm(rune, size) +
+          _runeTracking(attrsOf, offset, trackingMm) +
+          (rune == 0x20 ? justifyExtra : 0);
+    }
+    for (final kind in [...spans.keys]) {
+      close(kind, penX);
     }
   }
-  return paths;
+  return [...paths, ...decorations];
 }
 
 /// One laid-out glyph's slice of a [layoutText] result: the character,
@@ -308,19 +413,21 @@ List<GlyphGroup> glyphOutlineGroups(
   double trackingMm = 0,
   double? frameWidthMm,
   CharAttrs Function(int runeOffset)? attrsOf,
+  TextFont Function(int runeOffset)? fontOf,
 }) {
   final groups = <GlyphGroup>[];
   final lines = _wrapLines(text, font,
       sizeMm: sizeMm,
       trackingMm: trackingMm,
       frameWidthMm: frameWidthMm,
-      attrsOf: attrsOf);
+      attrsOf: attrsOf,
+      fontOf: fontOf);
   for (final line in lines) {
     for (final (offset, rune) in line.glyphs) {
       groups.add((
         char: String.fromCharCode(rune),
         index: offset,
-        outlineCount: font
+        outlineCount: _fontAt(font, fontOf, offset)
             .glyphPaths(rune, Point.zero, _runeSize(attrsOf, offset, sizeMm))
             .length,
       ));
@@ -342,26 +449,32 @@ List<TextLineMetrics> layoutLineMetrics(
   MonoTextAlign align = MonoTextAlign.left,
   double? frameWidthMm,
   CharAttrs Function(int runeOffset)? attrsOf,
+  TextFont Function(int runeOffset)? fontOf,
 }) {
   final lines = _wrapLines(text, font,
       sizeMm: sizeMm,
       trackingMm: trackingMm,
       frameWidthMm: frameWidthMm,
-      attrsOf: attrsOf);
+      attrsOf: attrsOf,
+      fontOf: fontOf);
   final out = <TextLineMetrics>[];
   for (final (index, line) in lines.indexed) {
     final baselineY = origin.y + index * lineHeight * sizeMm;
     final startX = origin.x +
-        _lineOffsetX(
-            line, font, align, sizeMm, trackingMm, frameWidthMm, attrsOf);
+        _lineOffsetX(line, font, align, sizeMm, trackingMm, frameWidthMm,
+            attrsOf, fontOf);
+    final justifyExtra = _justifyExtraPerSpace(text, line, font, align, sizeMm,
+        trackingMm, frameWidthMm, attrsOf, fontOf);
     final offsets = <int>[];
     final xs = <double>[];
     var penX = startX;
     for (final (offset, rune) in line.glyphs) {
       offsets.add(offset);
       xs.add(penX);
-      penX += font.advanceMm(rune, _runeSize(attrsOf, offset, sizeMm)) +
-          _runeTracking(attrsOf, offset, trackingMm);
+      penX += _fontAt(font, fontOf, offset)
+              .advanceMm(rune, _runeSize(attrsOf, offset, sizeMm)) +
+          _runeTracking(attrsOf, offset, trackingMm) +
+          (rune == 0x20 ? justifyExtra : 0);
     }
     // Trailing line-end caret boundary.
     offsets
@@ -384,17 +497,19 @@ Point layoutCaret(
   MonoTextAlign align = MonoTextAlign.left,
   double? frameWidthMm,
   CharAttrs Function(int runeOffset)? attrsOf,
+  TextFont Function(int runeOffset)? fontOf,
 }) {
   final lines = _wrapLines(text, font,
       sizeMm: sizeMm,
       trackingMm: trackingMm,
       frameWidthMm: frameWidthMm,
-      attrsOf: attrsOf);
+      attrsOf: attrsOf,
+      fontOf: fontOf);
   final last = lines.last;
   final baselineY = origin.y + (lines.length - 1) * lineHeight * sizeMm;
   final x = origin.x +
       _lineOffsetX(
-          last, font, align, sizeMm, trackingMm, frameWidthMm, attrsOf) +
-      _glyphsWidth(last.glyphs, font, sizeMm, trackingMm, attrsOf);
+          last, font, align, sizeMm, trackingMm, frameWidthMm, attrsOf, fontOf) +
+      _glyphsWidth(last.glyphs, font, sizeMm, trackingMm, attrsOf, fontOf);
   return Point(x, baselineY);
 }

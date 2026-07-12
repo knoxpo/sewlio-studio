@@ -14,13 +14,19 @@ import 'text_font.dart';
 // engine (HarfBuzz). Composite glyphs and cmap formats 4/12 are enough
 // for Latin system fonts.
 final class TtfTextFont implements TextFont {
-  TtfTextFont._(this._data, this._tables, this.family, this._unitsPerEm,
-      this._longLoca, this._numGlyphs, this._hMetricCount);
+  TtfTextFont._(this._data, this._tables, this.family, this.styleName,
+      this._unitsPerEm, this._longLoca, this._numGlyphs, this._hMetricCount);
 
   final ByteData _data;
   final Map<String, (int, int)> _tables; // tag -> (offset, length)
+
+  /// Typographic family (nameID 1) — the grouping key for style
+  /// variants ('Arial', not 'Arial Bold').
   @override
   final String family;
+
+  /// Face subfamily (nameID 2): 'Regular', 'Bold', 'Italic', …
+  final String styleName;
   final int _unitsPerEm;
   final bool _longLoca;
   final int _numGlyphs;
@@ -29,14 +35,18 @@ final class TtfTextFont implements TextFont {
   final Map<int, int> _glyphIndexCache = {};
 
   /// Parses [bytes]; returns null when the file is not TrueType-glyf
-  /// (e.g. CFF-based `.otf`) or is malformed.
-  static TtfTextFont? tryParse(Uint8List bytes) {
+  /// (e.g. CFF-based `.otf`) or is malformed. [faceIndex] selects a
+  /// face inside a `.ttc` collection (ignored for single-face files).
+  static TtfTextFont? tryParse(Uint8List bytes, {int faceIndex = 0}) {
     try {
       final data = ByteData.sublistView(bytes);
       var offset = 0;
       final version = data.getUint32(0);
       if (version == 0x74746366 /* 'ttcf' */) {
-        offset = data.getUint32(12); // First face of the collection.
+        if (faceIndex >= data.getUint32(8)) return null;
+        offset = data.getUint32(12 + faceIndex * 4);
+      } else if (faceIndex > 0) {
+        return null; // Single-face file has no further faces.
       }
       final sfnt = data.getUint32(offset);
       if (sfnt != 0x00010000 && sfnt != 0x74727565 /* 'true' */) {
@@ -64,7 +74,8 @@ final class TtfTextFont implements TextFont {
       return TtfTextFont._(
         data,
         tables,
-        _readFamily(data, bytes, tables['name']) ?? 'Unknown',
+        _readName(data, bytes, tables['name'], const [1, 4]) ?? 'Unknown',
+        _readName(data, bytes, tables['name'], const [2]) ?? 'Regular',
         data.getUint16(head + 18),
         data.getInt16(head + 50) == 1,
         data.getUint16(maxp + 4),
@@ -75,45 +86,73 @@ final class TtfTextFont implements TextFont {
     }
   }
 
-  /// Full font name (nameID 4), falling back to family (nameID 1).
-  static String? _readFamily(ByteData data, Uint8List bytes, (int, int)? name) {
+  /// Number of faces in [bytes]: >1 for `.ttc` collections, 1 for
+  /// plain `.ttf`, 0 when unreadable.
+  static int faceCount(Uint8List bytes) {
+    try {
+      final data = ByteData.sublistView(bytes);
+      return data.getUint32(0) == 0x74746366 /* 'ttcf' */
+          ? data.getUint32(8)
+          : 1;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// First non-empty name-table entry among [wantedIds], in order
+  /// (family = [1, 4] fallback, subfamily = [2]). Prefers English
+  /// entries — style grouping matches on 'Bold'/'Italic', so a
+  /// localized subfamily ('Negreta') must not win over 'Bold'.
+  static String? _readName(
+      ByteData data, Uint8List bytes, (int, int)? name, List<int> wantedIds) {
     if (name == null) return null;
     final base = name.$1;
     final count = data.getUint16(base + 2);
     final strings = base + data.getUint16(base + 4);
-    String? best;
-    for (final wantedId in const [4, 1]) {
+    for (final wantedId in wantedIds) {
+      String? best;
+      var bestScore = -1;
       for (var i = 0; i < count; i++) {
         final r = base + 6 + i * 12;
         final platform = data.getUint16(r);
+        final language = data.getUint16(r + 4);
         final nameId = data.getUint16(r + 6);
         if (nameId != wantedId) continue;
         final length = data.getUint16(r + 8);
         final start = strings + data.getUint16(r + 10);
-        if (platform == 3 || platform == 0) {
-          // UTF-16BE.
-          best = String.fromCharCodes([
-            for (var j = 0; j < length; j += 2) data.getUint16(start + j),
-          ]);
-        } else if (platform == 1 && best == null) {
-          best = String.fromCharCodes(bytes, start, start + length);
-        }
-        if (platform == 3) break;
+        final score = switch (platform) {
+          3 when language == 0x409 => 4, // Windows en-US
+          3 => 2,
+          0 => 3, // Unicode (no language)
+          1 when language == 0 => 1, // Mac English
+          _ => 0,
+        };
+        if (score <= bestScore) continue;
+        final value = platform == 1
+            ? String.fromCharCodes(bytes, start, start + length)
+            : String.fromCharCodes([
+                for (var j = 0; j < length; j += 2) data.getUint16(start + j),
+              ]);
+        if (value.isEmpty) continue;
+        best = value;
+        bestScore = score;
       }
-      if (best != null && best.isNotEmpty) return best;
+      if (best != null) return best;
     }
-    return best;
+    return null;
   }
 
   // ------------------------------------------------------------- metrics
 
   double _scale(double sizeMm) => sizeMm / _unitsPerEm;
 
-  // ponytail: `glyf`-only parser has no shaping/variation/style tables
-  // wired up, so it honestly reports a single style and no
-  // variation/feature support until a shaping engine lands.
+  // ponytail: `glyf`-only parser has no shaping/variation tables wired
+  // up, so it reports no variation/feature support until a shaping
+  // engine lands. Family-level style variants (Bold/Italic faces) are
+  // grouped by the app's FontLibrary; a single face knows only its own
+  // subfamily name.
   @override
-  List<String> get styleNames => const ['Regular'];
+  List<String> get styleNames => [styleName];
 
   @override
   List<({String tag, double min, double def, double max})> variationAxes() =>
