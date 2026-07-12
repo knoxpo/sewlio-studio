@@ -35,15 +35,26 @@ final class StrokeProps {
 
   static const defaults = StrokeProps();
 
-  /// Sentinel hex (alpha 00) meaning "no fill" / "no stroke" — a
-  /// first-class transparent colour distinct from null (inherit).
+  /// Fully transparent colour ("no fill" / "no stroke"): alpha 00. Colours
+  /// are `#rrggbb` (opaque) or `#rrggbbaa` (with alpha); any hex whose
+  /// alpha byte is 00 means "none".
   static const transparent = '#00000000';
 
-  /// Whether a visible fill should be painted.
-  bool get hasFill => fillHex != null && fillHex != transparent;
+  /// Alpha byte 0–255 of a colour hex: 255 for null or 6-digit (opaque),
+  /// else the trailing byte of an 8-digit `#rrggbbaa`.
+  static int alphaOf(String? hex) {
+    if (hex == null) return 255;
+    final h = hex.replaceFirst('#', '');
+    if (h.length == 8) return int.tryParse(h.substring(6), radix: 16) ?? 255;
+    return 255;
+  }
 
-  /// Whether a visible stroke should be painted.
-  bool get hasStroke => colorHex != transparent;
+  /// Whether a visible fill should be painted (has a colour and alpha > 0).
+  bool get hasFill => fillHex != null && alphaOf(fillHex) != 0;
+
+  /// Whether a visible stroke should be painted (alpha > 0; null strokes
+  /// with the theme default).
+  bool get hasStroke => alphaOf(colorHex) != 0;
 
   bool get isDefault =>
       widthMm == defaults.widthMm &&

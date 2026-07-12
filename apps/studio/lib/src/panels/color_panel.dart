@@ -4,6 +4,16 @@ import 'package:studio_embroidery/studio_embroidery.dart';
 
 import '../workspace_view_model.dart';
 
+/// Parses `#rrggbb` / `#rrggbbaa` into a Color (alpha last).
+Color _parseHex(String hex) {
+  final h = hex.replaceFirst('#', '');
+  if (h.length == 8) {
+    final v = int.parse(h, radix: 16);
+    return Color(((v & 0xff) << 24) | ((v >> 8) & 0xffffff));
+  }
+  return Color(0xFF000000 | int.parse(h, radix: 16));
+}
+
 // A compact preset palette (Affinity-style). Global/managed palettes are
 // future work; this is a sensible starter set.
 const _palette = <String>[
@@ -86,9 +96,7 @@ class _PaletteSwatch extends StatelessWidget {
           width: 22,
           height: 22,
           decoration: BoxDecoration(
-            color: transparent
-                ? AppTokens.field
-                : Color(0xFF000000 | int.parse(hex.substring(1), radix: 16)),
+            color: transparent ? AppTokens.field : _parseHex(hex),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: AppTokens.border),
           ),

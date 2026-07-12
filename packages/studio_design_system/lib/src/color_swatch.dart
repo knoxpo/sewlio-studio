@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'color_picker.dart';
 import 'tokens.dart';
 
-/// A small inline swatch button. Shows the current `#rrggbb` [color], or
-/// an "unset" (diagonal slash) look when null. Tapping opens
-/// [showStudioColorPicker] and reports the chosen hex via [onChanged].
-/// Focusable and Enter/Space-activatable (via [InkWell]).
+/// A small inline swatch button. Renders an opaque `#rrggbb` colour
+/// directly, a partial-alpha `#rrggbbaa` colour over a checkerboard, and
+/// the transparent sentinel (alpha 00) or null as the "none" (diagonal
+/// slash) look. Tapping opens [showStudioColorPicker] and reports the
+/// chosen hex via [onChanged]. Focusable and Enter/Space-activatable.
 class StudioColorSwatch extends StatelessWidget {
   const StudioColorSwatch({
     super.key,
@@ -15,17 +16,25 @@ class StudioColorSwatch extends StatelessWidget {
     this.size = 22,
   });
 
-  /// Current color as `#rrggbb`, or null when unset/mixed.
+  /// Current color as `#rrggbb`/`#rrggbbaa`, or null when unset/mixed.
   final String? color;
   final ValueChanged<String> onChanged;
   final double size;
 
-  static Color? _parse(String? hex) {
+  /// Opaque colour + alpha byte, or null when unset/malformed.
+  static (Color, int)? _parse(String? hex) {
     if (hex == null) return null;
     final h = hex.replaceFirst('#', '').trim();
-    if (h.length != 6) return null;
-    final v = int.tryParse(h, radix: 16);
-    return v == null ? null : Color(0xFF000000 | v);
+    if (h.length != 6 && h.length != 8) return null;
+    final rgb = int.tryParse(h.substring(0, 6), radix: 16);
+    if (rgb == null) return null;
+    var alpha = 255;
+    if (h.length == 8) {
+      final a = int.tryParse(h.substring(6, 8), radix: 16);
+      if (a == null) return null;
+      alpha = a;
+    }
+    return (Color(0xFF000000 | rgb), alpha);
   }
 
   Future<void> _pick(BuildContext context) async {
@@ -38,7 +47,21 @@ class StudioColorSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fill = _parse(color);
+    final parsed = _parse(color);
+    // Transparent (alpha 00) and unset both read as "none".
+    final isNone = parsed == null || parsed.$2 == 0;
+    final Widget inner;
+    if (isNone) {
+      inner = CustomPaint(painter: _UnsetSlashPainter());
+    } else if (parsed.$2 < 255) {
+      // Partial alpha: show it over a checkerboard.
+      inner = CustomPaint(
+        painter: _CheckerPainter(),
+        child: ColoredBox(color: parsed.$1.withValues(alpha: parsed.$2 / 255)),
+      );
+    } else {
+      inner = const SizedBox.expand();
+    }
     return InkWell(
       onTap: () => _pick(context),
       borderRadius: BorderRadius.circular(4),
@@ -47,12 +70,13 @@ class StudioColorSwatch extends StatelessWidget {
         key: const ValueKey('studio-color-swatch'),
         width: size,
         height: size,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: fill ?? AppTokens.field,
+          color: (isNone || parsed.$2 < 255) ? AppTokens.field : parsed.$1,
           border: Border.all(color: AppTokens.border),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: fill == null ? CustomPaint(painter: _UnsetSlashPainter()) : null,
+        child: inner,
       ),
     );
   }
@@ -71,4 +95,25 @@ class _UnsetSlashPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_UnsetSlashPainter oldDelegate) => false;
+}
+
+/// Grey checkerboard backing for partial-alpha swatches.
+class _CheckerPainter extends CustomPainter {
+  static const _cell = 4.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+        Offset.zero & size, Paint()..color = const Color(0xFFBDBDBD));
+    final dark = Paint()..color = const Color(0xFF8A8A8A);
+    for (var y = 0.0; y < size.height; y += _cell) {
+      for (var x = 0.0; x < size.width; x += _cell) {
+        if (((x ~/ _cell) + (y ~/ _cell)).isEven) continue;
+        canvas.drawRect(Rect.fromLTWH(x, y, _cell, _cell), dark);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CheckerPainter old) => false;
 }

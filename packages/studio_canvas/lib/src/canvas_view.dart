@@ -48,6 +48,16 @@ typedef CanvasDragUpdateCallback = void Function(
   double? pressure,
 });
 
+/// Parses a `#rrggbb` (opaque) or `#rrggbbaa` (with alpha) colour hex.
+Color _parseColorHex(String hex) {
+  final h = hex.replaceFirst('#', '');
+  if (h.length == 8) {
+    final v = int.parse(h, radix: 16); // rrggbbaa
+    return Color(((v & 0xff) << 24) | ((v >> 8) & 0xffffff)); // aarrggbb
+  }
+  return Color(0xFF000000 | int.parse(h, radix: 16));
+}
+
 /// The design canvas: paints document objects through [viewport], pans
 /// and pinch-zooms, and reports taps/drags in world coordinates so
 /// tools can act on them.
@@ -544,8 +554,7 @@ class _DesignPainter extends CustomPainter {
         ..strokeMiterLimit = props.miterLimit
         ..color = props.colorHex == null
             ? colorScheme.primary
-            : Color(0xFF000000 |
-                int.parse(props.colorHex!.substring(1), radix: 16));
+            : _parseColorHex(props.colorHex!);
       // Pressure stroke (ADR-038): per-node widths, one round-capped
       // segment per node pair with the mean of its end widths.
       if (object case RunningStitchObject(:final widthProfile?)) {
@@ -587,8 +596,7 @@ class _DesignPainter extends CustomPainter {
           fillPath,
           Paint()
             ..style = PaintingStyle.fill
-            ..color = Color(
-                0xFF000000 | int.parse(props.fillHex!.substring(1), radix: 16)),
+            ..color = _parseColorHex(props.fillHex!),
         );
       }
       // Transparent stroke = no stroke.
@@ -634,8 +642,7 @@ class _DesignPainter extends CustomPainter {
         fillPath,
         Paint()
           ..style = PaintingStyle.fill
-          ..color = Color(0xFF000000 |
-              int.parse(previewFillColor!.substring(1), radix: 16)),
+          ..color = _parseColorHex(previewFillColor!),
       );
     }
 

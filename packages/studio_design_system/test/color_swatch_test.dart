@@ -38,4 +38,28 @@ void main() {
     expect((swatch.decoration as BoxDecoration).color, isNotNull);
     expect(find.byType(CustomPaint), findsWidgets);
   });
+
+  testWidgets('transparent sentinel renders the none slash', (tester) async {
+    await tester.pumpWidget(_host(StudioColorSwatch(
+      color: studioTransparent,
+      onChanged: (_) {},
+    )));
+
+    // Same "none" look as null: field background + the slash paint.
+    expect((_swatch(tester).decoration as BoxDecoration).color, isNotNull);
+    expect(find.byType(CustomPaint), findsWidgets);
+  });
+
+  testWidgets('partial-alpha 8-digit color renders without throwing',
+      (tester) async {
+    await tester.pumpWidget(_host(StudioColorSwatch(
+      color: '#3e8bff80',
+      onChanged: (_) {},
+    )));
+
+    // Checkerboard + colour overlay; no exception thrown.
+    expect(_swatch(tester), isNotNull);
+    expect(find.byType(CustomPaint), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
 }

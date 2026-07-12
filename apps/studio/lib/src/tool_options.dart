@@ -293,6 +293,17 @@ class ToolOptionsBar extends StatelessWidget {
     ];
   }
 
+  /// Parses `#rrggbb` / `#rrggbbaa`; null for transparent (alpha 00).
+  Color? _chipColor(String hex) {
+    if (isTransparent(hex)) return null;
+    final h = hex.replaceFirst('#', '');
+    if (h.length == 8) {
+      final v = int.parse(h, radix: 16); // rrggbbaa
+      return Color(((v & 0xff) << 24) | ((v >> 8) & 0xffffff));
+    }
+    return Color(0xFF000000 | int.parse(h, radix: 16));
+  }
+
   Widget _colorChip(
     BuildContext context, {
     required String tooltip,
@@ -300,7 +311,8 @@ class ToolOptionsBar extends StatelessWidget {
     required bool filled,
     required void Function(String hex) onPicked,
   }) {
-    final color = Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
+    // null when transparent (alpha 00) — chip shows empty/none.
+    final color = _chipColor(hex);
     return Tooltip(
       message: tooltip,
       waitDuration: const Duration(milliseconds: 400),
@@ -328,7 +340,8 @@ class ToolOptionsBar extends StatelessWidget {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      border: Border.all(color: color, width: 3),
+                      border: Border.all(
+                          color: color ?? AppTokens.textMuted, width: 3),
                     ),
                   ),
                 ),

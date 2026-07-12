@@ -77,4 +77,35 @@ void main() {
         .first);
     expect((reset.decoration! as BoxDecoration).color, const Color(0xFFFFFFFF));
   });
+
+  testWidgets('transparent fill shows the none look', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpWidget(StudioApp(session: StudioSession()));
+
+    // Open the picker on the fill chip, pick the transparent swatch,
+    // and confirm — this dispatches a transparent fill.
+    await tester.tap(find.byKey(const Key('fill-chip')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('color-picker-transparent')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('color-picker-select')));
+    await tester.pumpAndSettle();
+
+    // The fill circle no longer paints a real colour; it falls back to
+    // the field fill (not a black/transparent colour).
+    final fill = tester.widget<Container>(find
+        .descendant(
+            of: find.byKey(const Key('fill-chip')),
+            matching: find.byType(Container))
+        .first);
+    expect((fill.decoration! as BoxDecoration).color,
+        isNot(const Color(0xFF000000)));
+    expect(
+      find.descendant(
+          of: find.byKey(const Key('fill-chip')),
+          matching: find.byType(CustomPaint)),
+      findsWidgets,
+    );
+  });
 }

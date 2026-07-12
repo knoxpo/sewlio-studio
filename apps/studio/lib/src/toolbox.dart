@@ -258,10 +258,15 @@ class _FillStrokeChips extends StatelessWidget {
 
   final WorkspaceViewModel model;
 
-  /// Parsed colour, or null for transparent (rendered as an empty chip).
-  Color? _color(String hex) => isTransparent(hex)
-      ? null
-      : Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
+  /// Parsed opaque colour + alpha byte, or null for transparent.
+  (Color, int)? _color(String hex) {
+    if (isTransparent(hex)) return null;
+    final h = hex.replaceFirst('#', '');
+    final rgb = int.parse(h.substring(0, 6), radix: 16);
+    final alpha = h.length == 8 ? int.parse(h.substring(6, 8), radix: 16) : 255;
+    if (alpha == 0) return null;
+    return (Color(0xFF000000 | rgb), alpha);
+  }
 
   // Summary of the selection's style (else defaults) — updates live on
   // selection change and inspector edits.
@@ -287,51 +292,31 @@ class _FillStrokeChips extends StatelessWidget {
         width: 34,
         height: 34,
         child: Stack(children: [
-          // Stroke chip (hollow), bottom-right.
+          // Stroke swatch (ring), bottom-right, overlapping the fill.
           Positioned(
             right: 0,
             bottom: 0,
             child: InkWell(
               key: const Key('stroke-chip'),
               onTap: () => _edit(context, stroke: true),
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                      color: active ? AppTokens.primary : AppTokens.border,
-                      width: active ? 2 : 1),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                          color: _color(_strokeHex) ?? AppTokens.textMuted,
-                          width: 3),
-                    ),
-                  ),
-                ),
+              customBorder: const CircleBorder(),
+              child: _StrokeCircle(
+                color: _color(_strokeHex),
+                selected: active,
               ),
             ),
           ),
-          // Fill chip, top-left, above the stroke chip.
+          // Fill swatch (solid), top-left, above the stroke.
           Positioned(
             left: 0,
             top: 0,
             child: InkWell(
               key: const Key('fill-chip'),
               onTap: () => _edit(context, stroke: false),
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: _color(_fillHex) ?? AppTokens.field,
-                  border: Border.all(
-                      color: !active ? AppTokens.primary : AppTokens.border,
-                      width: !active ? 2 : 1),
-                ),
+              customBorder: const CircleBorder(),
+              child: _FillCircle(
+                color: _color(_fillHex),
+                selected: !active,
               ),
             ),
           ),
@@ -359,4 +344,120 @@ class _FillStrokeChips extends StatelessWidget {
       ]),
     ]);
   }
+}
+
+/// Solid fill swatch circle: opaque colour filled, partial alpha over a
+/// checkerboard, transparent as the red "none" slash. A blue ring marks
+/// the [selected] (active) target.
+class _FillCircle extends StatelessWidget {
+  const _FillCircle({required this.color, required this.selected});
+
+  /// Opaque colour + alpha byte, or null for transparent/none.
+  final (Color, int)? color;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color;
+    final opaque = c != null && c.$2 == 255;
+    final Widget? child;
+    if (c == null) {
+      child = CustomPaint(painter: _SlashPainter());
+    } else if (c.$2 < 255) {
+      child = CustomPaint(
+        painter: _CheckerPainter(),
+        child: ColoredBox(color: c.$1.withValues(alpha: c.$2 / 255)),
+      );
+    } else {
+      child = null;
+    }
+    return Container(
+      width: 20,
+      height: 20,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: opaque ? c.$1 : AppTokens.field,
+        border: Border.all(
+            color: selected ? AppTokens.primary : AppTokens.border,
+            width: selected ? 2 : 1),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Hollow stroke swatch: a ring whose colour is the stroke colour;
+/// transparent shows the red "none" slash.
+class _StrokeCircle extends StatelessWidget {
+  const _StrokeCircle({required this.color, required this.selected});
+
+  final (Color, int)? color;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color;
+    final ringColor =
+        c == null ? AppTokens.textMuted : c.$1.withValues(alpha: c.$2 / 255);
+    return Container(
+      width: 20,
+      height: 20,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppTokens.panel,
+        border: Border.all(
+            color: selected ? AppTokens.primary : AppTokens.border,
+            width: selected ? 2 : 1),
+      ),
+      child: Center(
+        child: Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: ringColor, width: 3),
+          ),
+          child: c == null ? CustomPaint(painter: _SlashPainter()) : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// Diagonal red slash for a transparent/none swatch.
+class _SlashPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppTokens.error
+      ..strokeWidth = 1.5;
+    canvas.drawLine(
+        Offset(3, size.height - 3), Offset(size.width - 3, 3), paint);
+  }
+
+  @override
+  bool shouldRepaint(_SlashPainter old) => false;
+}
+
+/// Grey checkerboard backing for partial-alpha swatches.
+class _CheckerPainter extends CustomPainter {
+  static const _cell = 4.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+        Offset.zero & size, Paint()..color = const Color(0xFFBDBDBD));
+    final dark = Paint()..color = const Color(0xFF8A8A8A);
+    for (var y = 0.0; y < size.height; y += _cell) {
+      for (var x = 0.0; x < size.width; x += _cell) {
+        if (((x ~/ _cell) + (y ~/ _cell)).isEven) continue;
+        canvas.drawRect(Rect.fromLTWH(x, y, _cell, _cell), dark);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CheckerPainter old) => false;
 }
