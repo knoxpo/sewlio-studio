@@ -82,12 +82,19 @@ final class ObjectNodeState {
       );
 }
 
+/// Whether a layer holds design (vector) elements or generated stitch
+/// objects (ADR-043). Design layers render as vector and are not
+/// digitized; stitch layers are what the digitizer and Stitch view
+/// consume.
+enum LayerKind { design, stitch }
+
 final class LayerNode {
   LayerNode({
     required this.id,
     required this.name,
     this.visible = true,
     this.locked = false,
+    this.kind = LayerKind.design,
     List<HierarchyChildRef>? children,
   }) : children = children ?? [];
 
@@ -95,6 +102,7 @@ final class LayerNode {
   String name;
   bool visible;
   bool locked;
+  LayerKind kind;
   final List<HierarchyChildRef> children;
 
   LayerNode clone() => LayerNode(
@@ -102,6 +110,7 @@ final class LayerNode {
         name: name,
         visible: visible,
         locked: locked,
+        kind: kind,
         children: [for (final child in children) child.copyWith()],
       );
 
@@ -110,6 +119,7 @@ final class LayerNode {
         'name': name,
         'visible': visible,
         'locked': locked,
+        if (kind != LayerKind.design) 'kind': kind.name,
         'children': [for (final child in children) child.toJson()],
       };
 
@@ -118,6 +128,9 @@ final class LayerNode {
         name: json['name'] as String,
         visible: json['visible'] as bool? ?? true,
         locked: json['locked'] as bool? ?? false,
+        kind: json['kind'] == null
+            ? LayerKind.design
+            : LayerKind.values.byName(json['kind'] as String),
         children: [
           for (final child in (json['children'] as List?) ?? const [])
             HierarchyChildRef.fromJson(child as Map<String, dynamic>)

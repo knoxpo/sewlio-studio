@@ -290,7 +290,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
   // ponytail: re-digitized on every read — cache per document revision
   // when designs get big enough to notice.
   StitchSequence get sequence =>
-      digitizeObjects(session.document.flattenVisibleObjects());
+      digitizeObjects(session.document.flattenVisibleStitchObjects());
 
   SimulationViewModel? _sim;
   int? _simRevision;
@@ -806,21 +806,14 @@ final class WorkspaceViewModel extends BarleyViewModel {
     return FontLibrary.instance.cached(target.fontFamily);
   }
 
-  /// Converts the text object [id] into editable stitch objects grouped
-  /// in place (ADR-042): one running/satin object per glyph contour, or a
-  /// single even-odd fill object. Replaces the text as ONE undo step
-  /// (history transaction) and selects the new group.
+  /// Converts a design text object [id] into editable stitch objects on a
+  /// **stitch layer** (ADR-043): one running/satin object per glyph
+  /// contour, or a single even-odd fill object, grouped under a stitch
+  /// layer (created if the document has none). The design text is kept —
+  /// the stitch layer sits on top of the design layer. One undo step.
   void convertTextToStitches(Id id, StitchTarget target) {
     final obj = session.document.objectById(id);
     if (obj is! TextObject || obj.outlines.isEmpty) return;
-
-    final ref = DocumentNodeRef(DocumentNodeKind.object, id);
-    final parentRef = session.document.parentOf(ref);
-    final parent = parentRef == null
-        ? HierarchyParentRef(
-            DocumentNodeKind.layer, session.document.defaultLayer.id)
-        : HierarchyParentRef(parentRef.kind, parentRef.id);
-    final index = session.document.indexOfChild(parent, ref);
 
     // Fill = one even-odd object over all contours; running/satin = one
     // object per glyph contour.
@@ -846,8 +839,16 @@ final class WorkspaceViewModel extends BarleyViewModel {
       name: obj.text.trim().isEmpty ? 'Text' : obj.text.trim(),
     );
     session.history.beginTransaction();
-    execute(RemoveObject(id));
-    execute(AddGroup(group, parent: parent, index: index < 0 ? null : index));
+    // Target the first stitch layer, creating one if none exists.
+    var stitchLayerId = session.document.firstStitchLayer?.id;
+    if (stitchLayerId == null) {
+      stitchLayerId = nextId();
+      execute(AddLayer(LayerNode(
+          id: stitchLayerId, name: 'Stitches', kind: LayerKind.stitch)));
+    }
+    final layerParent =
+        HierarchyParentRef(DocumentNodeKind.layer, stitchLayerId);
+    execute(AddGroup(group, parent: layerParent));
     final groupParent = HierarchyParentRef(DocumentNodeKind.group, group.id);
     for (final child in children) {
       execute(AddObject(child, parent: groupParent));
@@ -1386,7 +1387,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// [suffix] ('.dst' or '.exp').
   ExportResult prepareExport(String suffix) {
     final skipped = <EmbroideryObject>[];
-    final seq = digitizeObjects(session.document.flattenVisibleObjects(),
+    final seq = digitizeObjects(session.document.flattenVisibleStitchObjects(),
         skipped: skipped);
     if (seq.ops.isEmpty) return const ExportResult(error: 'Nothing to export');
     // Machine coordinates are hoop-centered; design space anchors the

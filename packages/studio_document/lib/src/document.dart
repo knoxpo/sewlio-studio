@@ -149,6 +149,26 @@ final class Document {
     return out;
   }
 
+  /// Visible objects in **stitch** layers only (ADR-043) — what the
+  /// digitizer and Stitch view consume. Design-layer (vector) elements
+  /// are excluded until converted onto a stitch layer.
+  List<EmbroideryObject> flattenVisibleStitchObjects() {
+    final out = <EmbroideryObject>[];
+    for (final layer in layers) {
+      if (!layer.visible || layer.kind != LayerKind.stitch) continue;
+      _collectObjects(layer.children, out, visibleOnly: true);
+    }
+    return out;
+  }
+
+  /// The first stitch layer, or null if the document has none yet.
+  LayerNode? get firstStitchLayer {
+    for (final layer in layers) {
+      if (layer.kind == LayerKind.stitch) return layer;
+    }
+    return null;
+  }
+
   List<HierarchyChildRef> flattenedChildren() {
     final out = <HierarchyChildRef>[];
     for (final layer in layers) {
