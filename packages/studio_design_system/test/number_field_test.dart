@@ -8,6 +8,8 @@ Widget _host(Widget child) => MaterialApp(
       home: Scaffold(body: Center(child: SizedBox(width: 200, child: child))),
     );
 
+void _noop(double _) {}
+
 void main() {
   Future<void> submit(WidgetTester tester, String text) async {
     await tester.tap(find.byType(EditableText));
@@ -132,6 +134,54 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
     expect(commits, [3, 4]);
+  });
+
+  testWidgets('horizontal drag scrubs the value by step', (tester) async {
+    var value = 10.0;
+    await tester.pumpWidget(_host(StatefulBuilder(
+      builder: (context, setState) => StudioNumberField(
+        value: value,
+        integer: true,
+        onSubmitted: (v) => setState(() => value = v),
+      ),
+    )));
+
+    // 40px / 4px-per-step * step(1) = +10.
+    await tester.drag(find.byType(StudioNumberField), const Offset(40, 0));
+    await tester.pump();
+    expect(value, 20);
+  });
+
+  testWidgets('double-click resets to defaultValue', (tester) async {
+    var value = 42.0;
+    await tester.pumpWidget(_host(StatefulBuilder(
+      builder: (context, setState) => StudioNumberField(
+        value: value,
+        integer: true,
+        defaultValue: 5,
+        onSubmitted: (v) => setState(() => value = v),
+      ),
+    )));
+
+    await tester.tap(find.byType(StudioNumberField));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byType(StudioNumberField));
+    await tester.pumpAndSettle();
+    expect(value, 5);
+  });
+
+  testWidgets('mixed shows blank with a muted indicator', (tester) async {
+    await tester.pumpWidget(_host(const StudioNumberField(
+      value: 7,
+      mixed: true,
+      onSubmitted: _noop,
+    )));
+
+    expect(find.text('7.00'), findsNothing);
+    expect(find.text('—'), findsOneWidget);
+    expect(
+        tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+        isEmpty);
   });
 
   testWidgets('null onSubmitted disables the field', (tester) async {

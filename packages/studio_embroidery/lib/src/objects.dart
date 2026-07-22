@@ -1,6 +1,8 @@
 import 'package:studio_core/studio_core.dart';
 import 'package:studio_geometry/studio_geometry.dart';
 
+import 'text_style.dart';
+
 /// Visual stroke properties of a design object (fill/stroke system
 /// v1): rendered on the canvas; stitch generators may consume width
 /// later (satin). Immutable value type.
@@ -153,6 +155,7 @@ sealed class EmbroideryObject {
             :final frameWidthMm,
             :final stitchLength,
             :final outlines,
+            :final runs,
           ) =>
             {
               'text': text,
@@ -164,6 +167,7 @@ sealed class EmbroideryObject {
               if (frameWidthMm != null) 'frameWidthMm': frameWidthMm,
               'stitchLength': stitchLength,
               'outlines': [for (final o in outlines) o.toJson()],
+              if (runs.isNotEmpty) 'runs': [for (final r in runs) r.toJson()],
             },
         },
       };
@@ -214,6 +218,10 @@ sealed class EmbroideryObject {
           outlines: [
             for (final o in json['outlines'] as List)
               Path.fromJson(o as Map<String, dynamic>)
+          ],
+          runs: [
+            for (final r in (json['runs'] as List? ?? const []))
+              StyleRun.fromJson(r as Map<String, dynamic>)
           ],
         ),
       _ => throw FormatException('Unknown object type: ${json['type']}'),
@@ -312,6 +320,7 @@ final class TextObject extends EmbroideryObject {
     this.frameWidthMm,
     this.stitchLength = 2.5,
     this.outlines = const [],
+    this.runs = const [],
   });
 
   final String text;
@@ -331,6 +340,34 @@ final class TextObject extends EmbroideryObject {
 
   /// Cached glyph contours in world mm (derived; regenerated on edit).
   final List<Path> outlines;
+
+  /// Per-range character attributes (ADR-040). Empty = whole string uses
+  /// the scalar defaults above. Normalized (sorted, non-overlapping).
+  final List<StyleRun> runs;
+
+  /// Object-level defaults as a [CharAttrs] (what a gap between runs
+  /// inherits): the scalar font/size/tracking plus the stroke fill.
+  CharAttrs get defaultAttrs => CharAttrs(
+        fontFamily: fontFamily,
+        sizeMm: sizeMm,
+        trackingMm: trackingMm,
+        fillHex: stroke.fillHex,
+        strokeHex: stroke.colorHex,
+      );
+
+  /// Attributes resolved (defaults ⊕ run) at rune [offset].
+  CharAttrs attrsAt(int offset) =>
+      defaultAttrs.merge(attrsAtOffset(runs, offset));
+
+  /// A copy with [patch] applied over the rune range `[start, end)`.
+  TextObject withRangeAttrs(int start, int end, CharAttrs patch) => _with(
+        runs: applyPatchToRange(runs, text.runes.length, start, end, patch),
+      );
+
+  /// A copy with the cached glyph [outlines] replaced. Used by the UI to
+  /// refresh outlines after a run/attribute edit (the font engine lives
+  /// in the tools layer, so regeneration happens there, not here).
+  TextObject withOutlines(List<Path> outlines) => _with(outlines: outlines);
 
   Point get anchor => path.start;
 
@@ -363,7 +400,8 @@ final class TextObject extends EmbroideryObject {
         outlines: [for (final o in outlines) o.transformed(t)],
       );
 
-  TextObject _with({Path? path, List<Path>? outlines}) => TextObject(
+  TextObject _with({Path? path, List<Path>? outlines, List<StyleRun>? runs}) =>
+      TextObject(
         id: id,
         path: path ?? this.path,
         stroke: stroke,
@@ -377,5 +415,6 @@ final class TextObject extends EmbroideryObject {
         frameWidthMm: frameWidthMm,
         stitchLength: stitchLength,
         outlines: outlines ?? this.outlines,
+        runs: runs ?? this.runs,
       );
 }

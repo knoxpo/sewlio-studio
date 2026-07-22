@@ -15,6 +15,7 @@ import 'src/file_io.dart';
 import 'src/panels/panel_def.dart';
 import 'src/recents.dart';
 import 'src/tools/tool_contributions.dart';
+import 'src/workspace_view_model.dart';
 
 Future<void> main() async {
   // Tool-contributed dockable panels join the registry before the dock
@@ -35,7 +36,15 @@ Future<void> main() async {
         recentsPath == null ? RecentsStore.memory() : RecentsStore(recentsPath),
     dock: dockPath == null
         ? null
-        : DockController(dockPath, panelIds: defaultPanelIds),
+        : DockController(dockPath,
+            panelIds: defaultPanelIds, rows: designPanelRows),
+    // Domain/simulation docks persist per mode next to the design one.
+    dockFactory: (mode, ids) {
+      final path = appStatePath('workspace_layout_${mode.name}.json');
+      return path == null
+          ? DockController.memory(panelIds: ids)
+          : DockController(path, panelIds: ids);
+    },
   ));
 }
 
@@ -70,13 +79,16 @@ final class StudioSession {
 }
 
 class StudioApp extends StatefulWidget {
-  const StudioApp({super.key, this.session, this.recents, this.dock});
+  const StudioApp(
+      {super.key, this.session, this.recents, this.dock, this.dockFactory});
 
   /// When given, opens as an already-active document tab (test hook —
   /// production startup always lands on the Home Workspace).
   final StudioSession? session;
   final RecentsStore? recents;
   final DockController? dock;
+  final DockController Function(WorkspaceMode mode, List<String> panelIds)?
+      dockFactory;
 
   @override
   State<StudioApp> createState() => _StudioAppState();
@@ -121,7 +133,8 @@ class _StudioAppState extends State<StudioApp> with WidgetsBindingObserver {
       home: AppShell(create: () {
         final app = AppViewModel(
             recents: widget.recents ?? RecentsStore.memory(),
-            dock: widget.dock);
+            dock: widget.dock,
+            dockFactory: widget.dockFactory);
         if (widget.session != null) app.adoptSession(widget.session!);
         return app;
       }),

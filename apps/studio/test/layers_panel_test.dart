@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
+import 'package:studio/src/panels/layers_panel.dart';
 import 'package:studio_core/studio_core.dart';
 import 'package:studio_document/studio_document.dart';
 import 'package:studio_embroidery/studio_embroidery.dart';
@@ -39,6 +40,12 @@ StudioSession richSession() {
 Finder renameField() => find.byWidgetPredicate(
     (w) => w is TextField && (w.key?.toString().contains('rename-') ?? false));
 
+/// A row label inside the Layers panel. Scoped: once a node is
+/// selected, the always-visible Properties panel shows the same name
+/// in its editable field, so a bare text finder is ambiguous.
+Finder layerLabel(String name) => find.descendant(
+    of: find.byType(LayersPanelContent), matching: find.text(name));
+
 void main() {
   testWidgets('clicking the selected layer label starts rename; Enter commits',
       (tester) async {
@@ -46,17 +53,17 @@ void main() {
     expect(find.text('Layer 1'), findsOneWidget);
 
     // First click selects; clicking the selected label starts editing.
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
     expect(renameField(), findsNothing);
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
     expect(renameField(), findsOneWidget);
     await tester.enterText(renameField(), 'Background');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
     expect(renameField(), findsNothing);
-    expect(find.text('Background'), findsOneWidget);
+    expect(layerLabel('Background'), findsOneWidget);
     expect(session.document.layers.single.name, 'Background');
 
     // Undoable: rename went through the command bus.
@@ -67,9 +74,9 @@ void main() {
 
   testWidgets('Escape cancels an in-flight rename', (tester) async {
     final session = await pumpLayers(tester);
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
     await tester.enterText(renameField(), 'Nope');
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -81,7 +88,7 @@ void main() {
   testWidgets('F2 renames the primary selection', (tester) async {
     await pumpLayers(tester);
     // Select the layer (also focuses the panel), then F2.
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.f2);
     await tester.pump();
@@ -123,11 +130,17 @@ void main() {
     ));
     await tester.pumpWidget(StudioApp(session: session));
 
-    // Select the nested object from the Stitches panel (Layers closed).
+    // Select the nested object from the Stitch view's Stitch Objects
+    // panel (Layers closed) — selection is shared across modes.
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Running Stitch').first);
     await tester.pump();
 
-    // Opening Layers reveals the selection: ancestors auto-expanded.
+    // Back in design, opening Layers reveals the selection: ancestors
+    // auto-expanded.
+    await tester.tap(find.byKey(const Key('mode-design')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('dock-tab-layers')));
     await tester.pump();
     expect(find.text('Group 1'), findsOneWidget);
@@ -233,7 +246,9 @@ void main() {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
     await tester.pumpWidget(StudioApp(session: session));
-    // Stitches tab is active by default; two running-stitch rows.
+    // Stitch Objects panel lives in the Stitch view (default active tab).
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     expect(find.text('Running Stitch'), findsNWidgets(2));
     List<Id> order() => [
           for (final o in session.document.flattenVisibleObjects()) o.id,
@@ -259,9 +274,9 @@ void main() {
     expect(find.textContaining('Select:'), findsOneWidget); // status bar
 
     // Open the rename editor, then hit single-key tool shortcuts.
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
     expect(renameField(), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyP); // pen
@@ -282,7 +297,7 @@ void main() {
 
     // Outside any field the shortcut works again: clicking the selected
     // label re-opens rename, Esc leaves it (focus returns to the panel).
-    await tester.tap(find.text('Layer 1'));
+    await tester.tap(layerLabel('Layer 1'));
     await tester.pump();
     expect(renameField(), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);

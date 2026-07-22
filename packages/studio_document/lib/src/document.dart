@@ -33,6 +33,21 @@ final class Document {
   /// Ruler guides.
   final List<Guide> guides = [];
 
+  /// Reusable character styles (ADR-040); text runs reference these by
+  /// id. Mutated only via character-style commands.
+  final List<CharacterStyle> characterStyles = [];
+
+  CharacterStyle? characterStyleById(String id) {
+    for (final style in characterStyles) {
+      if (style.id == id) return style;
+    }
+    return null;
+  }
+
+  /// Document-wide optical-alignment preset table (ADR-040). Mutated only
+  /// via the SetOpticalRules command.
+  final List<OpticalRule> opticalRules = [];
+
   /// Hoop + fabric setup. Mutated only via the UpdateHoop command.
   HoopSettings hoop;
 
@@ -84,6 +99,8 @@ final class Document {
           for (final entry in groups.entries) entry.key: entry.value.clone()
         },
         guides: [for (final guide in guides) guide],
+        characterStyles: [for (final style in characterStyles) style],
+        opticalRules: [for (final rule in opticalRules) rule],
       );
 
   void restore(DocumentSnapshot snapshot) {
@@ -107,6 +124,12 @@ final class Document {
     guides
       ..clear()
       ..addAll(snapshot.guides);
+    characterStyles
+      ..clear()
+      ..addAll(snapshot.characterStyles);
+    opticalRules
+      ..clear()
+      ..addAll(snapshot.opticalRules);
   }
 
   List<EmbroideryObject> flattenObjects() {

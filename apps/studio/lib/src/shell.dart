@@ -9,7 +9,7 @@ import 'package:studio_geometry/studio_geometry.dart' as g;
 
 import 'app_shell.dart';
 import 'app_view_model.dart';
-import 'bottom_panel.dart';
+import 'panels/preview_panels.dart';
 import 'dock/dock_host.dart';
 import 'form_factor.dart';
 import 'menu/app_menus.dart';
@@ -21,6 +21,10 @@ import 'shape_palette.dart';
 import 'tool_options.dart';
 import 'toolbox.dart';
 import 'tools/tool_contributions.dart';
+import 'workspace/domain_module.dart';
+import 'workspace/overlay_def.dart';
+import 'workspace/project_type_registry.dart';
+import 'workspace/simulation_view_model.dart';
 import 'workspace_view_model.dart';
 
 /// CAD editor workspace (barley MVVM view): renders [WorkspaceViewModel]
@@ -37,19 +41,9 @@ class EditorWorkspace extends StatelessWidget {
   Widget build(BuildContext context) {
     // Reassigned every build so the closure captures the live context.
     model.onOpenHoopSetup = () => showDocumentSetup(context, model);
-    final sequence = model.sequence;
-    if (model.mode != WorkspaceMode.design) {
-      // Stitch Preview / Simulation workspaces: full-bleed sequence view,
-      // no editing chrome. ponytail: preview has no zoom/pan yet — grows
-      // one when digitized designs outsize the window.
-      return Column(children: [
-        Expanded(
-          child: model.mode == WorkspaceMode.simulation
-              ? SimulationSection(sequence: sequence)
-              : _stitchPreview(sequence),
-        ),
-        _statusBar(),
-      ]);
+    if (model.mode == WorkspaceMode.domain) return _domainWorkspace(context);
+    if (model.mode == WorkspaceMode.simulation) {
+      return _simulationWorkspace(context);
     }
     return Focus(
         autofocus: true,
@@ -61,12 +55,6 @@ class EditorWorkspace extends StatelessWidget {
                 return _workspaceBody(
                     context, formFactorFor(constraints.maxWidth));
               }),
-            ),
-            BottomPanel(
-              sequence: sequence,
-              hoop: model.hoop,
-              onEditHoop: () => showDocumentSetup(context, model),
-              onExport: (suffix) => exportWithPicker(context, model, suffix),
             ),
             _statusBar(),
           ],
@@ -158,17 +146,210 @@ class EditorWorkspace extends StatelessWidget {
     return null;
   }
 
-  // -------------------------------------------------------- stitch preview
+  // -------------------------------------------------------- domain view
 
-  /// Stitch Preview workspace: the digitized sequence rendered with
-  /// per-thread colors, plus a small stats line.
-  Widget _stitchPreview(StitchSequence sequence) {
-    return Container(
-      color: AppTokens.background,
-      padding: const EdgeInsets.all(24),
+  /// Domain workspace: production authoring for the active project type
+  /// (ARCH-038). Structurally the design layout — rail, mode toolbar,
+  /// shared canvas, dock — with every surface resolved from the
+  /// project type's module. This is an editing view, not a preview:
+  /// selection works on the shared canvas.
+  // ponytail: desktop layout on every form factor — tablet variants
+  // arrive with the design ones once domain tools are real.
+  Widget _domainWorkspace(BuildContext context) {
+    final module = moduleFor(model.projectType);
+    return Focus(
+      autofocus: true,
+      onKeyEvent: model.onKey,
       child: Column(children: [
         Expanded(
-          child: sequence.ops.isEmpty
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ToolboxRail(
+                  model: model,
+                  groups: module.domainToolbox,
+                  touchMode: isTouchPlatform),
+              Expanded(
+                child: Column(children: [
+                  _domainToolbar(module),
+                  Expanded(
+                    child: Builder(
+                      builder: (context) => _rulerFrame(
+                        context,
+                        Stack(children: [
+                          _buildCanvas(),
+                          // Contributed overlays: presentation-only layers
+                          // above the shared canvas (ARCH-038).
+                          for (final overlay
+                              in model.activeOverlays(WorkspaceMode.domain))
+                            Positioned.fill(
+                                child: overlay.builder(context, model)),
+                        ]),
+                      ),
+                    ),
+                  ),
+                  _threadBar(),
+                ]),
+              ),
+              DockHost(
+                  controller: app.dockFor(model.mode, model.projectType),
+                  model: model),
+            ],
+          ),
+        ),
+        _statusBar(),
+      ]),
+    );
+  }
+
+  /// Mode-aware top toolbar: domain label, the module's quick actions
+  /// (disabled placeholders until their commands exist), stitch view
+  /// toggles, overlays, and the same zoom controls as the design view.
+  Widget _domainToolbar(DomainUiModule module) {
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppTokens.panel,
+        border: Border(bottom: BorderSide(color: AppTokens.border)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.edit_outlined, size: 14, color: AppTokens.primary),
+        const SizedBox(width: 4),
+        Text('${module.domainLabel} View',
+            style: const TextStyle(color: AppTokens.primary, fontSize: 11)),
+        const SizedBox(width: 16),
+        // View toggles: visualization only, never document state.
+        _ViewToggleGroup(segments: [
+          (
+            Icons.gesture,
+            'Show stitches (S)',
+            model.showStitches,
+            model.toggleShowStitches,
+          ),
+          (
+            Icons.polyline_outlined,
+            'Show outlines (O)',
+            model.showOutlines,
+            model.toggleShowOutlines,
+          ),
+          (
+            Icons.grain,
+            'Show needle holes (N)',
+            model.showNeedleHoles,
+            model.toggleShowNeedleHoles,
+          ),
+        ]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              for (final action in module.quickActions)
+                StudioIconButton(
+                  key: Key('quick-${action.id}'),
+                  icon: action.icon,
+                  tooltip: '${action.label} — coming soon',
+                  onPressed: null,
+                ),
+            ]),
+          ),
+        ),
+        _overlayToggles(module),
+        StudioIconButton(
+            icon: Icons.fit_screen_outlined,
+            tooltip: 'Fit to canvas',
+            onPressed: model.fitCanvas),
+        StudioIconButton(
+            icon: Icons.zoom_out,
+            tooltip: 'Zoom out',
+            onPressed: () => model.zoomBy(0.8)),
+        _zoomControl(),
+        StudioIconButton(
+            icon: Icons.zoom_in,
+            tooltip: 'Zoom in',
+            onPressed: () => model.zoomBy(1.25)),
+      ]),
+    );
+  }
+
+  /// Thread palette strip (stitch-derived — Stitch view only).
+  Widget _threadBar() {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppTokens.panel,
+        border: Border(top: BorderSide(color: AppTokens.border)),
+      ),
+      child: Row(
+        children: [
+          Text('Colorway 1',
+              style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
+          const SizedBox(width: 12),
+          for (final (index, thread) in model.sequence.threads.indexed)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Container(
+                width: 20,
+                height: 20,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Color(0xFF000000 |
+                      int.parse(thread.color.substring(1), radix: 16)),
+                  borderRadius: BorderRadius.circular(2),
+                  border: Border.all(color: AppTokens.border),
+                ),
+                child: Text('${index + 1}',
+                    style: const TextStyle(
+                        fontSize: 9,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------- simulation view
+
+  /// Simulation workspace: transport toolbar, playback canvas, and the
+  /// module's simulation panels. Execution-oriented — playback state
+  /// lives on [SimulationViewModel]; nothing here mutates the document.
+  Widget _simulationWorkspace(BuildContext context) {
+    final module = moduleFor(model.projectType);
+    final sim = model.simulation;
+    return ListenableBuilder(
+      listenable: sim,
+      builder: (context, _) => Column(children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Column(children: [
+                  _transportBar(module, sim),
+                  Expanded(child: _playbackCanvas(context, sim)),
+                ]),
+              ),
+              DockHost(
+                  controller: app.dockFor(model.mode, model.projectType),
+                  model: model),
+            ],
+          ),
+        ),
+        _statusBar(),
+      ]),
+    );
+  }
+
+  Widget _playbackCanvas(BuildContext context, SimulationViewModel sim) {
+    return Container(
+      color: AppTokens.background,
+      child: Stack(children: [
+        Positioned.fill(
+          child: sim.ops.isEmpty
               ? Center(
                   child: Text('No stitches yet — draw in Design mode.',
                       style:
@@ -177,26 +358,172 @@ class EditorWorkspace extends StatelessWidget {
               : CustomPaint(
                   size: Size.infinite,
                   painter: StitchPreviewPainter(
-                    ops: sequence.ops,
-                    all: sequence.ops,
+                    ops: sim.playback.visible,
+                    all: sim.ops,
                     color: AppTokens.primary,
                     threadColors: [
-                      for (final thread in sequence.threads)
+                      for (final thread in sim.sequence.threads)
                         Color(0xFF000000 |
                             int.parse(thread.color.substring(1), radix: 16)),
                     ],
                   ),
                 ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            '${sequence.stitchCount} stitches · '
-            '${sequence.threads.length} thread(s)',
-            style: TextStyle(fontSize: 11, color: AppTokens.textMuted),
+        for (final overlay in model.activeOverlays(WorkspaceMode.simulation))
+          Positioned.fill(child: overlay.builder(context, model)),
+      ]),
+    );
+  }
+
+  static const _speedPresets = [0.25, 0.5, 1.0, 2.0, 4.0];
+
+  /// Transport controls: play/pause/stop, stepping, scrub, speed, jump
+  /// targets, loop, and path-visibility toggles.
+  Widget _transportBar(DomainUiModule module, SimulationViewModel sim) {
+    final hasOps = sim.ops.isNotEmpty;
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppTokens.panel,
+        border: Border(bottom: BorderSide(color: AppTokens.border)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.play_circle_outline,
+            size: 14, color: AppTokens.primary),
+        const SizedBox(width: 4),
+        const Text('Simulation',
+            style: TextStyle(color: AppTokens.primary, fontSize: 11)),
+        const SizedBox(width: 12),
+        StudioIconButton(
+            key: const Key('sim-play'),
+            icon: sim.playing ? Icons.pause : Icons.play_arrow,
+            tooltip: sim.playing ? 'Pause' : 'Play',
+            onPressed: hasOps ? (sim.playing ? sim.pause : sim.play) : null),
+        StudioIconButton(
+            key: const Key('sim-stop'),
+            icon: Icons.stop,
+            tooltip: 'Stop',
+            onPressed: hasOps ? sim.stop : null),
+        StudioIconButton(
+            key: const Key('sim-step-back'),
+            icon: Icons.skip_previous,
+            tooltip: 'Step back',
+            onPressed: hasOps ? () => sim.stepBy(-1) : null),
+        StudioIconButton(
+            key: const Key('sim-step-forward'),
+            icon: Icons.skip_next,
+            tooltip: 'Step forward',
+            onPressed: hasOps ? () => sim.stepBy(1) : null),
+        // Scrub
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: StudioSlider(
+              key: const Key('sim-scrub'),
+              value: sim.playback.fraction.clamp(0, 1),
+              onChanged: hasOps ? sim.seek : null,
+            ),
           ),
         ),
+        // Speed
+        PopupMenuButton<double>(
+          key: const Key('sim-speed'),
+          tooltip: 'Playback speed',
+          color: AppTokens.popoverSurface,
+          onSelected: sim.setSpeed,
+          itemBuilder: (context) => [
+            for (final preset in _speedPresets)
+              PopupMenuItem(
+                  value: preset,
+                  height: 30,
+                  child:
+                      Text('$preset×', style: const TextStyle(fontSize: 12))),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text('${sim.speed}×',
+                style: TextStyle(fontSize: 11, color: AppTokens.textMuted)),
+          ),
+        ),
+        StudioIconButton(
+            key: const Key('sim-jump-color'),
+            icon: Icons.palette_outlined,
+            tooltip: 'Jump to color change',
+            onPressed:
+                hasOps ? () => sim.jumpToNext(StitchKind.colorChange) : null),
+        StudioIconButton(
+            key: const Key('sim-jump-trim'),
+            icon: Icons.content_cut,
+            tooltip: 'Jump to trim',
+            onPressed: hasOps ? () => sim.jumpToNext(StitchKind.trim) : null),
+        // TODO: jump-to-object needs op→object provenance in Stitch IR.
+        const StudioIconButton(
+            key: Key('sim-jump-object'),
+            icon: Icons.widgets_outlined,
+            tooltip: 'Jump to object — coming soon',
+            onPressed: null),
+        StudioIconButton(
+            key: const Key('sim-loop'),
+            icon: Icons.repeat,
+            tooltip: 'Loop',
+            active: sim.loop,
+            onPressed: sim.toggleLoop),
+        StudioIconButton(
+            key: const Key('sim-show-needle'),
+            icon: Icons.gps_fixed,
+            tooltip: 'Show needle path',
+            active: sim.showNeedle,
+            onPressed: () => sim.toggleShow('needle')),
+        StudioIconButton(
+            key: const Key('sim-show-travel'),
+            icon: Icons.moving,
+            tooltip: 'Show travel',
+            active: sim.showTravel,
+            onPressed: () => sim.toggleShow('travel')),
+        StudioIconButton(
+            key: const Key('sim-show-machine-path'),
+            icon: Icons.route_outlined,
+            tooltip: 'Show machine path',
+            active: sim.showMachinePath,
+            onPressed: () => sim.toggleShow('machine-path')),
+        _overlayToggles(module),
       ]),
+    );
+  }
+
+  /// Overlay visibility menu for the current mode's contributed overlays.
+  Widget _overlayToggles(DomainUiModule module) {
+    final overlays = model.mode == WorkspaceMode.simulation
+        ? module.simulationOverlays
+        : module.domainOverlays;
+    if (overlays.isEmpty) return const SizedBox.shrink();
+    return PopupMenuButton<OverlayDef>(
+      key: const Key('overlay-toggles'),
+      tooltip: 'Overlays',
+      color: AppTokens.popoverSurface,
+      icon:
+          Icon(Icons.visibility_outlined, size: 15, color: AppTokens.textMuted),
+      onSelected: (overlay) => model.toggleOverlay(model.mode, overlay),
+      itemBuilder: (context) => [
+        for (final overlay in overlays)
+          PopupMenuItem(
+            key: Key('overlay-toggle-${overlay.id}'),
+            value: overlay,
+            height: 30,
+            child: Row(children: [
+              Icon(
+                Icons.check,
+                size: 14,
+                color: model.overlayVisible(model.mode, overlay)
+                    ? AppTokens.primary
+                    : Colors.transparent,
+              ),
+              const SizedBox(width: 8),
+              Text(overlay.label, style: const TextStyle(fontSize: 12)),
+            ]),
+          ),
+      ],
     );
   }
 
@@ -219,30 +546,6 @@ class EditorWorkspace extends StatelessWidget {
               const SizedBox(width: 4),
               const Text('Design View',
                   style: TextStyle(color: AppTokens.primary, fontSize: 11)),
-              const SizedBox(width: 16),
-              // View toggles: visualization only, never document state.
-              // Grouped pill, same design language as the header's
-              // workspace switcher (multi-select: each segment toggles).
-              _ViewToggleGroup(segments: [
-                (
-                  Icons.gesture,
-                  'Show stitches (S)',
-                  model.showStitches,
-                  model.toggleShowStitches,
-                ),
-                (
-                  Icons.polyline_outlined,
-                  'Show outlines (O)',
-                  model.showOutlines,
-                  model.toggleShowOutlines,
-                ),
-                (
-                  Icons.grain,
-                  'Show needle holes (N)',
-                  model.showNeedleHoles,
-                  model.toggleShowNeedleHoles,
-                ),
-              ]),
               const Spacer(),
               StudioIconButton(
                   icon: Icons.fit_screen_outlined,
@@ -282,42 +585,6 @@ class EditorWorkspace extends StatelessWidget {
             ]),
           ),
         ),
-        // Thread palette bar
-        Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppTokens.panel,
-            border: Border(top: BorderSide(color: AppTokens.border)),
-          ),
-          child: Row(
-            children: [
-              Text('Colorway 1',
-                  style: TextStyle(color: AppTokens.textMuted, fontSize: 11)),
-              const SizedBox(width: 12),
-              for (final (index, thread) in model.sequence.threads.indexed)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF000000 |
-                          int.parse(thread.color.substring(1), radix: 16)),
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: AppTokens.border),
-                    ),
-                    child: Text('${index + 1}',
-                        style: const TextStyle(
-                            fontSize: 9,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -353,10 +620,15 @@ class EditorWorkspace extends StatelessWidget {
       previewPaths: model.tool.preview,
       previewWidths: model.previewWidths,
       markers: model.canvasMarkers,
-      stitches: model.showStitches ? model.sequence : null,
+      // Design view is pure vector (Illustrator-like): stitch rendering
+      // and its toggles live in the domain (Stitch) view only.
+      stitches: model.mode == WorkspaceMode.domain && model.showStitches
+          ? model.sequence
+          : null,
       highlightStitches: model.highlightedStitchOps,
-      showOutlines: model.showOutlines,
-      showNeedleHoles: model.showNeedleHoles,
+      showOutlines: model.mode == WorkspaceMode.design || model.showOutlines,
+      showNeedleHoles:
+          model.mode == WorkspaceMode.domain && model.showNeedleHoles,
       cursor: cursor,
       paintedCursor: penBadge,
       paintedCursorWorld: penWorld,
@@ -893,9 +1165,9 @@ Future<void> showShortcutsDialog(BuildContext context) {
     ('T', 'Text'),
     ('H', 'Pan'),
     ('R', 'Measure'),
-    ('S', 'Toggle stitch preview'),
-    ('O', 'Toggle outlines'),
-    ('N', 'Toggle needle holes'),
+    ('S', 'Toggle stitches (Stitch view)'),
+    ('O', 'Toggle outlines (Stitch view)'),
+    ('N', 'Toggle needle holes (Stitch view)'),
     ('Esc', 'Cancel current tool action'),
     ('⌘N', 'New project'),
     ('⌘O', 'Open project'),

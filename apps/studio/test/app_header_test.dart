@@ -7,7 +7,7 @@ import 'package:studio_design_system/studio_design_system.dart';
 void main() {
   setUp(() => studioThemeMode.value = ThemeMode.system);
 
-  testWidgets('mode switcher swaps Design / Stitch Preview / Simulation',
+  testWidgets('mode switcher swaps Design / Stitch / Simulation',
       (tester) async {
     tester.view.physicalSize = const Size(1600, 1000);
     tester.view.devicePixelRatio = 1;
@@ -15,14 +15,15 @@ void main() {
 
     expect(find.byType(CanvasView), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('mode-stitchPreview')));
+    // Domain mode is an editing view: the shared canvas stays.
+    await tester.tap(find.byKey(const Key('mode-domain')));
     await tester.pumpAndSettle();
-    expect(find.byType(CanvasView), findsNothing);
-    expect(find.textContaining('No stitches yet'), findsOneWidget);
+    expect(find.byType(CanvasView), findsOneWidget);
+    expect(find.text('Stitch View'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('mode-simulation')));
     await tester.pumpAndSettle();
-    expect(find.text('STITCH SIMULATION'), findsOneWidget);
+    expect(find.byKey(const Key('sim-play')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('mode-design')));
     await tester.pumpAndSettle();

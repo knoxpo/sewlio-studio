@@ -21,6 +21,11 @@ import 'file_io.dart';
 import 'font_library.dart';
 import 'stroke_style.dart';
 import 'tools/tool_contributions.dart';
+import 'workspace/cursor_registry.dart';
+import 'workspace/overlay_def.dart';
+import 'workspace/project_type.dart';
+import 'workspace/project_type_registry.dart';
+import 'workspace/simulation_view_model.dart';
 
 enum ToolKind {
   select,
@@ -43,8 +48,11 @@ final class ExportResult {
   final int skipped;
 }
 
-/// Primary editor workspaces, switched from the app header.
-enum WorkspaceMode { design, stitchPreview, simulation }
+/// Primary editor workspaces, switched from the app header. `domain` is
+/// the production-authoring view — its label and contents resolve from
+/// the project type (embroidery → Stitch, weaving → Weaving), never
+/// hardcoded here (ARCH-038).
+enum WorkspaceMode { design, domain, simulation }
 
 /// A floating palette's placement: docked on a canvas-edge hotspot, or
 /// free at an absolute canvas offset.
@@ -60,11 +68,18 @@ final class PalettePlacement {
 /// model and forwards gestures/dialog results; every document mutation
 /// still flows through commands (ARCH-003).
 final class WorkspaceViewModel extends BarleyViewModel {
-  WorkspaceViewModel({required StudioSession session}) {
+  WorkspaceViewModel({
+    required StudioSession session,
+    this.projectType = ProjectType.embroidery,
+  }) {
     _bind(session);
   }
 
   late StudioSession session;
+
+  /// Persistent production type (ARCH-034) — resolves the domain-mode
+  /// contributions. Set at project creation, never a toolbar switch.
+  final ProjectType projectType;
   final viewport = ViewportController();
   final selection = SelectionController();
   final cursor = ValueNotifier<g.Point?>(null);
@@ -102,6 +117,46 @@ final class WorkspaceViewModel extends BarleyViewModel {
     mode = value;
     notify();
   }
+
+  /// Per-mode hidden overlay ids (view state; defaults come from each
+  /// overlay's defaultVisible flag).
+  final _hiddenOverlays = <WorkspaceMode, Set<String>>{};
+
+  bool overlayVisible(WorkspaceMode forMode, OverlayDef overlay) {
+    final hidden = _hiddenOverlays[forMode];
+    return hidden == null
+        ? overlay.defaultVisible
+        : !hidden.contains(overlay.id);
+  }
+
+  void toggleOverlay(WorkspaceMode forMode, OverlayDef overlay) {
+    final hidden = _hiddenOverlays.putIfAbsent(
+        forMode,
+        () => {
+              // Seed from defaults so the first toggle behaves.
+              for (final o in _overlaysFor(forMode))
+                if (!o.defaultVisible) o.id,
+            });
+    hidden.contains(overlay.id)
+        ? hidden.remove(overlay.id)
+        : hidden.add(overlay.id);
+    notify();
+  }
+
+  List<OverlayDef> _overlaysFor(WorkspaceMode forMode) {
+    final module = moduleFor(projectType);
+    return switch (forMode) {
+      WorkspaceMode.domain => module.domainOverlays,
+      WorkspaceMode.simulation => module.simulationOverlays,
+      WorkspaceMode.design => const [],
+    };
+  }
+
+  /// Overlays to render in [forMode], visibility toggles applied.
+  List<OverlayDef> activeOverlays(WorkspaceMode forMode) => [
+        for (final o in _overlaysFor(forMode))
+          if (overlayVisible(forMode, o)) o,
+      ];
 
   /// Bound by the view each build: the Hoop tool opens Document Setup.
   void Function()? onOpenHoopSetup;
@@ -234,6 +289,20 @@ final class WorkspaceViewModel extends BarleyViewModel {
   StitchSequence get sequence =>
       digitizeObjects(session.document.flattenVisibleObjects());
 
+  SimulationViewModel? _sim;
+  int? _simRevision;
+
+  /// Simulation-mode playback state, rebuilt when the document changes
+  /// (the digitized sequence is derived per revision).
+  SimulationViewModel get simulation {
+    if (_sim == null || _simRevision != session.document.revision) {
+      _sim?.dispose();
+      _sim = SimulationViewModel(sequence)..addListener(notify);
+      _simRevision = session.document.revision;
+    }
+    return _sim!;
+  }
+
   /// Stitches-panel glyph highlight: a text object's outline range
   /// [start, end). View state only — never touches the document.
   ({Id id, int start, int end})? stitchHighlight;
@@ -347,6 +416,7 @@ final class WorkspaceViewModel extends BarleyViewModel {
   @override
   void dispose() {
     _eventSub?.cancel();
+    _sim?.dispose();
     super.dispose();
   }
 
@@ -641,7 +711,78 @@ final class WorkspaceViewModel extends BarleyViewModel {
   void undo() => session.history.undo();
   void redo() => session.history.redo();
 
-  void execute(Command command) => session.history.execute(command);
+  void execute(Command command, {String? mergeKey}) =>
+      session.history.execute(command, mergeKey: mergeKey);
+
+  // ------------------------------------------------ character formatting
+
+  TextTool get _textTool => tools[ToolKind.text]! as TextTool;
+
+  /// The text object the Character panel targets: the one being edited on
+  /// canvas, else the primary selection when it is a text object.
+  TextObject? get characterTarget {
+    final tool = _textTool;
+    if (tool.editing && tool.editingId != null) {
+      final o = session.document.objectById(tool.editingId!);
+      if (o is TextObject) return o;
+    }
+    final primary = primarySelectedObject;
+    return primary is TextObject ? primary : null;
+  }
+
+  /// The active character range for the Character panel: the on-canvas
+  /// text selection when editing, else the whole string. Returns null
+  /// when there is no text target.
+  ({int start, int end})? get characterRange {
+    final target = characterTarget;
+    if (target == null) return null;
+    final tool = _textTool;
+    if (tool.editing && tool.editingId == target.id && tool.hasSelection) {
+      return (start: tool.selectionStart, end: tool.selectionEnd);
+    }
+    return (start: 0, end: target.text.runes.length);
+  }
+
+  /// Applies [patch] to the active character range and regenerates the
+  /// cached outlines with the run-aware layout, as one undoable edit.
+  /// Pass [mergeKey] to coalesce a scrub into a single undo entry.
+  Future<void> applyCharAttrs(CharAttrs patch, {String? mergeKey}) async {
+    final target = characterTarget;
+    final range = characterRange;
+    if (target == null || range == null) return;
+    final font = await FontLibrary.instance.load(target.fontFamily);
+    final updated = target.withRangeAttrs(range.start, range.end, patch);
+    final outlines = layoutText(
+      updated.text,
+      font,
+      origin: updated.anchor,
+      sizeMm: updated.sizeMm,
+      trackingMm: updated.trackingMm,
+      lineHeight: updated.lineHeight,
+      align: MonoTextAlign.values.asNameMap()[updated.alignment] ??
+          MonoTextAlign.left,
+      frameWidthMm: updated.frameWidthMm,
+      attrsOf: (offset) => updated.attrsAt(offset),
+    );
+    execute(ReplaceObject(updated.withOutlines(outlines)), mergeKey: mergeKey);
+  }
+
+  /// The merged attributes over the active range, plus the set of fields
+  /// that are mixed across it — drives the panel's value display.
+  ({CharAttrs shared, Set<String> mixed})? get characterAttrs {
+    final target = characterTarget;
+    final range = characterRange;
+    if (target == null || range == null) return null;
+    return queryRange(target.runs, target.defaultAttrs, range.start, range.end);
+  }
+
+  /// Capabilities of the target object's font (drives enable/disable of
+  /// OpenType / variable-axis controls). Empty when no font is cached.
+  TextFont? get characterFont {
+    final target = characterTarget;
+    if (target == null) return null;
+    return FontLibrary.instance.cached(target.fontFamily);
+  }
 
   /// Next free object id. Opened documents restore their stored ids
   /// ('obj-N'), while each session's sequential generator restarts at
@@ -798,18 +939,20 @@ final class WorkspaceViewModel extends BarleyViewModel {
       deleteSelection();
       return KeyEventResult.handled;
     }
-    // View toggles (canvas toolbar).
-    if (event.logicalKey == LogicalKeyboardKey.keyS) {
-      toggleShowStitches();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.keyO) {
-      toggleShowOutlines();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.keyN) {
-      toggleShowNeedleHoles();
-      return KeyEventResult.handled;
+    // View toggles (Stitch-view toolbar only — design is pure vector).
+    if (mode == WorkspaceMode.domain) {
+      if (event.logicalKey == LogicalKeyboardKey.keyS) {
+        toggleShowStitches();
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.keyO) {
+        toggleShowOutlines();
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.keyN) {
+        toggleShowNeedleHoles();
+        return KeyEventResult.handled;
+      }
     }
     final group = _shortcuts[event.logicalKey];
     if (group == null) return KeyEventResult.ignored;
@@ -821,15 +964,30 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// Canvas typing (KeyDown + KeyRepeat): Enter commits, Shift+Enter
   /// breaks the line, Esc commits, Backspace deletes.
   KeyEventResult _onTextKey(TextTool text, KeyEvent event) {
-    // Let menu chords (⌘S, ⌘Z, …) through even while typing.
-    if (HardwareKeyboard.instance.isMetaPressed ||
-        HardwareKeyboard.instance.isControlPressed) {
+    final key = event.logicalKey;
+    final meta = HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isControlPressed;
+    final shift = HardwareKeyboard.instance.isShiftPressed;
+    if (meta) {
+      // Editing chords intercepted before the menu chords fall through:
+      // select-all and word-wise caret motion (extended with Shift).
+      if (key == LogicalKeyboardKey.keyA) {
+        text.selectAll();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.arrowLeft) {
+        text.moveCaretByWord(-1, extend: shift);
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.arrowRight) {
+        text.moveCaretByWord(1, extend: shift);
+        return KeyEventResult.handled;
+      }
+      // Let other menu chords (⌘S save, ⌘Z undo, …) through.
       return KeyEventResult.ignored;
     }
-    final key = event.logicalKey;
     if (key == LogicalKeyboardKey.escape ||
-        key == LogicalKeyboardKey.enter &&
-            !HardwareKeyboard.instance.isShiftPressed) {
+        key == LogicalKeyboardKey.enter && !shift) {
       text.commit();
       return KeyEventResult.handled;
     }
@@ -846,19 +1004,19 @@ final class WorkspaceViewModel extends BarleyViewModel {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowLeft) {
-      text.moveCaret(-1);
+      text.moveCaret(-1, extend: shift);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowRight) {
-      text.moveCaret(1);
+      text.moveCaret(1, extend: shift);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.home) {
-      text.moveCaretToEdge(home: true);
+      text.moveCaretToEdge(home: true, extend: shift);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.end) {
-      text.moveCaretToEdge(home: false);
+      text.moveCaretToEdge(home: false, extend: shift);
       return KeyEventResult.handled;
     }
     final character = event.character;
@@ -914,39 +1072,6 @@ final class WorkspaceViewModel extends BarleyViewModel {
   /// notifier so hover moves don't trigger full workspace rebuilds.
   final canvasCursor = ValueNotifier<MouseCursor>(SystemMouseCursors.basic);
 
-  static const _cursorMap = <ToolCursor, MouseCursor>{
-    ToolCursor.basic: SystemMouseCursors.basic,
-    ToolCursor.crosshair: SystemMouseCursors.precise,
-    ToolCursor.text: SystemMouseCursors.text,
-    ToolCursor.move: SystemMouseCursors.move,
-    ToolCursor.grab: SystemMouseCursors.grab,
-    ToolCursor.grabbing: SystemMouseCursors.grabbing,
-    ToolCursor.zoomIn: SystemMouseCursors.zoomIn,
-    ToolCursor.zoomOut: SystemMouseCursors.zoomOut,
-    ToolCursor.resizeNS: SystemMouseCursors.resizeUpDown,
-    ToolCursor.resizeEW: SystemMouseCursors.resizeLeftRight,
-    // Painted by the canvas (system cursor hidden): pen family, plus
-    // rotation and diagonal resize — macOS ships no public cursors for
-    // those, so native mapping renders a plain arrow there.
-    ToolCursor.rotate: SystemMouseCursors.none,
-    ToolCursor.resizeNWSE: SystemMouseCursors.none,
-    ToolCursor.resizeNESW: SystemMouseCursors.none,
-    ToolCursor.pen: SystemMouseCursors.none,
-    ToolCursor.penAdd: SystemMouseCursors.none,
-    ToolCursor.penMinus: SystemMouseCursors.none,
-    ToolCursor.penClose: SystemMouseCursors.none,
-  };
-
-  static const _paintedCursors = <ToolCursor, PaintedCursor>{
-    ToolCursor.pen: PaintedCursor.penStart,
-    ToolCursor.penAdd: PaintedCursor.penAdd,
-    ToolCursor.penMinus: PaintedCursor.penRemove,
-    ToolCursor.penClose: PaintedCursor.penClose,
-    ToolCursor.rotate: PaintedCursor.rotate,
-    ToolCursor.resizeNWSE: PaintedCursor.resizeNWSE,
-    ToolCursor.resizeNESW: PaintedCursor.resizeNESW,
-  };
-
   /// Painted pen-cursor badge (null unless the pen family is active).
   final paintedCursor = ValueNotifier<PaintedCursor?>(null);
 
@@ -982,9 +1107,11 @@ final class WorkspaceViewModel extends BarleyViewModel {
       paintedCursor.value = null;
       return;
     }
-    final kind = tool.cursorAt(world);
-    canvasCursor.value = _cursorMap[kind]!;
-    paintedCursor.value = _paintedCursors[kind];
+    final spec = cursorRegistry.resolve(
+        toolContributionFor(activeKind)?.id ?? 'core.select',
+        tool.cursorAt(world));
+    canvasCursor.value = spec.native;
+    paintedCursor.value = spec.painted;
   }
 
   void hover(g.Point world) {

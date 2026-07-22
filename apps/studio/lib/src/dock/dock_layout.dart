@@ -51,9 +51,15 @@ final class DockLayout {
   final List<DockGroup> groups;
   final Set<String> hidden;
 
-  /// The out-of-the-box layout: one group with every registered panel.
-  factory DockLayout.defaults(List<String> panelIds) => DockLayout(groups: [
-        DockGroup(panelIds: [...panelIds])
+  /// The out-of-the-box layout: one group with every registered panel;
+  /// no groups at all for panel-less modes (planned domain modules).
+  factory DockLayout.defaults(List<String> panelIds) =>
+      DockLayout.grouped([panelIds]);
+
+  /// A default layout of stacked tab groups, one per row.
+  factory DockLayout.grouped(List<List<String>> rows) => DockLayout(groups: [
+        for (final row in rows)
+          if (row.isNotEmpty) DockGroup(panelIds: [...row])
       ]);
 
   String encode() => jsonEncode({
@@ -89,8 +95,11 @@ final class DockLayout {
     groups.removeWhere((g) => g.panelIds.isEmpty);
     final missing = registeredIds.where((id) => !placed.contains(id));
     if (missing.isNotEmpty) {
-      if (groups.isEmpty) groups.add(DockGroup(panelIds: []));
-      groups.last.panelIds.addAll(missing);
+      if (groups.isEmpty) {
+        groups.add(DockGroup(panelIds: [...missing]));
+      } else {
+        groups.last.panelIds.addAll(missing);
+      }
     }
     for (final group in groups) {
       if (!group.panelIds.contains(group.activeId)) {

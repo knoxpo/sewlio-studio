@@ -19,17 +19,21 @@ Future<DockController> pumpEditor(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('default dock shows the three tabs; switching tabs works',
+  testWidgets('default dock shows the design tabs; switching tabs works',
       (tester) async {
     await pumpEditor(tester);
-    expect(find.byKey(const Key('dock-tab-stitches')), findsOneWidget);
     expect(find.byKey(const Key('dock-tab-layers')), findsOneWidget);
     expect(find.byKey(const Key('dock-tab-properties')), findsOneWidget);
-    // Stitches is the default active tab (summary footer visible).
-    expect(find.text('Stitch Count'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('dock-tab-layers')));
-    await tester.pump();
+    expect(find.byKey(const Key('dock-tab-hoop')), findsOneWidget);
+    // Stitches panel is a domain (Stitch view) panel, not a design one.
+    expect(find.byKey(const Key('dock-tab-stitches')), findsNothing);
+    // Layers is the default active tab (first registered panel).
     expect(find.byTooltip('Add layer'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('dock-tab-hoop')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('dock-tab-hoop')));
+    await tester.pump();
+    expect(find.text('Edit Hoop…'), findsOneWidget);
     debugDefaultTargetPlatformOverride = null;
   });
 
@@ -51,7 +55,10 @@ void main() {
     await tester.pump();
     expect(dock.layout.groups, hasLength(2));
     expect(dock.layout.groups[0].panelIds, ['layers']);
-    expect(dock.layout.groups[1].panelIds, ['stitches', 'properties']);
+    expect(dock.layout.groups[1].panelIds, [
+      for (final id in defaultPanelIds)
+        if (id != 'layers') id
+    ]);
     // Both groups render their tab bars.
     expect(find.byKey(const Key('dock-tab-layers')), findsOneWidget);
     expect(find.byKey(const Key('dock-splitter-1')), findsOneWidget);
@@ -61,24 +68,28 @@ void main() {
   testWidgets('dragging a tab onto another tab joins/reorders the group',
       (tester) async {
     final dock = await pumpEditor(tester);
-    final target = find.byKey(const Key('dock-tab-properties'));
+    final target = find.byKey(const Key('dock-tab-layers'));
     final gesture = await tester.startGesture(
-        tester.getCenter(find.byKey(const Key('dock-tab-stitches'))));
+        tester.getCenter(find.byKey(const Key('dock-tab-properties'))));
     // The drag recognizer claims on the first move and fires
     // onDragStarted on the second (see the split-out test above).
     await gesture.moveBy(const Offset(0, 10));
     await tester.pump();
     await gesture.moveBy(const Offset(0, 10));
     await tester.pump();
-    // Hover the left half of the Properties tab → insert before it.
-    // (Its right half may sit past the dock edge in the scrollable
-    // tab bar, so the left half is the reliably visible drop zone.)
+    // Hover the left half of the Layers tab → insert before it (both
+    // leading tabs are reliably visible in the scrollable tab bar).
     await gesture.moveTo(tester.getTopLeft(target) + const Offset(20, 12));
     await tester.pump();
     await gesture.up();
     await tester.pump();
-    expect(dock.layout.groups.single.panelIds,
-        ['layers', 'stitches', 'properties']);
+    expect(dock.layout.groups.single.panelIds, [
+      'properties',
+      'layers',
+      'hoop',
+      for (final id in defaultPanelIds)
+        if (!{'properties', 'layers', 'hoop'}.contains(id)) id,
+    ]);
     debugDefaultTargetPlatformOverride = null;
   });
 

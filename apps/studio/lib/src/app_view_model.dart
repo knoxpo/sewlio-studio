@@ -7,6 +7,8 @@ import 'dock/dock_controller.dart';
 import 'file_io.dart';
 import 'panels/panel_def.dart';
 import 'recents.dart';
+import 'workspace/project_type.dart';
+import 'workspace/project_type_registry.dart';
 import 'workspace_view_model.dart';
 
 /// One open document: engine session + editor state + tab bookkeeping.
@@ -34,17 +36,52 @@ final class DocumentTab {
 /// active workspace (Home vs Editor), and the recent-projects index.
 /// No document is ever auto-created; the app boots to Home.
 final class AppViewModel extends BarleyViewModel {
-  AppViewModel({required this.recents, DockController? dock})
-      : dock = dock ?? DockController.memory(panelIds: defaultPanelIds) {
+  AppViewModel({
+    required this.recents,
+    DockController? dock,
+    DockController Function(WorkspaceMode mode, List<String> panelIds)?
+        dockFactory,
+  })  : dock = dock ??
+            DockController.memory(
+                panelIds: designPanelIds, rows: designPanelRows),
+        _dockFactory = dockFactory {
     // Menus (Window > Show/Hide panel) reflect dock changes.
     this.dock.addListener(notify);
   }
 
   final RecentsStore recents;
 
-  /// Workspace dock layout — application chrome shared across document
+  /// Design-mode dock layout — application chrome shared across document
   /// tabs (FR-1003), never document state.
   final DockController dock;
+
+  /// Builds persisted controllers for the non-design modes (main wires
+  /// per-mode layout files; tests get in-memory fallbacks).
+  final DockController Function(WorkspaceMode mode, List<String> panelIds)?
+      _dockFactory;
+
+  final _modeDocks = <String, DockController>{};
+
+  /// Dock controller for [mode]: design shares [dock]; domain and
+  /// simulation get lazy per-mode controllers whose panels resolve from
+  /// the active project type's module (ARCH-038).
+  // ponytail: layouts persist per mode, not per project type — suffix
+  // the layout file with the type id when a second type is creatable.
+  DockController dockFor(WorkspaceMode mode, ProjectType type) {
+    if (mode == WorkspaceMode.design) return dock;
+    return _modeDocks.putIfAbsent('${mode.name}-${type.id}', () {
+      final module = moduleFor(type);
+      final panels = mode == WorkspaceMode.domain
+          ? module.domainPanels
+          : module.simulationPanels;
+      final ids = [for (final p in panels) p.id];
+      final controller =
+          _dockFactory?.call(mode, ids) ?? DockController.memory(panelIds: ids);
+      controller.load();
+      controller.addListener(notify);
+      return controller;
+    });
+  }
 
   final tabs = <DocumentTab>[];
 
@@ -79,6 +116,7 @@ final class AppViewModel extends BarleyViewModel {
     required HoopSettings hoop,
     ProjectUnits units = ProjectUnits.mm,
     ColorProfile colorProfile = ColorProfile.srgb,
+    ProjectType type = ProjectType.embroidery,
     String? location,
   }) async {
     final document = Document(
@@ -88,7 +126,7 @@ final class AppViewModel extends BarleyViewModel {
       units: units,
       colorProfile: colorProfile,
     );
-    final tab = _addTab(StudioSession(document: document));
+    final tab = _addTab(StudioSession(document: document), type: type);
     if (location != null) await saveTab(tab, location);
     notify();
     return tab;
@@ -144,9 +182,13 @@ final class AppViewModel extends BarleyViewModel {
   /// Test hook: wraps a pre-built engine session in an active tab.
   DocumentTab adoptSession(StudioSession session) => _addTab(session);
 
-  DocumentTab _addTab(StudioSession session, {String? path}) {
+  DocumentTab _addTab(
+    StudioSession session, {
+    String? path,
+    ProjectType type = ProjectType.embroidery,
+  }) {
     final tab = DocumentTab(
-      WorkspaceViewModel(session: session),
+      WorkspaceViewModel(session: session, projectType: type),
       path: path,
       savedRevision: session.document.revision,
     );

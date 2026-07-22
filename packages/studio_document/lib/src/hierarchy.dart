@@ -177,6 +177,8 @@ final class DocumentSnapshot {
     required this.layers,
     required this.groups,
     required this.guides,
+    this.characterStyles = const [],
+    this.opticalRules = const [],
   });
 
   final String name;
@@ -186,6 +188,8 @@ final class DocumentSnapshot {
   final List<LayerNode> layers;
   final Map<Id, GroupNode> groups;
   final List<Guide> guides;
+  final List<CharacterStyle> characterStyles;
+  final List<OpticalRule> opticalRules;
 }
 
 final class DuplicatedSubtree {

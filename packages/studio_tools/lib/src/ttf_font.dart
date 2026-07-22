@@ -109,6 +109,22 @@ final class TtfTextFont implements TextFont {
 
   double _scale(double sizeMm) => sizeMm / _unitsPerEm;
 
+  // ponytail: `glyf`-only parser has no shaping/variation/style tables
+  // wired up, so it honestly reports a single style and no
+  // variation/feature support until a shaping engine lands.
+  @override
+  List<String> get styleNames => const ['Regular'];
+
+  @override
+  List<({String tag, double min, double def, double max})> variationAxes() =>
+      const [];
+
+  @override
+  List<String> availableFeatures() => const [];
+
+  @override
+  bool supportsFeature(String tag) => false;
+
   @override
   bool supports(int rune) => _glyphIndex(rune) != 0;
 

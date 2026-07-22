@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studio/main.dart';
+import 'package:studio/src/object_panel.dart';
 import 'package:studio_canvas/studio_canvas.dart';
 import 'package:studio_design_system/studio_design_system.dart';
 import 'package:studio_core/studio_core.dart';
@@ -18,13 +19,15 @@ void main() {
 
     expect(find.text('File'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
-    expect(find.text('Stitches'), findsWidgets); // tab + list header
+    // Design dock is vector-only: no Stitches panel (Illustrator-like).
+    expect(find.byKey(const Key('dock-tab-stitches')), findsNothing);
     expect(find.text('Layers'), findsOneWidget);
     expect(find.text('Properties'), findsOneWidget);
     expect(find.byType(CanvasView), findsOneWidget);
     expect(find.byKey(const Key('doc-title')), findsOneWidget);
-    expect(find.text('STITCH SIMULATION'), findsOneWidget);
-    expect(find.text('HOOP'), findsOneWidget);
+    // Hoop + Stitch Simulation moved from the bottom strip into the dock.
+    expect(find.byKey(const Key('dock-tab-hoop')), findsOneWidget);
+    expect(find.byKey(const Key('dock-tab-stitch-simulation')), findsOneWidget);
     expect(find.textContaining('Select:'), findsOneWidget); // status bar
   });
 
@@ -52,8 +55,12 @@ void main() {
 
     expect(session.document.objects, hasLength(1));
     expect(find.text('Untitled.swl*'), findsOneWidget);
-    // Stitch list shows the object with a real count.
+    // The Stitch view's object list shows the new object.
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     expect(find.text('Running Stitch'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('mode-design')));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
@@ -81,8 +88,13 @@ void main() {
     await tester.tapAt(canvas + const Offset(80, 60));
     await tester.pump(const Duration(milliseconds: 400));
 
+    // Select the object from the Stitch view's list (selection shared).
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Running Stitch'));
     await tester.pump();
+    await tester.tap(find.byKey(const Key('mode-design')));
+    await tester.pumpAndSettle();
     // The tab bar scrolls horizontally — the Properties tab may sit
     // past the dock edge under touch-sized chrome.
     await tester.ensureVisible(find.byKey(const Key('dock-tab-properties')));
@@ -90,9 +102,14 @@ void main() {
     await tester.tap(find.byKey(const Key('dock-tab-properties')));
     await tester.pump();
 
+    // Scoped to the panel: 'Transform' also names a dock tab and
+    // 'Stitch' also labels the header's domain-mode segment.
     expect(find.text('Object Properties'), findsOneWidget);
-    expect(find.text('Transform'), findsOneWidget);
-    expect(find.text('Stitch'), findsOneWidget);
+    final panel = find.byType(ObjectPropertiesPanel);
+    expect(find.descendant(of: panel, matching: find.text('Transform')),
+        findsOneWidget);
+    expect(find.descendant(of: panel, matching: find.text('Stitch')),
+        findsOneWidget);
   });
 
   testWidgets('layers tab shows hierarchy and hidden groups drop from stitches',
@@ -137,10 +154,9 @@ void main() {
     await tester.tap(find.byType(StudioSwitch).first);
     await tester.pump();
 
-    await tester.ensureVisible(find.byKey(const Key('dock-tab-stitches')));
-    await tester.pump();
-    await tester.tap(find.byKey(const Key('dock-tab-stitches')));
-    await tester.pump();
+    // Hidden group's objects drop from the Stitch view's object list.
+    await tester.tap(find.byKey(const Key('mode-domain')));
+    await tester.pumpAndSettle();
     expect(find.text('Running Stitch'), findsNothing);
   });
 

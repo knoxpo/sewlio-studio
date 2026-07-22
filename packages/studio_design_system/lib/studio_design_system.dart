@@ -7,14 +7,18 @@
 library;
 
 export 'src/button.dart';
+export 'src/collapsible_section.dart';
 export 'src/color_picker.dart';
+export 'src/color_swatch.dart';
 export 'src/dialog.dart';
 export 'src/dropdown.dart';
 export 'src/form.dart';
 export 'src/number_field.dart';
 export 'src/panel.dart';
+export 'src/searchable_dropdown.dart';
 export 'src/slider.dart';
 export 'src/switch.dart';
 export 'src/text_field.dart';
 export 'src/theme.dart';
+export 'src/toggle_group.dart';
 export 'src/tokens.dart';

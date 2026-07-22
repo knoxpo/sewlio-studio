@@ -93,11 +93,16 @@ class ToolboxRail extends StatelessWidget {
   const ToolboxRail({
     super.key,
     required this.model,
+    this.groups,
     this.touchMode = false,
     this.floating = false,
   });
 
   final WorkspaceViewModel model;
+
+  /// Rail contents; defaults to the design toolbox. Domain modes pass
+  /// the active module's toolbox (ARCH-038).
+  final List<ToolboxGroup>? groups;
 
   /// 48 dp tool targets (platform-requirements §14); rail widens to fit.
   final bool touchMode;
@@ -134,7 +139,7 @@ class ToolboxRail extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               child: Column(children: [
-                for (final group in toolboxGroups) _slot(group),
+                for (final group in groups ?? toolboxGroups) _slot(group),
               ]),
             ),
           ),
