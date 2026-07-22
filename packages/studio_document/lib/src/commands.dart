@@ -38,10 +38,15 @@ final class TransformObject extends Command {
 }
 
 /// Applies [transform] to all descendant objects from [refs].
+/// [rotateDeg] declares how much of the transform is rotation (a
+/// rotate-handle drag) so objects accumulate their orientation
+/// (ADR-045) — extracting the angle from an arbitrary affine matrix
+/// would be lossy.
 final class TransformSelection extends Command {
-  const TransformSelection(this.refs, this.transform);
+  const TransformSelection(this.refs, this.transform, {this.rotateDeg = 0});
   final List<DocumentNodeRef> refs;
   final Transform2 transform;
+  final double rotateDeg;
 }
 
 /// Replaces the object with the same id (parameter edits from the
@@ -460,7 +465,11 @@ void registerDocumentHandlers(CommandBus bus, Document document) {
     for (final id in ids) {
       final object = document.objectById(id);
       if (object == null) continue;
-      document.objects[id] = object.transformedBy(command.transform);
+      var next = object.transformedBy(command.transform);
+      if (command.rotateDeg != 0) {
+        next = next.withRotationDeg(next.rotationDeg + command.rotateDeg);
+      }
+      document.objects[id] = next;
     }
     return _restoreOutcome(
       document,

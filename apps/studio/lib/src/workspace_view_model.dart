@@ -282,10 +282,18 @@ final class WorkspaceViewModel extends BarleyViewModel {
   bool get showsTransformBox =>
       activeKind == ToolKind.select && selectionTransformable;
 
-  /// In-progress drag transform: the canvas draws the transform box
-  /// through it so the box moves/scales/rotates with the object.
+  /// The transform box in the selection's own frame (ADR-045): an
+  /// oriented box for a rotated object. The canvas maps its corners to
+  /// world through [liveBoxTransform].
+  g.Bounds? get transformBoxBounds =>
+      (tools[ToolKind.select] as SelectTool).frameBounds;
+
+  /// World transform for the transform-box corners: the selection's
+  /// orientation with the in-progress drag transform composed on top,
+  /// so the box stays rotated after a rotation and follows the object
+  /// live while transforming.
   g.Transform2? get liveBoxTransform => showsTransformBox
-      ? (tools[ToolKind.select] as SelectTool).liveTransform
+      ? (tools[ToolKind.select] as SelectTool).boxTransform
       : null;
 
   /// Pointer tooltip while transforming (rotation angle, scale %).

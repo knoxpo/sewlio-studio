@@ -109,10 +109,17 @@ sealed class EmbroideryObject {
     required this.path,
     this.stroke = StrokeProps.defaults,
     this.name,
+    this.rotationDeg = 0,
   });
 
   final Id id;
   final Path path;
+
+  /// The object's orientation in degrees (ADR-045). Geometry is stored
+  /// world-baked; this remembers how far it has been rotated so the
+  /// selection box and handles stay aligned with the object instead of
+  /// resetting to an axis-aligned rectangle after each rotation.
+  final double rotationDeg;
 
   /// Canvas stroke rendering properties (ADR-028 fill/stroke v1).
   final StrokeProps stroke;
@@ -132,6 +139,16 @@ sealed class EmbroideryObject {
   /// `ReplaceObject(object.withName(...))` — undoable for free.
   EmbroideryObject withName(String name) {
     final json = toJson()..['name'] = name;
+    return EmbroideryObject.fromJson(json);
+  }
+
+  /// A copy with [rotationDeg] replaced (normalized to (-180, 180]),
+  /// cloned through serialization like [withStroke]/[withName].
+  EmbroideryObject withRotationDeg(double degrees) {
+    var d = degrees % 360;
+    if (d > 180) d -= 360;
+    if (d <= -180) d += 360;
+    final json = toJson()..['rotation'] = d;
     return EmbroideryObject.fromJson(json);
   }
 
@@ -160,6 +177,7 @@ sealed class EmbroideryObject {
         'id': id.value,
         'path': path.toJson(),
         if (name != null) 'name': name,
+        if (rotationDeg != 0) 'rotation': rotationDeg,
         if (!stroke.isDefault) 'stroke': stroke.toJson(),
         ...switch (this) {
           RunningStitchObject(:final stitchLength, :final widthProfile) => {
@@ -203,6 +221,8 @@ sealed class EmbroideryObject {
     final id = Id(json['id'] as String);
     final path = Path.fromJson(json['path'] as Map<String, dynamic>);
     final name = json['name'] as String?;
+    // Legacy documents carry no rotation — axis-aligned (0°).
+    final rotationDeg = (json['rotation'] as num?)?.toDouble() ?? 0;
     final stroke = json['stroke'] == null
         ? StrokeProps.defaults
         : StrokeProps.fromJson(json['stroke'] as Map<String, dynamic>);
@@ -212,6 +232,7 @@ sealed class EmbroideryObject {
           path: path,
           stroke: stroke,
           name: name,
+          rotationDeg: rotationDeg,
           stitchLength: (json['stitchLength'] as num).toDouble(),
           widthProfile: (json['widthProfile'] as List?)
               ?.map((w) => (w as num).toDouble())
@@ -222,12 +243,14 @@ sealed class EmbroideryObject {
           path: path,
           stroke: stroke,
           name: name,
+          rotationDeg: rotationDeg,
           width: (json['width'] as num).toDouble()),
       'fill' => FillObject(
             id: id,
             path: path,
             stroke: stroke,
             name: name,
+            rotationDeg: rotationDeg,
             spacing: (json['spacing'] as num).toDouble(),
             holes: [
               for (final h in (json['holes'] as List? ?? const []))
@@ -238,6 +261,7 @@ sealed class EmbroideryObject {
           path: path,
           stroke: stroke,
           name: name,
+          rotationDeg: rotationDeg,
           text: json['text'] as String,
           fontFamily: json['fontFamily'] as String,
           sizeMm: (json['sizeMm'] as num).toDouble(),
@@ -267,6 +291,7 @@ final class RunningStitchObject extends EmbroideryObject {
     required super.path,
     super.stroke,
     super.name,
+    super.rotationDeg,
     this.stitchLength = 2.5,
     this.widthProfile,
   });
@@ -286,6 +311,7 @@ final class RunningStitchObject extends EmbroideryObject {
       path: path,
       stroke: stroke,
       name: name,
+      rotationDeg: rotationDeg,
       stitchLength: stitchLength,
       // Node edits invalidate the node↔width mapping; transforms
       // preserve it (ADR-038).
@@ -304,14 +330,20 @@ final class SatinObject extends EmbroideryObject {
       required super.path,
       super.stroke,
       super.name,
+      super.rotationDeg,
       this.width = 3.0});
 
   /// Column width in mm.
   final double width;
 
   @override
-  SatinObject withPath(Path path) =>
-      SatinObject(id: id, path: path, stroke: stroke, name: name, width: width);
+  SatinObject withPath(Path path) => SatinObject(
+      id: id,
+      path: path,
+      stroke: stroke,
+      name: name,
+      rotationDeg: rotationDeg,
+      width: width);
 }
 
 /// A region fill bounded by the (closed) path. Generator not
@@ -322,6 +354,7 @@ final class FillObject extends EmbroideryObject {
       required super.path,
       super.stroke,
       super.name,
+      super.rotationDeg,
       this.spacing = 0.4,
       this.holes = const []});
 
@@ -353,6 +386,7 @@ final class FillObject extends EmbroideryObject {
         path: path,
         stroke: stroke,
         name: name,
+        rotationDeg: rotationDeg,
         spacing: spacing,
         holes: holes);
   }
@@ -363,6 +397,7 @@ final class FillObject extends EmbroideryObject {
         path: path.transformed(t),
         stroke: stroke,
         name: name,
+        rotationDeg: rotationDeg,
         spacing: spacing,
         holes: [for (final h in holes) h.transformed(t)],
       );
@@ -378,6 +413,7 @@ final class TextObject extends EmbroideryObject {
     required super.path,
     super.stroke,
     super.name,
+    super.rotationDeg,
     required this.text,
     required this.fontFamily,
     this.sizeMm = 10,
@@ -494,6 +530,7 @@ final class TextObject extends EmbroideryObject {
         path: path ?? this.path,
         stroke: stroke,
         name: name,
+        rotationDeg: rotationDeg,
         text: text,
         fontFamily: fontFamily ?? this.fontFamily,
         sizeMm: sizeMm,

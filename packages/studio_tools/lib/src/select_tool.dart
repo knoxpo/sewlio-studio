@@ -115,6 +115,59 @@ final class SelectTool extends Tool {
       ? null
       : document.selectionBounds(selection.selectedRefs);
 
+  // ------------------------------------------------------ oriented frame
+  //
+  // ADR-045: a rotated object keeps its orientation (rotationDeg), so
+  // the transform box is computed in the object's own frame and mapped
+  // to world through the frame rotation — instead of resetting to an
+  // axis-aligned rectangle after every rotation.
+
+  /// The selection's orientation: the single selected object's
+  /// rotation; multi-selections stay axis-aligned (Illustrator-style).
+  double get selectionRotationDeg {
+    final ids = _selectedObjectIds;
+    if (ids.length != 1) return 0;
+    return document.objectById(ids.single)?.rotationDeg ?? 0;
+  }
+
+  /// Frame → world rotation, or null when axis-aligned.
+  Transform2? get frameTransform {
+    final deg = selectionRotationDeg;
+    return deg == 0 ? null : Transform2.rotation(deg * math.pi / 180);
+  }
+
+  /// The transform box in the selection's own frame: for a rotated
+  /// object, the AABB of its geometry counter-rotated about the origin.
+  /// The canvas maps the corners back through [boxTransform].
+  Bounds? get frameBounds {
+    if (selection.selectedRefs.isEmpty) return null;
+    final frame = frameTransform;
+    if (frame == null) return selectionBounds;
+    final inverse = frame.invert();
+    Bounds? bounds;
+    for (final id in _selectedObjectIds) {
+      final object = document.objectById(id);
+      if (object == null) continue;
+      for (final contour in object.renderPaths) {
+        final b = contour.transformed(inverse).bounds();
+        bounds = bounds == null ? b : bounds.union(b);
+      }
+    }
+    return bounds;
+  }
+
+  /// World transform for the frame-space box corners (null = identity):
+  /// the frame orientation, with the live drag transform composed on
+  /// top so the box follows the object while transforming.
+  Transform2? get boxTransform {
+    final frame = frameTransform;
+    final live = _liveTransform;
+    if (live == null) return frame;
+    return frame == null ? live : live * frame;
+  }
+
+  Point _toWorld(Point frame) => frameTransform?.apply(frame) ?? frame;
+
   Point _handlePoint(Bounds b, TransformHandle handle) {
     final cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
     return switch (handle) {
@@ -141,15 +194,17 @@ final class SelectTool extends Tool {
     TransformHandle.w: TransformHandle.e,
   };
 
-  /// The handle under [world], if the selection box is active.
+  /// The handle under [world], if the selection box is active. Handle
+  /// anchor points live in frame space and are mapped to world, so
+  /// they track a rotated box.
   TransformHandle? handleAt(Point world) {
-    final b = selectionBounds;
+    final b = frameBounds;
     if (b == null) return null;
     // No resize/rotate grips when the selection includes a base object.
     if (_selectedObjectIds.any((id) => !_transformable(id))) return null;
     final tolerance = handleHitPx / pxPerMm;
     for (final handle in TransformHandle.values) {
-      if (world.distanceTo(_handlePoint(b, handle)) <= tolerance) {
+      if (world.distanceTo(_toWorld(_handlePoint(b, handle))) <= tolerance) {
         return handle;
       }
     }
@@ -171,7 +226,7 @@ final class SelectTool extends Tool {
     final handle = handleAt(world);
     if (handle != null) {
       _activeHandle = handle;
-      _startBounds = selectionBounds;
+      _startBounds = frameBounds;
       _liveTransform = null;
       _dragMode = handle == TransformHandle.rotate
           ? _SelectDragMode.rotate
@@ -223,11 +278,15 @@ final class SelectTool extends Tool {
       };
 
   /// Scale about the opposite handle (or the center with Alt); Shift
-  /// keeps corner scaling uniform. One [Transform2], so the same code
-  /// path extends to skew/free transform later.
+  /// keeps corner scaling uniform. Computed in the selection's frame so
+  /// a rotated object scales along its own axes (ADR-045), then mapped
+  /// back to world. One [Transform2], so the same code path extends to
+  /// skew/free transform later.
   Transform2 _resizeTransform(Point world) {
     final b = _startBounds!;
     final handle = _activeHandle!;
+    final frame = frameTransform;
+    final local = frame == null ? world : frame.invert().apply(world);
     final anchor = centerModifier
         ? Point((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2)
         : _handlePoint(b, _opposite[handle]!);
@@ -242,24 +301,25 @@ final class SelectTool extends Tool {
       return s;
     }
 
-    var sx = affectsX ? scaleFor(world.x, from.x, anchor.x) : 1.0;
-    var sy = affectsY ? scaleFor(world.y, from.y, anchor.y) : 1.0;
+    var sx = affectsX ? scaleFor(local.x, from.x, anchor.x) : 1.0;
+    var sy = affectsY ? scaleFor(local.y, from.y, anchor.y) : 1.0;
     if (uniformModifier && affectsX && affectsY) {
       final s = sx.abs() > sy.abs() ? sx : sy;
       sx = s.abs() * sx.sign;
       sy = s.abs() * sy.sign;
     }
     _liveScale = (sx, sy);
-    return Transform2.translation(anchor.x, anchor.y) *
+    final resize = Transform2.translation(anchor.x, anchor.y) *
         Transform2.scaling(sx, sy) *
         Transform2.translation(-anchor.x, -anchor.y);
+    return frame == null ? resize : frame * resize * frame.invert();
   }
 
   /// Rotate about the selection center; Shift snaps to 15° steps.
   Transform2 _rotateTransform(Point world) {
     final b = _startBounds!;
-    final pivot = Point((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2);
-    final from = _handlePoint(b, TransformHandle.rotate);
+    final pivot = _toWorld(Point((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2));
+    final from = _toWorld(_handlePoint(b, TransformHandle.rotate));
     final a0 = math.atan2(from.y - pivot.y, from.x - pivot.x);
     final a1 = math.atan2(world.y - pivot.y, world.x - pivot.x);
     var angle = a1 - a0;
@@ -288,7 +348,10 @@ final class SelectTool extends Tool {
 
     if (mode == _SelectDragMode.resize || mode == _SelectDragMode.rotate) {
       if (transform != null) {
-        history.execute(TransformSelection(selection.selectedRefs, transform));
+        // Rotations accumulate the objects' orientation (ADR-045) so
+        // the box stays aligned with the object on reselect.
+        history.execute(TransformSelection(selection.selectedRefs, transform,
+            rotateDeg: mode == _SelectDragMode.rotate ? _liveAngleDeg : 0));
       }
       return;
     }

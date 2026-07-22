@@ -620,7 +620,8 @@ class EditorWorkspace extends StatelessWidget {
       // Transform box + per-object frames: Select tool only. Pen/Node
       // show the selected object's anchor points instead.
       selectedIds: model.showsTransformBox ? model.selectedObjectIds : const {},
-      selectionBounds: model.showsTransformBox ? model.selectionBounds : null,
+      selectionBounds:
+          model.showsTransformBox ? model.transformBoxBounds : null,
       previewPaths: model.tool.preview,
       previewFillPaths: model.tool.previewFills,
       selectionHighlights: model.tool.selectionHighlights,
